@@ -1,0 +1,302 @@
+package com.example
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.ui.PalmistViewModel
+import com.example.ui.language.AppLanguage
+import com.example.ui.language.LocalizedStrings
+import com.example.ui.screens.*
+import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.MysticBronze
+import com.example.ui.theme.MysticDarkBackground
+import com.example.ui.theme.MysticDarkSurface
+import com.example.ui.theme.MysticGold
+
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: PalmistViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        enableEdgeToEdge()
+
+        setContent {
+            MyApplicationTheme {
+                val navController = rememberNavController()
+
+                NavHost(
+                    navController = navController,
+                    startDestination = "language",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MysticDarkBackground)
+                ) {
+                    // 1. Language selector
+                    composable("language") {
+                        LanguageSelectionScreen(
+                            viewModel = viewModel,
+                            onNavigateToSplash = { navController.navigate("splash") }
+                        )
+                    }
+
+                    // 2. Parchment splash animation
+                    composable("splash") {
+                        MysticSplashScreen(
+                            viewModel = viewModel,
+                            onNavigateNext = { navController.navigate("auth") }
+                        )
+                    }
+
+                    // 3. Optional authorization
+                    composable("auth") {
+                        AuthScreen(
+                            viewModel = viewModel,
+                            onNavigateNext = { navController.navigate("profile") }
+                        )
+                    }
+
+                    // 4. Profile Details Form
+                    composable("profile") {
+                        ProfileScreen(
+                            viewModel = viewModel,
+                            onNavigateNext = {
+                                navController.navigate("main_container") {
+                                    popUpTo("profile") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // 5. Main dashboard with bottom navigation bar tabs
+                    composable("main_container") {
+                        MainContainerScreen(
+                            viewModel = viewModel,
+                            onNavigateToLoading = { navController.navigate("loading") },
+                            onNavigateToBilling = { navController.navigate("billing") },
+                            onNavigateToSettings = { navController.navigate("settings") }
+                        )
+                    }
+
+                    // 6. Progressive loader screen
+                    composable("loading") {
+                        val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+                        
+                        LaunchedEffect(isAnalyzing) {
+                            if (!isAnalyzing) {
+                                navController.navigate("result") {
+                                    popUpTo("loading") { inclusive = true }
+                                }
+                            }
+                        }
+
+                        MysticLoadingScreen(viewModel = viewModel)
+                    }
+
+                    // 7. Analysis Report Display + interactive palm map
+                    composable("result") {
+                        ResultsScreen(
+                            viewModel = viewModel,
+                            onNavigateToCompatibility = {
+                                navController.navigate("main_container")
+                            },
+                            onNavigateToBilling = { navController.navigate("billing") }
+                        )
+                    }
+
+                    // 8. Payment panel (Yandex Pay / YooKassa / Play billing)
+                    composable("billing") {
+                        BillingScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    // 9. Settings screen
+                    composable("settings") {
+                        SettingsScreen(
+                            viewModel = viewModel,
+                            onNavigateToLanguage = { navController.navigate("language") }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun MainContainerScreen(
+    viewModel: PalmistViewModel,
+    onNavigateToLoading: () -> Unit,
+    onNavigateToBilling: () -> Unit,
+    onNavigateToSettings: () -> Unit
+) {
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val strings = LocalizedStrings.get(currentLang)
+
+    var activeTab by remember { mutableStateOf("upload") }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = MysticDarkSurface,
+                contentColor = MysticGold,
+                tonalElevation = 8.dp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MysticBronze.copy(0.2f),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+            ) {
+                // Upload / Scan
+                NavigationBarItem(
+                    selected = activeTab == "upload",
+                    onClick = { activeTab = "upload" },
+                    icon = {
+                        Icon(
+                            imageVector = if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(strings.navScan, fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MysticGold,
+                        selectedTextColor = MysticGold,
+                        indicatorColor = Color(0x22D4AF37),
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray
+                    )
+                )
+
+                // Partner Compatibility
+                NavigationBarItem(
+                    selected = activeTab == "compatibility",
+                    onClick = { activeTab = "compatibility" },
+                    icon = {
+                        Icon(
+                            imageVector = if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(strings.navCompat, fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MysticGold,
+                        selectedTextColor = MysticGold,
+                        indicatorColor = Color(0x22D4AF37),
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray
+                    )
+                )
+
+                // History Records
+                NavigationBarItem(
+                    selected = activeTab == "history",
+                    onClick = { activeTab = "history" },
+                    icon = {
+                        Icon(
+                            imageVector = if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(strings.navHistory, fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MysticGold,
+                        selectedTextColor = MysticGold,
+                        indicatorColor = Color(0x22D4AF37),
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray
+                    )
+                )
+
+                // About / FAQ Theory
+                NavigationBarItem(
+                    selected = activeTab == "about",
+                    onClick = { activeTab = "about" },
+                    icon = {
+                        Icon(
+                            imageVector = if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(strings.navAbout, fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MysticGold,
+                        selectedTextColor = MysticGold,
+                        indicatorColor = Color(0x22D4AF37),
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray
+                    )
+                )
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToSettings,
+                containerColor = MysticGold,
+                contentColor = Color.Black,
+                shape = CircleShape,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings"
+                )
+            }
+        },
+        contentWindowInsets = WindowInsets.navigationBars,
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MysticDarkBackground)
+                .padding(innerPadding)
+        ) {
+            when (activeTab) {
+                "upload" -> UploadScreen(
+                    viewModel = viewModel,
+                    onNavigateToLoading = onNavigateToLoading,
+                    onNavigateToBilling = onNavigateToBilling
+                )
+                "compatibility" -> CompatibilityScreen(
+                    viewModel = viewModel,
+                    onNavigateToLoading = onNavigateToLoading,
+                    onNavigateToBilling = onNavigateToBilling
+                )
+                "history" -> HistoryScreen(
+                    viewModel = viewModel,
+                    onNavigateToResult = onNavigateToLoading // navigate directly
+                )
+                "about" -> AboutScreen(viewModel = viewModel)
+            }
+        }
+    }
+}
