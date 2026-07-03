@@ -20,23 +20,22 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
         
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v3
+      uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: '8.5'
+        gradle-version: '8.9'
         
     - name: Generate gradlew if missing
       run: |
         if [ ! -f gradlew ]; then
           echo "gradlew not found, generating..."
-          gradle wrapper
+          gradle wrapper --gradle-version 8.9
         fi
         chmod +x gradlew
         
     - name: Build with Gradle
-      run: ./gradlew build --no-daemon
+      run: ./gradlew build --no-daemon --continue
       
     - name: Build Debug APK
       run: ./gradlew assembleDebug --no-daemon
