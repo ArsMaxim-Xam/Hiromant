@@ -34,12 +34,19 @@ jobs:
         fi
         chmod +x gradlew
         
-    - name: Build Debug APK (skip tests)
-      run: ./gradlew assembleDebug --no-daemon -x test -x lint -x lintVitalRelease
-      
+    - name: Build Debug APK
+      run: |
+        echo "Building APK..."
+        ./gradlew assembleDebug --no-daemon --stacktrace
+        echo "Build complete!"
+        echo "Looking for APK..."
+        find . -name "*.apk" -type f
+        ls -la app/build/outputs/apk/debug/ || true
+        
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug-apk
+        name: hiromant-app
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 30
+        if-no-files-found: error
