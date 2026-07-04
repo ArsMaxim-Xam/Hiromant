@@ -14,7 +14,7 @@ plugins {
 
 android {
   namespace = "com.aistudio.hiromant.kxsrwa"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.hiromant.kxsrwa"
@@ -143,9 +143,6 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
-  // Firebase BoM
-  implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
-
   // Если нужна аналитика
   implementation("com.google.firebase:firebase-analytics")
 
@@ -157,9 +154,7 @@ dependencies {
 
   // Если хотите использовать Firebase AI (Gemini через Firebase)
   implementation("com.google.firebase:firebase-ai")
-  // Импортируйте спецификацию материалов Firebase
-  implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-  // Импортируйте спецификацию материалов Firebase
+  // Импортируйте спецификацию материалов Firebase BoM
   implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
   // TODO: Добавьте зависимости для продуктов Firebase, которые вы хотите использовать
   // При использовании BoM не указывайте версии в зависимостях Firebase.
