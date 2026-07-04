@@ -1,4 +1,4 @@
-package com.example.ui.components
+package com.aistudio.hiromant.kxsrwa.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -23,9 +23,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.MysticBronze
-import com.example.ui.theme.MysticGold
-import com.example.ui.theme.MysticGoldGlow
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticBronze
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticGold
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticGoldGlow
 
 @Composable
 fun MysticHeader(

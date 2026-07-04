@@ -1,4 +1,4 @@
-package com.example.ui.screens
+package com.aistudio.hiromant.kxsrwa.ui.screens
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -43,14 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
-import com.example.data.local.ReadingEntity
-import com.example.ui.PalmistViewModel
-import com.example.ui.components.*
-import com.example.ui.language.AppLanguage
-import com.example.ui.language.LocalizedStrings
-import com.example.ui.language.PalmistStrings
-import com.example.ui.theme.*
-import com.example.utils.BitmapUtils
+import com.aistudio.hiromant.kxsrwa.data.local.ReadingEntity
+import com.aistudio.hiromant.kxsrwa.ui.PalmistViewModel
+import com.aistudio.hiromant.kxsrwa.ui.components.*
+import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
+import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
+import com.aistudio.hiromant.kxsrwa.ui.language.PalmistStrings
+import com.aistudio.hiromant.kxsrwa.ui.theme.*
+import com.aistudio.hiromant.kxsrwa.utils.BitmapUtils
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.delay
@@ -1262,7 +1262,7 @@ fun ResultsScreen(
         reading?.let {
             try {
                 val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-                moshi.adapter(com.example.data.remote.PalmistReport::class.java).fromJson(it.resultJson)
+                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport::class.java).fromJson(it.resultJson)
             } catch (e: Exception) {
                 null
             }
@@ -1270,7 +1270,7 @@ fun ResultsScreen(
     }
 
     // Interactive lines map dialog state
-    var selectedLineInfo by remember { mutableStateOf<com.example.data.remote.PalmLineAnalysis?>(null) }
+    var selectedLineInfo by remember { mutableStateOf<com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis?>(null) }
 
     // TTS configurations
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
@@ -1832,7 +1832,7 @@ fun ResultsScreen(
 }
 
 @Composable
-fun LineReportCard(line: com.example.data.remote.PalmLineAnalysis) {
+fun LineReportCard(line: com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis) {
     val parsedColor = remember(line.color) {
         try {
             Color(android.graphics.Color.parseColor(line.color))
@@ -1896,7 +1896,7 @@ fun LineReportCard(line: com.example.data.remote.PalmLineAnalysis) {
 }
 
 @Composable
-fun MountReportRow(mount: com.example.data.remote.PalmMountAnalysis) {
+fun MountReportRow(mount: com.aistudio.hiromant.kxsrwa.data.remote.PalmMountAnalysis) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1926,7 +1926,7 @@ fun MountReportRow(mount: com.example.data.remote.PalmMountAnalysis) {
 }
 
 @Composable
-fun SignReportCard(sign: com.example.data.remote.PalmSign) {
+fun SignReportCard(sign: com.aistudio.hiromant.kxsrwa.data.remote.PalmSign) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0x11D4AF37)),
@@ -1998,7 +1998,7 @@ fun CompatibilityScreen(
         compatibilityReading?.let {
             try {
                 val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-                moshi.adapter(com.example.data.remote.CompatibilityReport::class.java).fromJson(it.resultJson)
+                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport::class.java).fromJson(it.resultJson)
             } catch (e: Exception) {
                 null
             }

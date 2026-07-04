@@ -1,4 +1,4 @@
-package com.example
+package com.aistudio.hiromant.kxsrwa
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,15 +26,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.ui.PalmistViewModel
-import com.example.ui.language.AppLanguage
-import com.example.ui.language.LocalizedStrings
-import com.example.ui.screens.*
-import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.MysticBronze
-import com.example.ui.theme.MysticDarkBackground
-import com.example.ui.theme.MysticDarkSurface
-import com.example.ui.theme.MysticGold
+import com.aistudio.hiromant.kxsrwa.ui.PalmistViewModel
+import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
+import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
+import com.aistudio.hiromant.kxsrwa.ui.screens.*
+import com.aistudio.hiromant.kxsrwa.ui.theme.MyApplicationTheme
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticBronze
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkBackground
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkSurface
+import com.aistudio.hiromant.kxsrwa.ui.theme.MysticGold
 
 class MainActivity : ComponentActivity() {
 

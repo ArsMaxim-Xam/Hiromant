@@ -1,4 +1,4 @@
-package com.example.ui.language
+package com.aistudio.hiromant.kxsrwa.ui.language
 
 enum class AppLanguage(val code: String, val label: String) {
     RUS("RU", "🇷🇺 Русский (RUS)"),

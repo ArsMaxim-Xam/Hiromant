@@ -1,4 +1,4 @@
-package com.example.data.remote
+package com.aistudio.hiromant.kxsrwa.data.remote
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass

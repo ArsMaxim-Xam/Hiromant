@@ -1,9 +1,9 @@
-package com.example
+package com.aistudio.hiromant.kxsrwa
 
 import android.app.Application
 import androidx.room.Room
-import com.example.data.local.PalmistDatabase
-import com.example.data.repository.PalmistRepository
+import com.aistudio.hiromant.kxsrwa.data.local.PalmistDatabase
+import com.aistudio.hiromant.kxsrwa.data.repository.PalmistRepository
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 

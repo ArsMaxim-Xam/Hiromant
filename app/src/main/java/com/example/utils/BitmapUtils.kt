@@ -1,4 +1,4 @@
-package com.example.utils
+package com.aistudio.hiromant.kxsrwa.utils
 
 import android.content.Context
 import android.graphics.Bitmap

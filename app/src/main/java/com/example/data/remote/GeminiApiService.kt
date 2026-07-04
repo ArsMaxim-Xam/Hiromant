@@ -1,4 +1,4 @@
-package com.example.data.remote
+package com.aistudio.hiromant.kxsrwa.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

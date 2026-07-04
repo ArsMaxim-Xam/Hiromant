@@ -1,14 +1,14 @@
-package com.example.ui
+package com.aistudio.hiromant.kxsrwa.ui
 
 import android.app.Application
 import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.PalmistApplication
-import com.example.data.local.BillingStateEntity
-import com.example.data.local.ReadingEntity
-import com.example.data.local.UserProfileEntity
-import com.example.ui.language.AppLanguage
+import com.aistudio.hiromant.kxsrwa.PalmistApplication
+import com.aistudio.hiromant.kxsrwa.data.local.BillingStateEntity
+import com.aistudio.hiromant.kxsrwa.data.local.ReadingEntity
+import com.aistudio.hiromant.kxsrwa.data.local.UserProfileEntity
+import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

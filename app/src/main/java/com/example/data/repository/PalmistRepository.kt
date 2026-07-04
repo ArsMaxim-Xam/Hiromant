@@ -1,12 +1,12 @@
-package com.example.data.repository
+package com.aistudio.hiromant.kxsrwa.data.repository
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import com.example.BuildConfig
-import com.example.data.local.*
-import com.example.data.remote.*
-import com.example.utils.BitmapUtils.toBase64
+import com.aistudio.hiromant.kxsrwa.BuildConfig
+import com.aistudio.hiromant.kxsrwa.data.local.*
+import com.aistudio.hiromant.kxsrwa.data.remote.*
+import com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.toBase64
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers

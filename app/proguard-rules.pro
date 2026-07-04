@@ -23,11 +23,11 @@
 # --- Room database ProGuard rules ---
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.paging.**
--keep class com.example.data.local.** { *; }
+-keep class com.aistudio.hiromant.kxsrwa.data.local.** { *; }
 
 # --- Moshi JSON serialization models ---
--keep class com.example.data.remote.** { *; }
--keepclassmembers class com.example.data.remote.** {
+-keep class com.aistudio.hiromant.kxsrwa.data.remote.** { *; }
+-keepclassmembers class com.aistudio.hiromant.kxsrwa.data.remote.** {
     <fields>;
     <init>(...);
 }
