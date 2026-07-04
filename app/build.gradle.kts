@@ -7,13 +7,10 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
-  id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-  id("com.google.gms.google-services")
 }
 
 android {
-  namespace = "com.aistudio.hiromant.kxsrwa"
+  namespace = "com.example"
   compileSdk = 36
 
   defaultConfig {
@@ -22,7 +19,6 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
-    buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY")}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk {
