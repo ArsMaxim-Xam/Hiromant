@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.aistudio.hiromant.kxsrwa"
   compileSdk = 36
 
   defaultConfig {
