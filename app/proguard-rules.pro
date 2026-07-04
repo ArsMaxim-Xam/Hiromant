@@ -14,8 +14,36 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable,Signature,InnerClasses,EnclosingMethod,Annotation
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Room database ProGuard rules ---
+-keep class * extends androidx.room.RoomDatabase
+-dontwarn androidx.room.paging.**
+-keep class com.example.data.local.** { *; }
+
+# --- Moshi JSON serialization models ---
+-keep class com.example.data.remote.** { *; }
+-keepclassmembers class com.example.data.remote.** {
+    <fields>;
+    <init>(...);
+}
+
+# --- Keep Retrofit & OkHttp classes ---
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keepattributes *Annotation*
+-keepclassmembernames class * {
+    @retrofit2.http.* <methods>;
+}
+
+-dontwarn okhttp3.**
+-keep class okhttp3.** { *; }
+
+# --- Keep Moshi internals ---
+-dontwarn com.squareup.moshi.**
+-keep class com.squareup.moshi.** { *; }
+
