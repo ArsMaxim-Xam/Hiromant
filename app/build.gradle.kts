@@ -156,4 +156,12 @@ dependencies {
 
   // Если хотите использовать Firebase AI (Gemini через Firebase)
   implementation("com.google.firebase:firebase-ai")
+  // Импортируйте спецификацию материалов Firebase
+  implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+  // Импортируйте спецификацию материалов Firebase
+  implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
+  // TODO: Добавьте зависимости для продуктов Firebase, которые вы хотите использовать
+  // При использовании BoM не указывайте версии в зависимостях Firebase.
+  implementation("com.google.firebase:firebase-analytics")
+
 }
