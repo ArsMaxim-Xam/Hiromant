@@ -22,6 +22,7 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
+    buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY")}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk {
