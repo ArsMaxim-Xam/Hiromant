@@ -7,6 +7,9 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
+  id("com.android.application")
+  id("org.jetbrains.kotlin.android")
+  id("com.google.gms.google-services")
 }
 
 android {
@@ -139,4 +142,18 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+  // Firebase BoM
+  implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
+
+  // Если нужна аналитика
+  implementation("com.google.firebase:firebase-analytics")
+
+  // Если нужна аутентификация
+  implementation("com.google.firebase:firebase-auth")
+
+  // Если нужен Firestore (база данных)
+  implementation("com.google.firebase:firebase-firestore")
+
+  // Если хотите использовать Firebase AI (Gemini через Firebase)
+  implementation("com.google.firebase:firebase-ai")
 }
