@@ -1,8 +1,0 @@
-<resources>
-    <!-- Простая тема для Activity, не влияет на Compose -->
-    <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/mystic_dark_background</item>
-        <item name="android:navigationBarColor">@color/mystic_dark_background</item>
-        <item name="android:windowBackground">@color/mystic_dark_background</item>
-    </style>
-</resources>
