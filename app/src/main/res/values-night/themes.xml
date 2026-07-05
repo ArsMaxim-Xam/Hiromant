@@ -1,19 +1,7 @@
 <resources>
-    <!-- Базовый стиль для приложения. Используем Material3 DayNight тему, которая адаптируется под светлую/тёмную тему -->
-    <style name="Theme.MyApplication" parent="android:Theme.Material3.DayNight.NoActionBar">
-        <!-- Статус-бар и навигационная панель -->
+    <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@color/mystic_dark_background</item>
         <item name="android:navigationBarColor">@color/mystic_dark_background</item>
         <item name="android:windowBackground">@color/mystic_dark_background</item>
-        
-        <!-- Цвета Material 3 (используются в Compose, если вы используете MaterialTheme) -->
-        <item name="colorPrimary">@color/mystic_gold</item>
-        <item name="colorOnPrimary">@android:color/black</item>
-        <item name="colorSecondary">@color/mystic_bronze</item>
-        <item name="colorOnSecondary">@android:color/black</item>
-        <item name="colorSurface">@color/mystic_dark_surface</item>
-        <item name="colorOnSurface">@android:color/white</item>
-        <item name="colorPrimaryContainer">@color/mystic_gold_transparent</item>
-        <item name="colorOnPrimaryContainer">@android:color/black</item>
     </style>
 </resources>
