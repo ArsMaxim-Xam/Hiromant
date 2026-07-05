@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyApplication"
-           parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Можно добавить кастомные настройки, если нужно -->
-        </style>
-    </resources>
+    <style name="Theme.MyApplication">
+        <item name="android:windowBackground">@color/mystic_dark_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+</resources>
