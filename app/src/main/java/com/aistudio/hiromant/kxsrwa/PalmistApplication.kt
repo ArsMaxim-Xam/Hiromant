@@ -1,37 +1,43 @@
 package com.aistudio.hiromant.kxsrwa
 
 import android.app.Application
-import androidx.room.Room
-import com.aistudio.hiromant.kxsrwa.data.local.PalmistDatabase
-import com.aistudio.hiromant.kxsrwa.data.repository.PalmistRepository
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import android.util.Log
+import java.io.File
+import java.io.FileWriter
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class PalmistApplication : Application() {
 
-    lateinit var database: PalmistDatabase
-        private set
-
-    lateinit var repository: PalmistRepository
-        private set
-
     override fun onCreate() {
         super.onCreate()
-        
-        database = Room.databaseBuilder(
-            applicationContext,
-            PalmistDatabase::class.java,
-            "palmist_database"
-        )
-        .fallbackToDestructiveMigration()
-        .build()
+        // Перехватываем все исключения на уровне Application
+        try {
+            // Здесь инициализация репозитория и других компонентов
+            // (если они есть)
+        } catch (e: Exception) {
+            logException(e)
+        }
+    }
 
-        repository = PalmistRepository(applicationContext, database.palmistDao())
-
-        // Initialize default billing state if empty
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch {
-            repository.initializeBillingStateIfEmpty()
+    private fun logException(e: Exception) {
+        try {
+            val logDir = filesDir // внутреннее хранилище приложения
+            if (logDir.exists() || logDir.mkdirs()) {
+                val logFile = File(logDir, "crash.log")
+                val writer = FileWriter(logFile, true)
+                val sw = StringWriter()
+                val pw = PrintWriter(sw)
+                e.printStackTrace(pw)
+                writer.write("\n--- Crash at ${System.currentTimeMillis()} ---\n")
+                writer.write(sw.toString())
+                writer.write("\n--- End of crash ---\n\n")
+                writer.flush()
+                writer.close()
+            }
+        } catch (ex: Exception) {
+            // Если и запись упала — просто логируем в Logcat
+            Log.e("PalmistApplication", "Не удалось записать лог", ex)
         }
     }
 }
