@@ -1,8 +1,6 @@
 package com.aistudio.hiromant.kxsrwa
 
 import android.os.Bundle
-import android.os.Environment
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,7 +28,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aistudio.hiromant.kxsrwa.ui.PalmistViewModel
-import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
 import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
 import com.aistudio.hiromant.kxsrwa.ui.screens.*
 import com.aistudio.hiromant.kxsrwa.ui.theme.MyApplicationTheme
@@ -48,17 +45,21 @@ class MainActivity : ComponentActivity() {
     private val viewModel: PalmistViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Перехватываем все исключения и пишем в файл
         try {
             super.onCreate(savedInstanceState)
             enableEdgeToEdge()
+
+            // Проверяем, был ли уже выбран язык (для пропуска экрана выбора)
+            val prefs = applicationContext.getSharedPreferences("palmist_prefs", android.content.Context.MODE_PRIVATE)
+            val hasLanguageSelected = prefs.contains("app_language")
+
             setContent {
                 MyApplicationTheme {
                     val navController = rememberNavController()
 
                     NavHost(
                         navController = navController,
-                        startDestination = "language",
+                        startDestination = if (hasLanguageSelected) "splash" else "language",
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MysticDarkBackground)
@@ -154,25 +155,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } catch (e: Exception) {
-            // Логируем ошибку в файл
-            logException(e)
-            // Показываем тост с путём к файлу
-            val logFile = File(getExternalFilesDir(null), "crash.log")
-            Toast.makeText(
-                this,
-                "Ошибка: ${e.message}\nЛог записан в ${logFile.absolutePath}",
-                Toast.LENGTH_LONG
-            ).show()
-            // Если хотите, чтобы приложение не падало — закомментируйте throw e
-            throw e
-        }
-    }
-
-    private fun logException(e: Exception) {
-        try {
-            val logDir = getExternalFilesDir(null)
-            if (logDir != null && (logDir.exists() || logDir.mkdirs())) {
-                val logFile = File(logDir, "crash.log")
+            // Логируем ошибку во внутреннее хранилище (без разрешений)
+            try {
+                val logFile = File(filesDir, "crash.log")
                 val writer = FileWriter(logFile, true)
                 val sw = StringWriter()
                 val pw = PrintWriter(sw)
@@ -182,10 +167,11 @@ class MainActivity : ComponentActivity() {
                 writer.write("\n--- End of crash ---\n\n")
                 writer.flush()
                 writer.close()
+            } catch (ex: Exception) {
+                // Игнорируем
             }
-        } catch (ex: Exception) {
-            // Если и запись упала — просто логируем в Logcat
-            Log.e("MainActivity", "Не удалось записать лог", ex)
+            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+            throw e
         }
     }
 }
