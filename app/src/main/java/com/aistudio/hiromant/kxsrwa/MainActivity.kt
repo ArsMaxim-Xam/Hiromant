@@ -47,311 +47,72 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: PalmistViewModel by viewModels()
 
-        override fun onCreate(savedInstanceState: Bundle?) {
-            // Перехватываем все исключения и пишем в файл
-            try {
-                super.onCreate(savedInstanceState)
-                enableEdgeToEdge()
-                setContent {
-                    MyApplicationTheme {
-                        val navController = rememberNavController()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Перехватываем все исключения и пишем в файл
+        try {
+            super.onCreate(savedInstanceState)
+            enableEdgeToEdge()
+            setContent {
+                MyApplicationTheme {
+                    val navController = rememberNavController()
 
-                        NavHost(
-                            navController = navController,
-                            startDestination = "language",
-                            modifier = Modifier
+                    NavHost(
+                        navController = navController,
+                        startDestination = "language",
+                        modifier = Modifier
                             .fillMaxSize()
                             .background(MysticDarkBackground)
-                        ) {
-                            // 1. Language selector
-                            composable("language") {
-                                LanguageSelectionScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToSplash = {
-                                        navController.navigate("splash") }
-                                )
-                            }
+                    ) {
+                        // 1. Language selector
+                        composable("language") {
+                            LanguageSelectionScreen(
+                                viewModel = viewModel,
+                                onNavigateToSplash = { navController.navigate("splash") }
+                            )
+                        }
 
-                            // 2. Parchment splash animation
-                            composable("splash") {
-                                MysticSplashScreen(
-                                    viewModel = viewModel,
-                                    onNavigateNext = {
-                                        navController.navigate("auth") }
-                                )
-                            }
+                        // 2. Parchment splash animation
+                        composable("splash") {
+                            MysticSplashScreen(
+                                viewModel = viewModel,
+                                onNavigateNext = { navController.navigate("auth") }
+                            )
+                        }
 
-                            // 3. Optional authorization
-                            composable("auth") {
-                                AuthScreen(
-                                    viewModel = viewModel,
-                                    onNavigateNext = {
-                                        navController.navigate("profile") }
-                                )
-                            }
+                        // 3. Optional authorization
+                        composable("auth") {
+                            AuthScreen(
+                                viewModel = viewModel,
+                                onNavigateNext = { navController.navigate("profile") }
+                            )
+                        }
 
-                            // 4. Profile Details Form
-                            composable("profile") {
-                                ProfileScreen(
-                                    viewModel = viewModel,
-                                    onNavigateNext = {
-                                        navController.navigate("main_container")
-                                        {
-                                            popUpTo("profile") { inclusive =
-                                                true }
-                                        }
+                        // 4. Profile Details Form
+                        composable("profile") {
+                            ProfileScreen(
+                                viewModel = viewModel,
+                                onNavigateNext = {
+                                    navController.navigate("main_container") {
+                                        popUpTo("profile") { inclusive = true }
                                     }
-                                )
-                            }
-
-                            // 5. Main dashboard with bottom navigation bar tabs
-                            composable("main_container") {
-                                MainContainerScreen(
-                                    viewModel = viewModel,
-                                    onNavigateToLoading = {
-                                        navController.navigate("loading") },
-                                                    onNavigateToBilling = {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-navController.navigate("billing") },
-                                onNavigateToSettings = {
-navController.navigate("settings") }
+                                }
+                            )
+                        }
+
+                        // 5. Main dashboard with bottom navigation bar tabs
+                        composable("main_container") {
+                            MainContainerScreen(
+                                viewModel = viewModel,
+                                onNavigateToLoading = { navController.navigate("loading") },
+                                onNavigateToBilling = { navController.navigate("billing") },
+                                onNavigateToSettings = { navController.navigate("settings") }
                             )
                         }
 
                         // 6. Progressive loader screen
                         composable("loading") {
-                            val isAnalyzing by
-viewModel.isAnalyzing.collectAsState()
-
+                            val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+                            
                             LaunchedEffect(isAnalyzing) {
                                 if (!isAnalyzing) {
                                     navController.navigate("result") {
@@ -370,18 +131,15 @@ viewModel.isAnalyzing.collectAsState()
                                 onNavigateToCompatibility = {
                                     navController.navigate("main_container")
                                 },
-                                onNavigateToBilling = {
-navController.navigate("billing") }
+                                onNavigateToBilling = { navController.navigate("billing") }
                             )
                         }
 
-                        // 8. Payment panel (Yandex Pay / YooKassa / Play
-billing)
+                        // 8. Payment panel (Yandex Pay / YooKassa / Play billing)
                         composable("billing") {
                             BillingScreen(
                                 viewModel = viewModel,
-                                onNavigateBack = { navController.popBackStack()
-}
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 
@@ -389,8 +147,7 @@ billing)
                         composable("settings") {
                             SettingsScreen(
                                 viewModel = viewModel,
-                                onNavigateToLanguage = {
-navController.navigate("language") }
+                                onNavigateToLanguage = { navController.navigate("language") }
                             )
                         }
                     }
@@ -420,8 +177,7 @@ navController.navigate("language") }
                 val sw = StringWriter()
                 val pw = PrintWriter(sw)
                 e.printStackTrace(pw)
-                writer.write("\n--- Crash at ${System.currentTimeMillis()}
----\n")
+                writer.write("\n--- Crash at ${System.currentTimeMillis()} ---\n")
                 writer.write(sw.toString())
                 writer.write("\n--- End of crash ---\n\n")
                 writer.flush()
@@ -458,8 +214,7 @@ fun MainContainerScreen(
                     .border(
                         width = 1.dp,
                         color = MysticBronze.copy(0.2f),
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd =
-24.dp)
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                     )
             ) {
                 // Upload / Scan
@@ -468,8 +223,7 @@ fun MainContainerScreen(
                     onClick = { activeTab = "upload" },
                     icon = {
                         Icon(
-                            imageVector = if (activeTab == "upload")
-Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
+                            imageVector = if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
                             contentDescription = null
                         )
                     },
@@ -489,8 +243,7 @@ Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
                     onClick = { activeTab = "compatibility" },
                     icon = {
                         Icon(
-                            imageVector = if (activeTab == "compatibility")
-Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            imageVector = if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = null
                         )
                     },
@@ -510,8 +263,7 @@ Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     onClick = { activeTab = "history" },
                     icon = {
                         Icon(
-                            imageVector = if (activeTab == "history")
-Icons.Filled.History else Icons.Outlined.History,
+                            imageVector = if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History,
                             contentDescription = null
                         )
                     },
@@ -531,8 +283,7 @@ Icons.Filled.History else Icons.Outlined.History,
                     onClick = { activeTab = "about" },
                     icon = {
                         Icon(
-                            imageVector = if (activeTab == "about")
-Icons.Filled.Info else Icons.Outlined.Info,
+                            imageVector = if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info,
                             contentDescription = null
                         )
                     },
