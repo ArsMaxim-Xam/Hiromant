@@ -1,52 +1,36 @@
-package com.aistudio.hiromant.kxsrwa
+package com.aistudio.hiromant.kxsrwa.data.local
 
-import android.app.Application
-import android.util.Log
-import com.aistudio.hiromant.kxsrwa.data.local.PalmistDatabase
-import com.aistudio.hiromant.kxsrwa.data.repository.PalmistRepository
-import java.io.File
-import java.io.FileWriter
-import java.io.PrintWriter
-import java.io.StringWriter
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
 
-class PalmistApplication : Application() {
+@Database(
+    entities = [
+        ReadingEntity::class,
+        UserProfileEntity::class,
+        BillingStateEntity::class
+    ],
+    version = 1,
+    exportSchema = false
+)
+abstract class PalmistDatabase : RoomDatabase() {
+    abstract fun palmistDao(): PalmistDao
 
-    // Инициализация репозитория (ленивая, чтобы не нагружать старт)
-    val repository: PalmistRepository by lazy {
-        PalmistRepository(
-            context = applicationContext,
-            dao = PalmistDatabase.getDatabase(applicationContext).palmistDao()
-        )
-    }
+    companion object {
+        @Volatile
+        private var INSTANCE: PalmistDatabase? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        try {
-            // Инициализация репозитория (вызов lazy сработает автоматически при первом обращении)
-            // Можем также вызвать repository, чтобы инициализировать сейчас, но не обязательно
-            // repository // если хотим инициализировать сразу
-        } catch (e: Exception) {
-            logException(e)
-        }
-    }
-
-    private fun logException(e: Exception) {
-        try {
-            val logDir = filesDir
-            if (logDir.exists() || logDir.mkdirs()) {
-                val logFile = File(logDir, "crash.log")
-                val writer = FileWriter(logFile, true)
-                val sw = StringWriter()
-                val pw = PrintWriter(sw)
-                e.printStackTrace(pw)
-                writer.write("\n--- Crash at ${System.currentTimeMillis()} ---\n")
-                writer.write(sw.toString())
-                writer.write("\n--- End of crash ---\n\n")
-                writer.flush()
-                writer.close()
+        fun getDatabase(context: Context): PalmistDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    PalmistDatabase::class.java,
+                    "palmist_database"
+                ).build()
+                INSTANCE = instance
+                instance
             }
-        } catch (ex: Exception) {
-            Log.e("PalmistApplication", "Не удалось записать лог", ex)
         }
     }
 }
