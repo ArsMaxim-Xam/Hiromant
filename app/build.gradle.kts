@@ -36,7 +36,8 @@ android {
     }
   }
 
-  // Automatically restore debug.keystore from debug.keystore.base64 in CI or fresh clones
+  // Automatically restore debug.keystore from debug.keystore.base64 in CI or fresh clones,
+  // or auto-generate a new one if it is missing entirely.
   val debugKeystore = rootProject.file("debug.keystore")
   if (!debugKeystore.exists()) {
     val base64File = rootProject.file("debug.keystore.base64")
@@ -47,7 +48,40 @@ android {
         debugKeystore.writeBytes(decodedBytes)
         logger.lifecycle("Successfully restored debug.keystore from base64")
       } catch (e: Exception) {
-        logger.error("Failed to restore debug.keystore from base64: ${e.message}")
+        try {
+          val decodedBytes = Base64.getMimeDecoder().decode(base64File.readText())
+          debugKeystore.writeBytes(decodedBytes)
+          logger.lifecycle("Successfully restored debug.keystore via MimeDecoder")
+        } catch (e2: Exception) {
+          logger.error("Failed to restore debug.keystore from base64: ${e2.message}")
+        }
+      }
+    }
+    
+    // Fallback: If still missing, automatically generate a new standard debug keystore using keytool
+    if (!debugKeystore.exists()) {
+      try {
+        logger.lifecycle("Generating a new debug.keystore...")
+        val process = ProcessBuilder(
+          "keytool", "-genkey", "-v",
+          "-keystore", debugKeystore.absolutePath,
+          "-storepass", "android",
+          "-alias", "androiddebugkey",
+          "-keypass", "android",
+          "-keyalg", "RSA",
+          "-keysize", "2048",
+          "-validity", "10000",
+          "-dname", "CN=Android Debug,O=Android,C=US"
+        ).inheritIO().start()
+        
+        val exitCode = process.waitFor()
+        if (exitCode == 0) {
+          logger.lifecycle("Successfully generated a new debug.keystore")
+        } else {
+          logger.error("Failed to auto-generate debug.keystore, keytool exited with code $exitCode")
+        }
+      } catch (e: Exception) {
+        logger.error("Failed to auto-generate debug.keystore: ${e.message}")
       }
     }
   }
