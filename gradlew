@@ -88,6 +88,23 @@ APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s\n' "$PWD" ) || exit
 
+# Verify if gradle-wrapper.jar is present and valid, download if corrupted or missing
+WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+if [ ! -f "$WRAPPER_JAR" ] || ! unzip -t "$WRAPPER_JAR" >/dev/null 2>&1; then
+    echo "gradle-wrapper.jar is missing, invalid or corrupted. Attempting to download..."
+    mkdir -p "$APP_HOME/gradle/wrapper"
+    if command -v curl >/dev/null 2>&1; then
+        curl -L -s -o "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradle/wrapper/gradle-wrapper.jar"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$WRAPPER_JAR" "https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradle/wrapper/gradle-wrapper.jar"
+    fi
+    if [ -f "$WRAPPER_JAR" ] && unzip -t "$WRAPPER_JAR" >/dev/null 2>&1; then
+        echo "Successfully downloaded and verified gradle-wrapper.jar"
+    else
+        echo "ERROR: Failed to download a valid gradle-wrapper.jar"
+    fi
+fi
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
