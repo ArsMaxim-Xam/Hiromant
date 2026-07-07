@@ -2,22 +2,14 @@ package com.aistudio.hiromant.kxsrwa.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.aistudio.hiromant.kxsrwa.R
 
-// Define our custom elegant families using the bundled font resources
-val CinzelDecorativeFamily = FontFamily(
-    Font(R.font.cinzel_decorative_regular, FontWeight.Normal),
-    Font(R.font.cinzel_decorative_bold, FontWeight.Bold)
-)
+// Using elegant system serif typography for a mystic and classical feel
+val CinzelDecorativeFamily = FontFamily.Serif
 
-val CinzelFamily = FontFamily(
-    Font(R.font.cinzel_regular, FontWeight.Normal),
-    Font(R.font.cinzel_regular, FontWeight.Bold)
-)
+val CinzelFamily = FontFamily.Serif
 
 val Typography = Typography(
     // Headers (Decorative with Cinzel Decorative)
