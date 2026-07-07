@@ -166,7 +166,13 @@ data class PalmistStrings(
     val billDialogGooglePlay: String,
     val billDialogCardNum: String,
     val billDialogSuccess: String,
-    val billDialogFail: String
+    val billDialogFail: String,
+
+    // Hand Slots
+    val slotLeftPalm: String,
+    val slotLeftBack: String,
+    val slotRightPalm: String,
+    val slotRightBack: String
 )
 
 object LocalizedStrings {
@@ -316,7 +322,12 @@ object LocalizedStrings {
         billDialogGooglePlay = "Google Play Billing",
         billDialogCardNum = "Номер карты (для ЮKassa)",
         billDialogSuccess = "Платеж прошёл успешно! Доступ разблокирован.",
-        billDialogFail = "Не удалось завершить транзакцию."
+        billDialogFail = "Не удалось завершить транзакцию.",
+
+        slotLeftPalm = "Левая ладонь",
+        slotLeftBack = "Тыльная сторона левой руки",
+        slotRightPalm = "Правая ладонь",
+        slotRightBack = "Тыльная сторона правой руки"
     )
 
     private val enStrings = PalmistStrings(
@@ -465,7 +476,12 @@ object LocalizedStrings {
         billDialogGooglePlay = "Google Play Billing System",
         billDialogCardNum = "Card number (for YooKassa)",
         billDialogSuccess = "Payment successful! Universal access unlocked.",
-        billDialogFail = "Transaction faded into the ether. Try again."
+        billDialogFail = "Transaction faded into the ether. Try again.",
+
+        slotLeftPalm = "Left Palm",
+        slotLeftBack = "Back of Left Hand",
+        slotRightPalm = "Right Palm",
+        slotRightBack = "Back of Right Hand"
     )
 
     fun get(lang: AppLanguage): PalmistStrings {

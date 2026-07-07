@@ -63,6 +63,14 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         repository.setSelectedLanguage(lang.code)
     }
 
+    fun isLanguageSelected(): Boolean {
+        return repository.isLanguageSelected()
+    }
+
+    fun markLanguageSelected() {
+        repository.setLanguageSelected(true)
+    }
+
     // --- Profile actions ---
 
     fun saveProfile(

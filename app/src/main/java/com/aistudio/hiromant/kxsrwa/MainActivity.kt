@@ -170,10 +170,13 @@ class MainActivity : ComponentActivity() {
             setContent {
                 MyApplicationTheme {
                     val navController = rememberNavController()
+                    val startDest = remember {
+                        if (viewModel.isLanguageSelected()) "splash" else "language"
+                    }
 
                     NavHost(
                         navController = navController,
-                        startDestination = "language",
+                        startDestination = startDest,
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MysticDarkBackground)
@@ -182,7 +185,17 @@ class MainActivity : ComponentActivity() {
                         composable("language") {
                             LanguageSelectionScreen(
                                 viewModel = viewModel,
-                                onNavigateToSplash = { navController.navigate("splash") }
+                                onNavigateToSplash = {
+                                    val isAlreadySelected = viewModel.isLanguageSelected()
+                                    viewModel.markLanguageSelected()
+                                    if (isAlreadySelected) {
+                                        navController.popBackStack()
+                                    } else {
+                                        navController.navigate("splash") {
+                                            popUpTo("language") { inclusive = true }
+                                        }
+                                    }
+                                }
                             )
                         }
 

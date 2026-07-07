@@ -211,6 +211,12 @@ fun MysticSplashScreen(
         label = "LinePulse"
     )
 
+    val imageAlpha by animateFloatAsState(
+        targetValue = if (showSymbols) 1f else 0f,
+        animationSpec = tween(durationMillis = 1500),
+        label = "ImageAlpha"
+    )
+
     LaunchedEffect(Unit) {
         // Unfold ancient scroll
         delay(800)
@@ -260,90 +266,22 @@ fun MysticSplashScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize(0.9f)
-                            .drawBehind {
-                                // Draw parchment styled background
-                                drawRoundRect(
-                                    color = Color(0xFF1E1E28),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16f),
-                                    style = androidx.compose.ui.graphics.drawscope.Fill
-                                )
-                                drawRoundRect(
-                                    color = MysticBronze.copy(0.6f),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16f),
-                                    style = Stroke(width = 2.dp.toPx())
-                                )
-                            }
+                            .fillMaxSize(0.95f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(2.dp, MysticGold.copy(0.4f), RoundedCornerShape(20.dp))
                     ) {
-                        // Drawing lines inside scroll
-                        if (showSymbols) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                // Hand schematic lines representation
-                                val w = size.width
-                                val h = size.height
-
-                                // Draw hand outline
-                                val handPath = Path().apply {
-                                    moveTo(w * 0.35f, h * 0.8f)
-                                    quadraticTo(w * 0.25f, h * 0.65f, w * 0.3f, h * 0.5f)
-                                    quadraticTo(w * 0.3f, h * 0.35f, w * 0.35f, h * 0.25f) // Index
-                                    quadraticTo(w * 0.4f, h * 0.22f, w * 0.44f, h * 0.25f)
-                                    lineTo(w * 0.44f, h * 0.45f)
-                                    
-                                    moveTo(w * 0.46f, h * 0.45f)
-                                    lineTo(w * 0.46f, h * 0.2f) // Middle
-                                    quadraticTo(w * 0.5f, h * 0.17f, w * 0.54f, h * 0.2f)
-                                    lineTo(w * 0.54f, h * 0.45f)
-
-                                    moveTo(w * 0.56f, h * 0.45f)
-                                    lineTo(w * 0.56f, h * 0.23f) // Ring
-                                    quadraticTo(w * 0.6f, h * 0.2f, w * 0.64f, h * 0.23f)
-                                    lineTo(w * 0.64f, h * 0.48f)
-
-                                    moveTo(w * 0.66f, h * 0.48f)
-                                    lineTo(w * 0.66f, h * 0.3f) // Pinky
-                                    quadraticTo(w * 0.7f, h * 0.28f, w * 0.73f, h * 0.3f)
-                                    quadraticTo(w * 0.75f, h * 0.45f, w * 0.72f, h * 0.6f)
-                                    quadraticTo(w * 0.75f, h * 0.75f, w * 0.68f, h * 0.85f)
-                                    
-                                    // Thumb
-                                    moveTo(w * 0.32f, h * 0.65f)
-                                    quadraticTo(w * 0.2f, h * 0.62f, w * 0.18f, h * 0.55f)
-                                    quadraticTo(w * 0.16f, h * 0.48f, w * 0.23f, h * 0.46f)
-                                    quadraticTo(w * 0.29f, h * 0.48f, w * 0.34f, h * 0.58f)
-                                }
-                                drawPath(
-                                    path = handPath,
-                                    color = MysticBronze.copy(alpha = 0.4f),
-                                    style = Stroke(width = 1.5.dp.toPx())
-                                )
-
-                                // Heart line
-                                drawLine(
-                                    color = LineHeartColor.copy(alpha = if (pulseLines) linePulse else 0.3f),
-                                    start = androidx.compose.ui.geometry.Offset(w * 0.32f, h * 0.52f),
-                                    end = androidx.compose.ui.geometry.Offset(w * 0.68f, h * 0.46f),
-                                    strokeWidth = 3.dp.toPx()
-                                )
-                                // Head line
-                                drawLine(
-                                    color = LineHeadColor.copy(alpha = if (pulseLines) linePulse else 0.3f),
-                                    start = androidx.compose.ui.geometry.Offset(w * 0.3f, h * 0.56f),
-                                    end = androidx.compose.ui.geometry.Offset(w * 0.65f, h * 0.58f),
-                                    strokeWidth = 3.dp.toPx()
-                                )
-                                // Life line
-                                drawArc(
-                                    color = LineLifeColor.copy(alpha = if (pulseLines) linePulse else 0.3f),
-                                    startAngle = 100f,
-                                    sweepAngle = 120f,
-                                    useCenter = false,
-                                    topLeft = androidx.compose.ui.geometry.Offset(w * 0.18f, h * 0.42f),
-                                    size = androidx.compose.ui.geometry.Size(w * 0.35f, h * 0.38f),
-                                    style = Stroke(width = 3.dp.toPx())
-                                )
-                            }
-                        }
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                    .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
+                                    .crossfade(true)
+                                    .build()
+                            ),
+                            contentDescription = "Realistic Mystic Hand",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            alpha = imageAlpha
+                        )
                     }
                 }
             }
@@ -599,8 +537,7 @@ fun ProfileScreen(
                     ) {
                         listOf(
                             strings.profileGenderMale to "Male",
-                            strings.profileGenderFemale to "Female",
-                            strings.profileGenderNone to "Other"
+                            strings.profileGenderFemale to "Female"
                         ).forEach { (label, value) ->
                             val selected = gender == value
                             OutlinedButton(
@@ -737,6 +674,125 @@ fun ProfileScreen(
 // --- SCREEN 4: MEDIA UPLOAD & RUN ANALYSES ---
 
 @Composable
+fun HandSlotCard(
+    title: String,
+    bitmap: Bitmap?,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x1F1E1E2C)),
+        border = BorderStroke(1.dp, if (bitmap != null) MysticGold else MysticBronze.copy(0.3f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(180.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = if (bitmap != null) MysticGold else Color.White
+                ),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            if (bitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(bitmap),
+                        contentDescription = title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    IconButton(
+                        onClick = onClear,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(28.dp)
+                            .background(Color.Black.copy(0.6f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Clear",
+                            tint = Color.Red,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.PhotoCamera,
+                        contentDescription = null,
+                        tint = MysticBronze.copy(0.4f),
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    IconButton(
+                        onClick = onTakePhoto,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(MysticBronze.copy(0.15f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = "Take Photo",
+                            tint = MysticGold,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onPickPhoto,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(MysticBronze.copy(0.15f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Gallery",
+                            tint = MysticGold,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// --- SCREEN 4: MEDIA UPLOAD & RUN ANALYSES ---
+
+@Composable
 fun UploadScreen(
     viewModel: PalmistViewModel,
     onNavigateToLoading: () -> Unit,
@@ -748,9 +804,13 @@ fun UploadScreen(
 
     val billingState by viewModel.billingState.collectAsState()
 
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var activeSlot by remember { mutableStateOf<String?>(null) }
+    var bitmapLeftPalm by remember { mutableStateOf<Bitmap?>(null) }
+    var bitmapLeftBack by remember { mutableStateOf<Bitmap?>(null) }
+    var bitmapRightPalm by remember { mutableStateOf<Bitmap?>(null) }
+    var bitmapRightBack by remember { mutableStateOf<Bitmap?>(null) }
+
     var videoUri by remember { mutableStateOf<Uri?>(null) }
-    var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // CameraX recording simulated state
     var isRecordingVideo by remember { mutableStateOf(false) }
@@ -761,8 +821,13 @@ fun UploadScreen(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
             uri?.let {
-                photoUri = it
-                selectedBitmap = BitmapUtils.uriToBitmap(context, it)
+                val bitmap = BitmapUtils.uriToBitmap(context, it)
+                when (activeSlot) {
+                    "left_palm" -> bitmapLeftPalm = bitmap
+                    "left_back" -> bitmapLeftBack = bitmap
+                    "right_palm" -> bitmapRightPalm = bitmap
+                    "right_back" -> bitmapRightBack = bitmap
+                }
             }
         }
     )
@@ -779,8 +844,12 @@ fun UploadScreen(
         contract = ActivityResultContracts.TakePicturePreview(),
         onResult = { bitmap ->
             bitmap?.let {
-                selectedBitmap = it
-                photoUri = Uri.parse("content://palmist/temp_photo") // dummy placeholder
+                when (activeSlot) {
+                    "left_palm" -> bitmapLeftPalm = it
+                    "left_back" -> bitmapLeftBack = it
+                    "right_palm" -> bitmapRightPalm = it
+                    "right_back" -> bitmapRightBack = it
+                }
             }
         }
     )
@@ -847,7 +916,7 @@ fun UploadScreen(
                 }
             }
 
-            // Photo upload block
+            // Photo upload block (Grid of 4 slots)
             MysticCard {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -857,41 +926,17 @@ fun UploadScreen(
                         text = strings.uploadPhotoSection,
                         style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (selectedBitmap != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(selectedBitmap),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(140.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(1.5.dp, MysticGold, RoundedCornerShape(12.dp))
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = strings.uploadPreviewPhoto,
-                            style = MaterialTheme.typography.labelMedium.copy(color = MysticBronze)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Outlined.PhotoCamera,
-                            contentDescription = null,
-                            tint = MysticBronze.copy(0.5f),
-                            modifier = Modifier.size(50.dp)
-                        )
-                    }
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        MysticButton(
-                            text = strings.uploadTakePhoto,
-                            onClick = {
+                        HandSlotCard(
+                            title = strings.slotLeftPalm,
+                            bitmap = bitmapLeftPalm,
+                            onTakePhoto = {
+                                activeSlot = "left_palm"
                                 val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
                                     context,
                                     android.Manifest.permission.CAMERA
@@ -902,13 +947,87 @@ fun UploadScreen(
                                     cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                                 }
                             },
-                            isSecondary = true,
+                            onPickPhoto = {
+                                activeSlot = "left_palm"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = { bitmapLeftPalm = null },
                             modifier = Modifier.weight(1f)
                         )
-                        MysticButton(
-                            text = strings.uploadGallery,
-                            onClick = { photoPickerLauncher.launch("image/*") },
-                            isSecondary = true,
+
+                        HandSlotCard(
+                            title = strings.slotLeftBack,
+                            bitmap = bitmapLeftBack,
+                            onTakePhoto = {
+                                activeSlot = "left_back"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    cameraLauncher.launch(null)
+                                } else {
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "left_back"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = { bitmapLeftBack = null },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        HandSlotCard(
+                            title = strings.slotRightPalm,
+                            bitmap = bitmapRightPalm,
+                            onTakePhoto = {
+                                activeSlot = "right_palm"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    cameraLauncher.launch(null)
+                                } else {
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "right_palm"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = { bitmapRightPalm = null },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        HandSlotCard(
+                            title = strings.slotRightBack,
+                            bitmap = bitmapRightBack,
+                            onTakePhoto = {
+                                activeSlot = "right_back"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    cameraLauncher.launch(null)
+                                } else {
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "right_back"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = { bitmapRightBack = null },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -1024,7 +1143,7 @@ fun UploadScreen(
                 label = strings.btnBriefChar,
                 priceText = strings.freeLabel,
                 onClick = {
-                    val bitmaps = if (selectedBitmap != null) listOf(selectedBitmap!!) else emptyList()
+                    val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
                     viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "brief_char", onNavigateToLoading)
                 }
             )
@@ -1035,7 +1154,7 @@ fun UploadScreen(
                 onClick = {
                     viewModel.checkFeatureUnlocked("full_char") { unlocked ->
                         if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                            val bitmaps = if (selectedBitmap != null) listOf(selectedBitmap!!) else emptyList()
+                            val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
                             viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "full_char", onNavigateToLoading)
                         } else {
                             onNavigateToBilling()
@@ -1048,7 +1167,7 @@ fun UploadScreen(
                 label = strings.btnBriefPath,
                 priceText = strings.freeLabel,
                 onClick = {
-                    val bitmaps = if (selectedBitmap != null) listOf(selectedBitmap!!) else emptyList()
+                    val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
                     viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "brief_path", onNavigateToLoading)
                 }
             )
@@ -1059,7 +1178,7 @@ fun UploadScreen(
                 onClick = {
                     viewModel.checkFeatureUnlocked("full_path") { unlocked ->
                         if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                            val bitmaps = if (selectedBitmap != null) listOf(selectedBitmap!!) else emptyList()
+                            val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
                             viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "full_path", onNavigateToLoading)
                         } else {
                             onNavigateToBilling()

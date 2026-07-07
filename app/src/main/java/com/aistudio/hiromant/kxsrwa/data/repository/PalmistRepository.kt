@@ -38,6 +38,14 @@ class PalmistRepository(
         sharedPrefs.edit().putString("app_language", lang).apply()
     }
 
+    fun isLanguageSelected(): Boolean {
+        return sharedPrefs.getBoolean("is_language_selected", false)
+    }
+
+    fun setLanguageSelected(selected: Boolean) {
+        sharedPrefs.edit().putBoolean("is_language_selected", selected).apply()
+    }
+
     // --- Profile & Account ---
 
     suspend fun saveUserProfile(
@@ -154,6 +162,7 @@ class PalmistRepository(
             - Dominant Hand: ${profile.dominantHand} (Remember: for ${profile.dominantHand}, active life is on this hand, birth potentials on the other).
             
             Please evaluate the shape of the hand, finger proportions, major lines (Life, Heart, Head, Destiny) and planetary mounts (Venus, Jupiter, Saturn, Apollo, Mercury, Luna, Mars).
+            I have provided up to 4 images of my hands. They represent different angles of my hands, specifically (in order if provided): Left Palm, Back of Left Hand, Right Palm, and Back of Right Hand. Please use these angles to perform a highly accurate and comprehensive reading.
             ${if (isFull) "Also provide detail about minor markings, special signs like crosses or stars, detailed recommendations, and future forecasts." else ""}
             
             Provide the response strictly in ${if (isRussian) "Russian (русский)" else "English"}.
@@ -203,8 +212,8 @@ class PalmistRepository(
                 val parts = mutableListOf<Part>()
                 parts.add(Part(text = promptText))
 
-                // Attach up to 2 images to limit token usage and remain highly stable
-                bitmaps.take(2).forEach { bitmap ->
+                // Attach up to 4 images to limit token usage and remain highly stable
+                bitmaps.take(4).forEach { bitmap ->
                     val base64 = bitmap.toBase64( quality = 60 )
                     parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
