@@ -36,7 +36,7 @@ android {
     }
   }
 
-  // Register a task to automatically restore or generate a debug.keystore
+  // Register a task to automatically restore a debug.keystore from debug.keystore.base64
   // This avoids violating the Configuration Cache rules since it executes only during the execution phase.
   val generateDebugKeystore = tasks.register("generateDebugKeystore") {
     val debugKeystore = rootProject.file("debug.keystore")
@@ -48,48 +48,19 @@ android {
     }
 
     doLast {
-      if (!debugKeystore.exists()) {
-        if (base64File.exists()) {
+      if (!debugKeystore.exists() && base64File.exists()) {
+        try {
+          val base64Content = base64File.readText().trim()
+          val decodedBytes = Base64.getDecoder().decode(base64Content)
+          debugKeystore.writeBytes(decodedBytes)
+          logger.lifecycle("Successfully restored debug.keystore from base64")
+        } catch (e: Exception) {
           try {
-            val base64Content = base64File.readText().trim()
-            val decodedBytes = Base64.getDecoder().decode(base64Content)
+            val decodedBytes = Base64.getMimeDecoder().decode(base64File.readText())
             debugKeystore.writeBytes(decodedBytes)
-            logger.lifecycle("Successfully restored debug.keystore from base64")
-          } catch (e: Exception) {
-            try {
-              val decodedBytes = Base64.getMimeDecoder().decode(base64File.readText())
-              debugKeystore.writeBytes(decodedBytes)
-              logger.lifecycle("Successfully restored debug.keystore via MimeDecoder")
-            } catch (e2: Exception) {
-              logger.error("Failed to restore debug.keystore from base64: ${e2.message}")
-            }
-          }
-        }
-        
-        // Fallback: If still missing, automatically generate a new standard debug keystore using keytool
-        if (!debugKeystore.exists()) {
-          try {
-            logger.lifecycle("Generating a new debug.keystore...")
-            val process = ProcessBuilder(
-              "keytool", "-genkey", "-v",
-              "-keystore", debugKeystore.absolutePath,
-              "-storepass", "android",
-              "-alias", "androiddebugkey",
-              "-keypass", "android",
-              "-keyalg", "RSA",
-              "-keysize", "2048",
-              "-validity", "10000",
-              "-dname", "CN=Android Debug,O=Android,C=US"
-            ).inheritIO().start()
-            
-            val exitCode = process.waitFor()
-            if (exitCode == 0) {
-              logger.lifecycle("Successfully generated a new debug.keystore")
-            } else {
-              throw IllegalStateException("Failed to auto-generate debug.keystore, keytool exited with code $exitCode")
-            }
-          } catch (e: Exception) {
-            throw IllegalStateException("Failed to auto-generate debug.keystore", e)
+            logger.lifecycle("Successfully restored debug.keystore via MimeDecoder")
+          } catch (e2: Exception) {
+            logger.error("Failed to restore debug.keystore from base64: ${e2.message}")
           }
         }
       }
@@ -125,7 +96,13 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
+      val keystoreFile = rootProject.file("debug.keystore")
+      val base64File = rootProject.file("debug.keystore.base64")
+      if (keystoreFile.exists() || base64File.exists()) {
+        signingConfig = signingConfigs.getByName("debugConfig")
+      } else {
+        signingConfig = signingConfigs.getByName("debug")
+      }
     }
   }
   compileOptions {

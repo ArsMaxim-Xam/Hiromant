@@ -16,3 +16,12 @@
 local.properties
 .env
 debug.keystore
+
+# Force include Gradle wrapper scripts and files
+!gradlew
+!gradlew.bat
+!gradle/
+!gradle/wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
