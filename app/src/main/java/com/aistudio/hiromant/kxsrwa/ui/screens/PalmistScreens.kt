@@ -1481,6 +1481,92 @@ fun ResultsScreen(
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
 
+                            // --- AUDIO VOICE TTS PLAYER CONTROLLER panel ---
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0x33B87333)),
+                                border = BorderStroke(1.dp, MysticBronze.copy(0.5f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = strings.resAudioTitle,
+                                        style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Play Button
+                                        IconButton(
+                                            onClick = { playTtsOfReport() },
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .background(MysticGold, CircleShape)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isPlayingTts) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                tint = Color.Black
+                                            )
+                                        }
+
+                                        // Stop
+                                        IconButton(
+                                            onClick = {
+                                                tts?.stop()
+                                                isPlayingTts = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Stop,
+                                                contentDescription = null,
+                                                tint = Color.White
+                                            )
+                                        }
+
+                                        // Male/Female
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                        ) {
+                                            Text(strings.resVoiceMale, fontSize = 11.sp)
+                                            Switch(
+                                                checked = ttsGenderState == "Female",
+                                                onCheckedChange = { ttsGenderState = if (it) "Female" else "Male" },
+                                                colors = SwitchDefaults.colors(
+                                                    checkedThumbColor = MysticGold,
+                                                    checkedTrackColor = MysticBronze
+                                                )
+                                            )
+                                            Text(strings.resVoiceFemale, fontSize = 11.sp)
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Speed slider
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(strings.resVoiceSpeed, fontSize = 11.sp, modifier = Modifier.width(80.dp))
+                                        Slider(
+                                            value = ttsRateState,
+                                            onValueChange = { ttsRateState = it },
+                                            valueRange = 0.5f..2.0f,
+                                            modifier = Modifier.weight(1f),
+                                            colors = SliderDefaults.colors(activeTrackColor = MysticGold)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
                             // Overall summary
                             Text(
                                 text = strings.resOverallPortrait,
@@ -1653,93 +1739,7 @@ fun ResultsScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(30.dp))
-
-                            // --- AUDIO VOICE TTS PLAYER CONTROLLER panel ---
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0x33B87333)),
-                                border = BorderStroke(1.dp, MysticBronze.copy(0.5f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = strings.resAudioTitle,
-                                        style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Play Button
-                                        IconButton(
-                                            onClick = { playTtsOfReport() },
-                                            modifier = Modifier
-                                                .size(50.dp)
-                                                .background(MysticGold, CircleShape)
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isPlayingTts) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                                contentDescription = null,
-                                                tint = Color.Black
-                                            )
-                                        }
-
-                                        // Stop
-                                        IconButton(
-                                            onClick = {
-                                                tts?.stop()
-                                                isPlayingTts = false
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Stop,
-                                                contentDescription = null,
-                                                tint = Color.White
-                                            )
-                                        }
-
-                                        // Male/Female
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 4.dp)
-                                        ) {
-                                            Text(strings.resVoiceMale, fontSize = 11.sp)
-                                            Switch(
-                                                checked = ttsGenderState == "Female",
-                                                onCheckedChange = { ttsGenderState = if (it) "Female" else "Male" },
-                                                colors = SwitchDefaults.colors(
-                                                    checkedThumbColor = MysticGold,
-                                                    checkedTrackColor = MysticBronze
-                                                )
-                                            )
-                                            Text(strings.resVoiceFemale, fontSize = 11.sp)
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    // Speed slider
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(strings.resVoiceSpeed, fontSize = 11.sp, modifier = Modifier.width(80.dp))
-                                        Slider(
-                                            value = ttsRateState,
-                                            onValueChange = { ttsRateState = it },
-                                            valueRange = 0.5f..2.0f,
-                                            modifier = Modifier.weight(1f),
-                                            colors = SliderDefaults.colors(activeTrackColor = MysticGold)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             // Share / Export to PDF
                             MysticButton(
