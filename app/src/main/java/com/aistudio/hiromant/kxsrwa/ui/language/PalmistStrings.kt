@@ -215,7 +215,7 @@ object LocalizedStrings {
 
         profileTitle = "Ваши данные",
         profileSubtitle = "Хиромантия учитывает возраст, пол и физиологические пропорции",
-        profileNameLabel = "Имя",
+        profileNameLabel = "Ваше имя",
         profileNameError = "Имя должно содержать от 2 символов",
         profileGenderLabel = "Пол",
         profileGenderMale = "Мужской",
@@ -226,8 +226,8 @@ object LocalizedStrings {
         profileHandLabel = "Ведущая рука",
         profileHandLeft = "Левша",
         profileHandRight = "Правша",
-        profileHandDescLeft = "У левшей левая рука отражает активную судьбу, правая — врождённый потенциал",
-        profileHandDescRight = "У правшей правая рука отражает активную судьбу, левая — врождённый потенциал",
+        profileHandDescLeft = "У левшей, левая рука отображает активную судьбу, правая - врождённый потенциал, и наоборот.",
+        profileHandDescRight = "У правшей, правая рука отображает активную судьбу, лева - врождённый потенциал, и наоборот.",
 
         uploadTitle = "Загрузка материалов",
         uploadGuideHeader = "ВАЖНО ДЛЯ ТОЧНОГО АНАЛИЗА:",
@@ -371,7 +371,7 @@ object LocalizedStrings {
 
         profileTitle = "Personal Profile",
         profileSubtitle = "Palmistry considers age, gender and physical proportions",
-        profileNameLabel = "Name",
+        profileNameLabel = "Your Name",
         profileNameError = "Name must be at least 2 characters",
         profileGenderLabel = "Gender",
         profileGenderMale = "Male",

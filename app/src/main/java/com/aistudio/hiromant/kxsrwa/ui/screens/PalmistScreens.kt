@@ -591,6 +591,60 @@ fun AuthScreen(
     var emailOrPhoneError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
 
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
+    val auth = remember { com.google.firebase.auth.FirebaseAuth.getInstance() }
+    
+    var storedVerificationId by remember { mutableStateOf("") }
+    var resendingToken by remember { mutableStateOf<com.google.firebase.auth.PhoneAuthProvider.ForceResendingToken?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val isEmailMode = emailOrPhone.trim().contains("@")
+
+    val callbacks = remember {
+        object : com.google.firebase.auth.PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: com.google.firebase.auth.PhoneAuthCredential) {
+                isLoading = false
+                auth.signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val user = auth.currentUser
+                            viewModel.saveProfile(
+                                name = "",
+                                gender = "",
+                                age = 25,
+                                height = 175,
+                                dominantHand = "Right",
+                                email = user?.email,
+                                phone = user?.phoneNumber,
+                                isRegistered = true
+                            )
+                            Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен успешно!" else "Logged in successfully!", Toast.LENGTH_SHORT).show()
+                            onNavigateNext()
+                        } else {
+                            Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+            }
+
+            override fun onVerificationFailed(e: com.google.firebase.FirebaseException) {
+                isLoading = false
+                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка верификации телефона:" else "Phone verification failed:"} ${e.message}", Toast.LENGTH_LONG).show()
+            }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: com.google.firebase.auth.PhoneAuthProvider.ForceResendingToken
+            ) {
+                isLoading = false
+                storedVerificationId = verificationId
+                resendingToken = token
+                codeSent = true
+                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Код отправлен!" else "Verification code sent!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     val isValidInput = {
         var valid = true
         val trimmedInput = emailOrPhone.trim()
@@ -653,6 +707,9 @@ fun AuthScreen(
                     onValueChange = { 
                         emailOrPhone = it
                         emailOrPhoneError = null
+                        if (it.contains("@")) {
+                            codeSent = false
+                        }
                     },
                     label = strings.authEmailPhonePlaceholder,
                     placeholder = "example@domain.com / +79991234567",
@@ -670,7 +727,7 @@ fun AuthScreen(
                     error = passwordError
                 )
 
-                if (codeSent) {
+                if (!isEmailMode && codeSent) {
                     MysticTextField(
                         value = verificationCode,
                         onValueChange = { verificationCode = it },
@@ -679,46 +736,162 @@ fun AuthScreen(
                     )
                 }
 
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = MysticGold)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (!codeSent) {
+                    if (isEmailMode) {
                         MysticButton(
-                            text = strings.authSendCodeBtn,
+                            text = if (currentLang == AppLanguage.RUS) "Войти" else "Sign In",
                             onClick = {
                                 if (isValidInput()) {
-                                    codeSent = true
+                                    isLoading = true
+                                    auth.signInWithEmailAndPassword(emailOrPhone.trim(), password)
+                                        .addOnCompleteListener { task ->
+                                            isLoading = false
+                                            if (task.isSuccessful) {
+                                                val user = auth.currentUser
+                                                if (user != null) {
+                                                    if (user.isEmailVerified) {
+                                                        viewModel.saveProfile(
+                                                            name = "",
+                                                            gender = "",
+                                                            age = 25,
+                                                            height = 175,
+                                                            dominantHand = "Right",
+                                                            email = user.email,
+                                                            phone = null,
+                                                            isRegistered = true
+                                                        )
+                                                        Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Успешный вход!" else "Successfully logged in!", Toast.LENGTH_SHORT).show()
+                                                        onNavigateNext()
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            if (currentLang == AppLanguage.RUS) 
+                                                                "Пожалуйста, подтвердите ваш E-mail! Мы отправили вам ссылку на почту." 
+                                                            else 
+                                                                "Please verify your E-mail! We have sent you a link.",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                                }
+                                            } else {
+                                                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
                                 }
                             },
                             isSecondary = true,
                             modifier = Modifier.weight(1f)
                         )
-                    } else {
+
                         MysticButton(
                             text = strings.authRegisterBtn,
                             onClick = {
-                                if (verificationCode.length >= 4) {
-                                    // Simulated login
-                                    viewModel.saveProfile(
-                                        name = "",
-                                        gender = "",
-                                        age = 25,
-                                        height = 175,
-                                        dominantHand = "Right",
-                                        email = if (emailOrPhone.contains("@")) emailOrPhone else null,
-                                        phone = if (!emailOrPhone.contains("@")) emailOrPhone else null,
-                                        isRegistered = true
-                                    )
-                                    onNavigateNext()
+                                if (isValidInput()) {
+                                    isLoading = true
+                                    auth.createUserWithEmailAndPassword(emailOrPhone.trim(), password)
+                                        .addOnCompleteListener { task ->
+                                            isLoading = false
+                                            if (task.isSuccessful) {
+                                                val user = auth.currentUser
+                                                user?.sendEmailVerification()
+                                                    ?.addOnCompleteListener { emailTask ->
+                                                        if (emailTask.isSuccessful) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                if (currentLang == AppLanguage.RUS)
+                                                                    "Регистрация успешна! Письмо с подтверждением отправлено на вашу почту. Пожалуйста, подтвердите почту для входа."
+                                                                else
+                                                                    "Registration successful! Verification email sent to your inbox. Please confirm it to sign in.",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        } else {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "${if (currentLang == AppLanguage.RUS) "Письмо не отправлено:" else "Failed to send email:"} ${emailTask.exception?.message}",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
+                                                    }
+                                            } else {
+                                                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка регистрации:" else "Registration error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
                                 }
                             },
                             modifier = Modifier.weight(1f)
                         )
+                    } else {
+                        if (!codeSent) {
+                            MysticButton(
+                                text = strings.authSendCodeBtn,
+                                onClick = {
+                                    if (isValidInput() && activity != null) {
+                                        isLoading = true
+                                        val options = com.google.firebase.auth.PhoneAuthOptions.newBuilder(auth)
+                                            .setPhoneNumber(emailOrPhone.trim())
+                                            .setTimeout(60L, java.util.concurrent.TimeUnit.SECONDS)
+                                            .setActivity(activity)
+                                            .setCallbacks(callbacks)
+                                            .build()
+                                        com.google.firebase.auth.PhoneAuthProvider.verifyPhoneNumber(options)
+                                    } else if (activity == null) {
+                                        Toast.makeText(context, "Activity Context is not available", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                isSecondary = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else {
+                            MysticButton(
+                                text = strings.authRegisterBtn,
+                                onClick = {
+                                    if (verificationCode.length >= 4) {
+                                        isLoading = true
+                                        val credential = com.google.firebase.auth.PhoneAuthProvider.getCredential(storedVerificationId, verificationCode)
+                                        auth.signInWithCredential(credential)
+                                            .addOnCompleteListener { task ->
+                                                isLoading = false
+                                                if (task.isSuccessful) {
+                                                    val user = auth.currentUser
+                                                    viewModel.saveProfile(
+                                                        name = "",
+                                                        gender = "",
+                                                        age = 25,
+                                                        height = 175,
+                                                        dominantHand = "Right",
+                                                        email = null,
+                                                        phone = user?.phoneNumber,
+                                                        isRegistered = true
+                                                    )
+                                                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Успешный вход!" else "Successfully logged in!", Toast.LENGTH_SHORT).show()
+                                                    onNavigateNext()
+                                                } else {
+                                                    Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка:" else "Error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
@@ -798,113 +971,161 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            MysticCard {
+            MysticCard(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Name input
-                MysticTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                        nameError = if (it.trim().length < 2) strings.profileNameError else null
-                    },
-                    label = strings.profileNameLabel,
-                    error = nameError,
-                    placeholder = "Александр / Elizabeth"
-                )
+                // Name and Gender Row
+                val isRu = currentLang == com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage.RUS
+                val maleLabel = if (isRu) "М" else "M"
+                val femaleLabel = if (isRu) "Ж" else "F"
 
-                // Gender choosing
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(
-                        text = strings.profileGenderLabel,
-                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        listOf(
-                            strings.profileGenderMale to "Male",
-                            strings.profileGenderFemale to "Female"
-                        ).forEach { (label, value) ->
-                            val selected = gender == value
-                            OutlinedButton(
-                                onClick = { gender = value },
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, if (selected) MysticGold else MysticBronze.copy(0.4f)),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (selected) Color(0x22D4AF37) else Color.Transparent,
-                                    contentColor = if (selected) MysticGold else Color.White
-                                ),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(label, fontSize = 12.sp, maxLines = 1)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Left Column: Name Field
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.profileNameLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = {
+                                name = it
+                                nameError = if (it.trim().length < 2) strings.profileNameError else null
+                            },
+                            placeholder = { Text("Александр", color = Color.Gray) },
+                            singleLine = true,
+                            isError = nameError != null,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = MysticGold,
+                                unfocusedBorderColor = MysticBronze.copy(0.6f),
+                                cursorColor = MysticGold,
+                                errorBorderColor = Color(0xFFCF6679)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (nameError != null) {
+                            Text(
+                                text = nameError!!,
+                                style = MaterialTheme.typography.labelSmall.copy(color = Color(0xFFCF6679)),
+                                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                            )
+                        }
+                    }
+
+                    // Right Column: Gender Buttons (М/Ж)
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text(
+                            text = strings.profileGenderLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                maleLabel to "Male",
+                                femaleLabel to "Female"
+                            ).forEach { (label, value) ->
+                                val selected = gender == value
+                                OutlinedButton(
+                                    onClick = { gender = value },
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, if (selected) MysticGold else MysticBronze.copy(0.4f)),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = if (selected) Color(0x22D4AF37) else Color.Transparent,
+                                        contentColor = if (selected) MysticGold else Color.White
+                                    ),
+                                    contentPadding = PaddingValues(0.dp),
+                                    modifier = Modifier.size(52.dp)
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // Birth Year Input
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(
-                        text = strings.profileAgeLabel,
-                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                    OutlinedTextField(
-                        value = birthYearText,
-                        onValueChange = { newValue ->
-                            if (newValue.length <= 4 && newValue.all { it.isDigit() }) {
-                                birthYearText = newValue
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = MysticGold,
-                            focusedBorderColor = MysticGold,
-                            unfocusedBorderColor = MysticBronze.copy(0.4f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        placeholder = { Text("1995", color = Color.Gray) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
+                // Birth Year and Height Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Birth Year Input
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.profileAgeLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        OutlinedTextField(
+                            value = birthYearText,
+                            onValueChange = { newValue ->
+                                if (newValue.length <= 4 && newValue.all { it.isDigit() }) {
+                                    birthYearText = newValue
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                cursorColor = MysticGold,
+                                focusedBorderColor = MysticGold,
+                                unfocusedBorderColor = MysticBronze.copy(0.4f)
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("1995", color = Color.Gray) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
 
-                // Height Input
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(
-                        text = strings.profileHeightLabel,
-                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                    OutlinedTextField(
-                        value = heightText,
-                        onValueChange = { newValue ->
-                            if (newValue.length <= 3 && newValue.all { it.isDigit() }) {
-                                heightText = newValue
-                            }
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = MysticGold,
-                            focusedBorderColor = MysticGold,
-                            unfocusedBorderColor = MysticBronze.copy(0.4f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        placeholder = { Text("172", color = Color.Gray) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    // Height Input
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.profileHeightLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        OutlinedTextField(
+                            value = heightText,
+                            onValueChange = { newValue ->
+                                if (newValue.length <= 3 && newValue.all { it.isDigit() }) {
+                                    heightText = newValue
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                cursorColor = MysticGold,
+                                focusedBorderColor = MysticGold,
+                                unfocusedBorderColor = MysticBronze.copy(0.4f)
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("172", color = Color.Gray) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
                 }
 
                 // Dominant hand selector (ESSENTIAL)
@@ -931,18 +1152,33 @@ fun ProfileScreen(
                                     containerColor = if (selected) Color(0x22D4AF37) else Color.Transparent,
                                     contentColor = if (selected) MysticGold else Color.White
                                 ),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(label, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = label,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = if (dominantHand == "Left") strings.profileHandDescLeft else strings.profileHandDescRight,
-                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze),
-                        modifier = Modifier.padding(top = 4.dp)
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MysticBronze,
+                            fontSize = 11.5.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Justify,
+                            lineHeight = 16.sp
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))

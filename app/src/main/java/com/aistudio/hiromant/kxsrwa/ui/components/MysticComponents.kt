@@ -134,7 +134,7 @@ fun MysticButton(
 
 @Composable
 fun MysticCard(
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.padding(16.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -143,9 +143,9 @@ fun MysticCard(
             containerColor = Color(0xFF141210)
         ),
         border = BorderStroke(1.dp, MysticGold.copy(0.2f)),
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .then(modifier),
         content = content
     )
 }
