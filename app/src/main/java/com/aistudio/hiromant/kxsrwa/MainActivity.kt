@@ -126,11 +126,56 @@ class MainActivity : ComponentActivity() {
                             
                             Spacer(modifier = Modifier.height(16.dp))
                             
+                            val context = LocalContext.current
+                            
+                            Button(
+                                onClick = {
+                                    try {
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                            data = android.net.Uri.parse("mailto:")
+                                            putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("ArsMaxim@gmail.com"))
+                                            putExtra(android.content.Intent.EXTRA_SUBJECT, "Crash Report: Palmist App")
+                                            putExtra(android.content.Intent.EXTRA_TEXT, lastCrash)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(intent, "Отправить отчет..."))
+                                    } catch (ex: Exception) {
+                                        try {
+                                            val backupIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                type = "text/plain"
+                                                putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("ArsMaxim@gmail.com"))
+                                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Crash Report: Palmist App")
+                                                putExtra(android.content.Intent.EXTRA_TEXT, lastCrash)
+                                            }
+                                            context.startActivity(android.content.Intent.createChooser(backupIntent, "Отправить отчет..."))
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "Не удалось открыть почтовый клиент", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Отправить отчет об ошибке разработчику\n(ArsMaxim@gmail.com)",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                            
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                val context = LocalContext.current
                                 Button(
                                     onClick = {
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -139,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.makeText(context, "Лог скопирован", Toast.LENGTH_SHORT).show()
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = MysticBronze),
-                                    modifier = Modifier.weight(1.dp.value)
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Text("Скопировать")
                                 }
@@ -153,7 +198,7 @@ class MainActivity : ComponentActivity() {
                                         startActivity(intent)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
-                                    modifier = Modifier.weight(1.dp.value)
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Text("Сбросить и запустить", color = Color.Black)
                                 }
