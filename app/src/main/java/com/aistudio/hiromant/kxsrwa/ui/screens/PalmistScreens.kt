@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -185,7 +186,9 @@ fun LanguageCard(
 }
 
 
-// --- SCREEN 1: SPLASH SCREEN (ANCIENT SCROLL ANIMATION) ---
+// --- SCREEN 1: SPLASH SCREEN (ANCIENT SCROLL ANIMATION WITH GLOWING LINES) ---
+
+enum class HandElementType { LINE, MOUNT }
 
 @Composable
 fun MysticSplashScreen(
@@ -202,35 +205,167 @@ fun MysticSplashScreen(
     var pulseLines by remember { mutableStateOf(false) }
     var titleVisible by remember { mutableStateOf(false) }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "PulseScroll")
-    val linePulse by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "LinePulse"
-    )
+    class AnimatedElementState(
+        val id: String,
+        val type: HandElementType,
+        val name: String,
+        val color: Color,
+        val symbol: String = "",
+        val points: List<Pair<Float, Float>> = emptyList(),
+        val position: Pair<Float, Float> = Pair(0f, 0f)
+    ) {
+        val opacity = mutableStateOf(0f)
+        val flash = mutableStateOf(1f)
+    }
+
+    val elements = remember {
+        listOf(
+            // Lines
+            AnimatedElementState(
+                id = "life_line",
+                type = HandElementType.LINE,
+                name = "Life Line",
+                color = Color(0xFFFF4D4D), // Coral Red
+                points = listOf(Pair(0.33f, 0.52f), Pair(0.36f, 0.60f), Pair(0.40f, 0.70f), Pair(0.45f, 0.78f), Pair(0.50f, 0.84f))
+            ),
+            AnimatedElementState(
+                id = "head_line",
+                type = HandElementType.LINE,
+                name = "Head Line",
+                color = Color(0xFF00BFFF), // Cyan Blue
+                points = listOf(Pair(0.33f, 0.52f), Pair(0.46f, 0.54f), Pair(0.64f, 0.57f))
+            ),
+            AnimatedElementState(
+                id = "heart_line",
+                type = HandElementType.LINE,
+                name = "Heart Line",
+                color = Color(0xFFFF1493), // Deep Pink
+                points = listOf(Pair(0.70f, 0.50f), Pair(0.54f, 0.48f), Pair(0.36f, 0.45f))
+            ),
+            AnimatedElementState(
+                id = "destiny_line",
+                type = HandElementType.LINE,
+                name = "Destiny Line",
+                color = Color(0xFFDA70D6), // Orchid / Light Purple
+                points = listOf(Pair(0.50f, 0.85f), Pair(0.50f, 0.65f), Pair(0.49f, 0.41f))
+            ),
+            // Mounts
+            AnimatedElementState(
+                id = "mount_jupiter",
+                type = HandElementType.MOUNT,
+                name = "Mount of Jupiter",
+                color = Color(0xFF9370DB), // Medium Purple
+                symbol = "♃",
+                position = Pair(0.38f, 0.36f)
+            ),
+            AnimatedElementState(
+                id = "mount_saturn",
+                type = HandElementType.MOUNT,
+                name = "Mount of Saturn",
+                color = Color(0xFFFFD700), // Gold
+                symbol = "♄",
+                position = Pair(0.49f, 0.34f)
+            ),
+            AnimatedElementState(
+                id = "mount_apollo",
+                type = HandElementType.MOUNT,
+                name = "Mount of Apollo",
+                color = Color(0xFFFF8C00), // Dark Orange
+                symbol = "☉",
+                position = Pair(0.61f, 0.35f)
+            ),
+            AnimatedElementState(
+                id = "mount_mercury",
+                type = HandElementType.MOUNT,
+                name = "Mount of Mercury",
+                color = Color(0xFF00FA9A), // Medium Spring Green
+                symbol = "☿",
+                position = Pair(0.72f, 0.37f)
+            ),
+            AnimatedElementState(
+                id = "mount_venus",
+                type = HandElementType.MOUNT,
+                name = "Mount of Venus",
+                color = Color(0xFFFF69B4), // Hot Pink
+                symbol = "♀",
+                position = Pair(0.34f, 0.72f)
+            ),
+            AnimatedElementState(
+                id = "mount_mars_lower",
+                type = HandElementType.MOUNT,
+                name = "Lower Mars",
+                color = Color(0xFFFF0000), // Pure Red
+                symbol = "♂",
+                position = Pair(0.33f, 0.48f)
+            ),
+            AnimatedElementState(
+                id = "mount_mars_upper",
+                type = HandElementType.MOUNT,
+                name = "Upper Mars",
+                color = Color(0xFFFF4500), // Orange Red
+                symbol = "♂",
+                position = Pair(0.71f, 0.53f)
+            ),
+            AnimatedElementState(
+                id = "mount_moon",
+                type = HandElementType.MOUNT,
+                name = "Mount of Moon",
+                color = Color(0xFFE6E6FA), // Lavender
+                symbol = "☽",
+                position = Pair(0.71f, 0.73f)
+            )
+        )
+    }
 
     val imageAlpha by animateFloatAsState(
         targetValue = if (showSymbols) 1f else 0f,
-        animationSpec = tween(durationMillis = 1500),
+        animationSpec = tween(durationMillis = 1000),
         label = "ImageAlpha"
     )
 
-    LaunchedEffect(Unit) {
-        // Unfold ancient scroll
-        delay(800)
-        scrollOpened = true
-        delay(1200)
-        showSymbols = true
-        delay(1200)
-        pulseLines = true
-        delay(1000)
-        titleVisible = true
+    var scaleTarget by remember { mutableStateOf(0.75f) }
+    val handScale by animateFloatAsState(
+        targetValue = scaleTarget,
+        animationSpec = tween(durationMillis = 7500, easing = androidx.compose.animation.core.EaseOutCubic),
+        label = "HandScale"
+    )
 
-        // Complete splash and navigate
+    LaunchedEffect(Unit) {
+        // Zoom-in hand slowly
+        delay(200)
+        scaleTarget = 1.03f
+
+        // Unfold ancient scroll
+        delay(400)
+        scrollOpened = true
+        delay(600)
+        showSymbols = true
+        
+        // Let elements light up sequentially
+        elements.forEachIndexed { index, element ->
+            delay(400)
+            coroutineScope.launch {
+                val steps = 15
+                for (i in 1..steps) {
+                    val progress = i.toFloat() / steps
+                    element.opacity.value = progress
+                    if (progress < 0.5f) {
+                        element.flash.value = 1f + (progress * 2f) * 1.5f
+                    } else {
+                        element.flash.value = 2.5f - ((progress - 0.5f) * 2f) * 1.5f
+                    }
+                    delay(16)
+                }
+                element.opacity.value = 1f
+                element.flash.value = 1f
+            }
+        }
+        
+        delay(800)
+        pulseLines = true
+        titleVisible = true
+        
+        // Final presentation before automatic skip
         delay(2500)
         onNavigateNext()
     }
@@ -240,91 +375,199 @@ fun MysticSplashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MysticDarkBackground)
-            .clickable {
-                // Tap to skip after 3 seconds
-                onNavigateNext()
-            }
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // Full screen container with 8.dp margin (fits "5-10 pixels")
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(8.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.5.dp, MysticGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .background(Color(0xFF07070F))
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Mystical canvas scroll drawing
-            Box(
-                contentAlignment = Alignment.Center,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(320.dp)
+                    .fillMaxSize()
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Parchment scroll representation
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = scrollOpened,
-                    enter = scaleIn(animationSpec = tween(1200)) + fadeIn(),
-                    exit = fadeOut()
+                // Top: Application Logo / Title
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(0.95f)
-                            .clip(RoundedCornerShape(20.dp))
-                            .border(2.dp, MysticGold.copy(0.4f), RoundedCornerShape(20.dp))
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = titleVisible,
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { -30 })
                     ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                    .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
-                                    .crossfade(true)
-                                    .build()
-                            ),
-                            contentDescription = "Realistic Mystic Hand",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                            alpha = imageAlpha
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = strings.appName.uppercase(),
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = MysticGold,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 3.sp
+                                ),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = strings.splashLogoSubtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = MysticBronze,
+                                    letterSpacing = 1.5.sp,
+                                    fontSize = 10.sp
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Center: Hand representation (1:1 square ratio centered horizontally/vertically)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = scrollOpened,
+                        enter = scaleIn(animationSpec = tween(1200)) + fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .scale(handScale)
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                        .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
+                                        .crossfade(true)
+                                        .build()
+                                ),
+                                contentDescription = "Realistic Mystic Hand",
+                                contentScale = ContentScale.Fit, // Visible COMPLETELY
+                                modifier = Modifier.fillMaxSize(),
+                                alpha = imageAlpha
+                            )
+                            
+                            // Canvas overlays exactly in 1:1 square coordinates
+                            Canvas(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                val w = size.width
+                                val h = size.height
+                                val toAndroidColor = { c: Color ->
+                                    android.graphics.Color.argb(
+                                        (c.alpha * 255).toInt(),
+                                        (c.red * 255).toInt(),
+                                        (c.green * 255).toInt(),
+                                        (c.blue * 255).toInt()
+                                    )
+                                }
 
-            // App Titles
-            AnimatedVisibility(
-                visible = titleVisible,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { 30 })
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                elements.forEach { element ->
+                                    val op = element.opacity.value
+                                    val fl = element.flash.value
+                                    if (op > 0f) {
+                                        val baseColor = element.color
+                                        if (element.type == HandElementType.LINE && element.points.isNotEmpty()) {
+                                            val path = Path().apply {
+                                                val first = element.points.first()
+                                                moveTo(first.first * w, first.second * h)
+                                                for (i in 1 until element.points.size) {
+                                                    val pt = element.points[i]
+                                                    lineTo(pt.first * w, pt.second * h)
+                                                }
+                                            }
+                                            
+                                            // 1. Outer glow
+                                            drawPath(
+                                                path = path,
+                                                color = baseColor.copy(alpha = op * 0.15f * fl),
+                                                style = Stroke(width = 16.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                            )
+                                            
+                                            // 2. Medium glow
+                                            drawPath(
+                                                path = path,
+                                                color = baseColor.copy(alpha = op * 0.4f * fl),
+                                                style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                            )
+                                            
+                                            // 3. Bright core
+                                            drawPath(
+                                                path = path,
+                                                color = Color.White.copy(alpha = op * 0.9f),
+                                                style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                            )
+                                        } else if (element.type == HandElementType.MOUNT) {
+                                            val px = element.position.first * w
+                                            val py = element.position.second * h
+                                            
+                                            // Draw outer halo
+                                            drawContext.canvas.nativeCanvas.drawText(
+                                                element.symbol,
+                                                px,
+                                                py,
+                                                android.graphics.Paint().apply {
+                                                    color = toAndroidColor(baseColor.copy(alpha = op * 0.3f * fl))
+                                                    textSize = 36.dp.toPx()
+                                                    textAlign = android.graphics.Paint.Align.CENTER
+                                                    isAntiAlias = true
+                                                    style = android.graphics.Paint.Style.FILL_AND_STROKE
+                                                    strokeWidth = 6.dp.toPx()
+                                                }
+                                            )
+                                            
+                                            // Draw core text with shadow
+                                            drawContext.canvas.nativeCanvas.drawText(
+                                                element.symbol,
+                                                px,
+                                                py,
+                                                android.graphics.Paint().apply {
+                                                    color = toAndroidColor(Color.White.copy(alpha = op))
+                                                    textSize = 24.dp.toPx()
+                                                    textAlign = android.graphics.Paint.Align.CENTER
+                                                    isAntiAlias = true
+                                                    style = android.graphics.Paint.Style.FILL
+                                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Bottom: "Пропустить заставку" button
+                Box(
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .border(1.dp, MysticGold.copy(0.4f), RoundedCornerShape(20.dp))
+                        .background(Color.Black.copy(0.4f))
+                        .clickable { onNavigateNext() }
+                        .padding(horizontal = 24.dp, vertical = 10.dp)
+                ) {
                     Text(
-                        text = strings.appName.uppercase(),
-                        style = MaterialTheme.typography.displayLarge.copy(
+                        text = strings.splashTapToSkip,
+                        style = MaterialTheme.typography.labelLarge.copy(
                             color = MysticGold,
-                            fontSize = 38.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 3.sp
-                        ),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = strings.splashLogoSubtitle,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            color = MysticBronze,
-                            letterSpacing = 2.sp
+                            letterSpacing = 1.sp
                         )
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = strings.splashTapToSkip,
-                style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray),
-                modifier = Modifier.padding(bottom = 30.dp)
-            )
         }
     }
 }

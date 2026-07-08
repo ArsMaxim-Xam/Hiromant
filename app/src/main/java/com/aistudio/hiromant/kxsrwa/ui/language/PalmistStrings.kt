@@ -196,7 +196,7 @@ object LocalizedStrings {
         langContinue = "Продолжить",
 
         splashMysticScroll = "Древний свиток разворачивается...",
-        splashTapToSkip = "Нажмите для пропуска",
+        splashTapToSkip = "Пропустить заставку",
         splashLogoSubtitle = "ТАЙНЫ ВАШЕЙ СУДЬБЫ НА ЛАДОНИ",
 
         authTitle = "Войдите в аккаунт",
@@ -350,7 +350,7 @@ object LocalizedStrings {
         langContinue = "Continue",
 
         splashMysticScroll = "Ancient scroll unfolding...",
-        splashTapToSkip = "Tap to skip",
+        splashTapToSkip = "Skip splash",
         splashLogoSubtitle = "THE SECRETS OF YOUR DESTINY IN YOUR HAND",
 
         authTitle = "Sign In",
