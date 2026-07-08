@@ -588,6 +588,40 @@ fun AuthScreen(
     var verificationCode by remember { mutableStateOf("") }
     var codeSent by remember { mutableStateOf(false) }
 
+    var emailOrPhoneError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+
+    val isValidInput = {
+        var valid = true
+        val trimmedInput = emailOrPhone.trim()
+        if (trimmedInput.isEmpty()) {
+            emailOrPhoneError = strings.authEmailPhoneError
+            valid = false
+        } else {
+            val isEmail = trimmedInput.contains("@")
+            if (isEmail) {
+                val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
+                if (!emailRegex.matches(trimmedInput)) {
+                    emailOrPhoneError = strings.authEmailPhoneError
+                    valid = false
+                }
+            } else {
+                val digitsOnly = trimmedInput.replace("[\\s()+-]".toRegex(), "")
+                if (digitsOnly.length < 10 || !digitsOnly.all { it.isDigit() }) {
+                    emailOrPhoneError = strings.authEmailPhoneError
+                    valid = false
+                }
+            }
+        }
+
+        if (password.length < 6) {
+            passwordError = strings.authPasswordError
+            valid = false
+        }
+
+        valid
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -602,35 +636,38 @@ fun AuthScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null,
-                tint = MysticGold,
-                modifier = Modifier.size(60.dp)
+            MysticHeader(
+                text = strings.authTitle,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            MysticHeader(strings.authTitle)
-            MysticSubtitle(strings.authSubtitle)
-
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             MysticCard {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 MysticTextField(
                     value = emailOrPhone,
-                    onValueChange = { emailOrPhone = it },
+                    onValueChange = { 
+                        emailOrPhone = it
+                        emailOrPhoneError = null
+                    },
                     label = strings.authEmailPhonePlaceholder,
-                    placeholder = "example@domain.com / +79991234567"
+                    placeholder = "example@domain.com / +79991234567",
+                    error = emailOrPhoneError
                 )
 
                 MysticTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = { 
+                        password = it
+                        passwordError = null
+                    },
                     label = strings.authPasswordPlaceholder,
-                    placeholder = "••••••••"
+                    placeholder = "••••••••",
+                    error = passwordError
                 )
 
                 if (codeSent) {
@@ -654,7 +691,7 @@ fun AuthScreen(
                         MysticButton(
                             text = strings.authSendCodeBtn,
                             onClick = {
-                                if (emailOrPhone.length > 5) {
+                                if (isValidInput()) {
                                     codeSent = true
                                 }
                             },
@@ -692,10 +729,15 @@ fun AuthScreen(
             TextButton(
                 onClick = onNavigateNext,
                 colors = ButtonDefaults.textButtonColors(contentColor = MysticGold),
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = strings.authSkipBtn,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelLarge.copy(
                         textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                     )

@@ -42,6 +42,8 @@ data class PalmistStrings(
     val authSkipBtn: String,
     val authSendCodeBtn: String,
     val authErrorInvalid: String,
+    val authEmailPhoneError: String,
+    val authPasswordError: String,
 
     // Profile Screen
     val profileTitle: String,
@@ -199,15 +201,17 @@ object LocalizedStrings {
         splashTapToSkip = "Пропустить заставку",
         splashLogoSubtitle = "ТАЙНЫ ВАШЕЙ СУДЬБЫ НА ЛАДОНИ",
 
-        authTitle = "Войдите в аккаунт",
+        authTitle = "Вход/Регистрация",
         authSubtitle = "Создайте профиль для сохранения истории ваших сеансов",
         authEmailPhonePlaceholder = "Email или Телефон",
         authPasswordPlaceholder = "Пароль",
         authSmsEmailCodePlaceholder = "Код подтверждения (из SMS/Email)",
         authRegisterBtn = "Зарегистрироваться",
-        authSkipBtn = "Пропустить и продолжить без регистрации",
+        authSkipBtn = "Продолжить без регистрации",
         authSendCodeBtn = "Получить код",
         authErrorInvalid = "Пожалуйста, введите корректные данные",
+        authEmailPhoneError = "Введите корректный E-mail или номер телефона (от 10 цифр)",
+        authPasswordError = "Пароль должен быть не менее 6 символов",
 
         profileTitle = "Ваши данные",
         profileSubtitle = "Хиромантия учитывает возраст, пол и физиологические пропорции",
@@ -353,15 +357,17 @@ object LocalizedStrings {
         splashTapToSkip = "Skip splash",
         splashLogoSubtitle = "THE SECRETS OF YOUR DESTINY IN YOUR HAND",
 
-        authTitle = "Sign In",
+        authTitle = "Sign In / Register",
         authSubtitle = "Create an account to keep track of your reading history",
         authEmailPhonePlaceholder = "Email or Phone Number",
         authPasswordPlaceholder = "Password",
         authSmsEmailCodePlaceholder = "Verification Code (SMS/Email)",
         authRegisterBtn = "Register",
-        authSkipBtn = "Skip and continue offline",
+        authSkipBtn = "Continue without registration",
         authSendCodeBtn = "Send Code",
         authErrorInvalid = "Please enter valid credentials",
+        authEmailPhoneError = "Enter a valid E-mail or phone number (at least 10 digits)",
+        authPasswordError = "Password must be at least 6 characters",
 
         profileTitle = "Personal Profile",
         profileSubtitle = "Palmistry considers age, gender and physical proportions",
