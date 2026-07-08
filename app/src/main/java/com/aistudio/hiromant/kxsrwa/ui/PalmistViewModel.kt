@@ -24,6 +24,10 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     private val _selectedLanguage = MutableStateFlow(AppLanguage.RUS)
     val selectedLanguage: StateFlow<AppLanguage> = _selectedLanguage
 
+    // Font scale state
+    private val _fontScale = MutableStateFlow(1.0f)
+    val fontScale: StateFlow<Float> = _fontScale
+
     // Subscribed state and readings list
     val userProfile: StateFlow<UserProfileEntity?> = repository.userProfile.stateIn(
         scope = viewModelScope,
@@ -56,6 +60,15 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         val code = repository.getSelectedLanguage()
         val lang = AppLanguage.values().find { it.code == code } ?: AppLanguage.RUS
         _selectedLanguage.value = lang
+
+        // Load initially stored font scale
+        _fontScale.value = repository.getFontScale()
+    }
+
+    fun changeFontScale(scale: Float) {
+        val clamped = scale.coerceIn(0.8f, 1.6f)
+        _fontScale.value = clamped
+        repository.setFontScale(clamped)
     }
 
     fun changeLanguage(lang: AppLanguage) {

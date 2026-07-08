@@ -26,6 +26,14 @@ class PalmistRepository(
     val billingState: Flow<BillingStateEntity?> = dao.getBillingState()
     val allReadings: Flow<List<ReadingEntity>> = dao.getAllReadings()
 
+    fun getFontScale(): Float {
+        return sharedPrefs.getFloat("app_font_scale", 1.0f)
+    }
+
+    fun setFontScale(scale: Float) {
+        sharedPrefs.edit().putFloat("app_font_scale", scale).apply()
+    }
+
     // --- Language preferences ---
 
     fun getSelectedLanguage(): String {

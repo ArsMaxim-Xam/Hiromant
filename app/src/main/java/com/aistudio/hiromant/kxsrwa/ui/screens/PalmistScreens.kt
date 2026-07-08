@@ -51,6 +51,8 @@ import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
 import com.aistudio.hiromant.kxsrwa.ui.language.PalmistStrings
 import com.aistudio.hiromant.kxsrwa.ui.theme.*
 import com.aistudio.hiromant.kxsrwa.utils.BitmapUtils
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.delay
@@ -298,10 +300,12 @@ fun MysticSplashScreen(
                         text = strings.appName.uppercase(),
                         style = MaterialTheme.typography.displayLarge.copy(
                             color = MysticGold,
-                            fontSize = 44.sp,
+                            fontSize = 38.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 4.sp
-                        )
+                            letterSpacing = 3.sp
+                        ),
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -474,8 +478,8 @@ fun ProfileScreen(
 
     var name by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf(28) }
-    var height by remember { mutableStateOf(172) }
+    var birthYearText by remember { mutableStateOf("1995") }
+    var heightText by remember { mutableStateOf("172") }
     var dominantHand by remember { mutableStateOf("Right") }
 
     var nameError by remember { mutableStateOf<String?>(null) }
@@ -484,8 +488,8 @@ fun ProfileScreen(
         existingProfile?.let {
             if (it.name.isNotEmpty()) name = it.name
             if (it.gender.isNotEmpty()) gender = it.gender
-            age = it.age
-            height = it.height
+            birthYearText = (2026 - it.age).toString()
+            heightText = it.height.toString()
             dominantHand = it.dominantHand
         }
     }
@@ -556,57 +560,65 @@ fun ProfileScreen(
                     }
                 }
 
-                // Age slider
+                // Birth Year Input
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = strings.profileAgeLabel,
-                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
-                        )
-                        Text(
-                            text = "$age",
-                            style = MaterialTheme.typography.labelMedium.copy(color = Color.White)
-                        )
-                    }
-                    Slider(
-                        value = age.toFloat(),
-                        onValueChange = { age = it.toInt() },
-                        valueRange = 18f..100f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = MysticGold,
-                            activeTrackColor = MysticGold,
-                            inactiveTrackColor = MysticBronze.copy(0.3f)
-                        )
+                    Text(
+                        text = strings.profileAgeLabel,
+                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    OutlinedTextField(
+                        value = birthYearText,
+                        onValueChange = { newValue ->
+                            if (newValue.length <= 4 && newValue.all { it.isDigit() }) {
+                                birthYearText = newValue
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = MysticGold,
+                            focusedBorderColor = MysticGold,
+                            unfocusedBorderColor = MysticBronze.copy(0.4f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        placeholder = { Text("1995", color = Color.Gray) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
 
-                // Height slider
+                // Height Input
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = strings.profileHeightLabel,
-                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
-                        )
-                        Text(
-                            text = "$height",
-                            style = MaterialTheme.typography.labelMedium.copy(color = Color.White)
-                        )
-                    }
-                    Slider(
-                        value = height.toFloat(),
-                        onValueChange = { height = it.toInt() },
-                        valueRange = 100f..230f,
-                        colors = SliderDefaults.colors(
-                            thumbColor = MysticGold,
-                            activeTrackColor = MysticGold,
-                            inactiveTrackColor = MysticBronze.copy(0.3f)
-                        )
+                    Text(
+                        text = strings.profileHeightLabel,
+                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    OutlinedTextField(
+                        value = heightText,
+                        onValueChange = { newValue ->
+                            if (newValue.length <= 3 && newValue.all { it.isDigit() }) {
+                                heightText = newValue
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = MysticGold,
+                            focusedBorderColor = MysticGold,
+                            unfocusedBorderColor = MysticBronze.copy(0.4f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        placeholder = { Text("172", color = Color.Gray) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
 
@@ -657,7 +669,12 @@ fun ProfileScreen(
                 text = strings.next,
                 onClick = {
                     if (name.trim().length >= 2 && gender.isNotEmpty()) {
-                        viewModel.saveProfile(name, gender, age, height, dominantHand)
+                        val parsedBirthYear = birthYearText.toIntOrNull() ?: 1995
+                        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                        val parsedAge = (currentYear - parsedBirthYear).coerceIn(18, 100)
+                        val parsedHeight = heightText.toIntOrNull() ?: 172
+
+                        viewModel.saveProfile(name, gender, parsedAge, parsedHeight, dominantHand)
                         onNavigateNext()
                     } else {
                         if (name.trim().length < 2) nameError = strings.profileNameError
@@ -680,6 +697,8 @@ fun HandSlotCard(
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
     onClear: () -> Unit,
+    btnCameraText: String,
+    btnGalleryText: String,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -688,34 +707,24 @@ fun HandSlotCard(
         border = BorderStroke(1.dp, if (bitmap != null) MysticGold else MysticBronze.copy(0.3f)),
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(115.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(12.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = if (bitmap != null) MysticGold else Color.White
-                ),
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            if (bitmap != null) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                ) {
+            // Left Side: Image Preview / Icon Placeholder
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x10FFFFFF))
+                    .border(1.dp, MysticBronze.copy(0.2f), RoundedCornerShape(12.dp))
+            ) {
+                if (bitmap != null) {
                     Image(
                         painter = rememberAsyncImagePainter(bitmap),
                         contentDescription = title,
@@ -726,63 +735,99 @@ fun HandSlotCard(
                         onClick = onClear,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .size(28.dp)
+                            .size(24.dp)
                             .background(Color.Black.copy(0.6f), CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Clear",
                             tint = Color.Red,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(12.dp)
                         )
                     }
-                }
-            } else {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
+                } else {
                     Icon(
                         imageVector = Icons.Outlined.PhotoCamera,
                         contentDescription = null,
                         tint = MysticBronze.copy(0.4f),
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
+            }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    IconButton(
-                        onClick = onTakePhoto,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MysticBronze.copy(0.15f), CircleShape)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Right Side: Label and Actions
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (bitmap != null) MysticGold else Color.White,
+                        fontSize = 15.sp
+                    ),
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (bitmap == null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AddAPhoto,
-                            contentDescription = "Take Photo",
-                            tint = MysticGold,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        // Take Photo Button
+                        Button(
+                            onClick = onTakePhoto,
+                            colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = "Take Photo",
+                                tint = MysticGold,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = btnCameraText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MysticGold
+                            )
+                        }
+
+                        // Pick Gallery Button
+                        Button(
+                            onClick = onPickPhoto,
+                            colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = "Gallery",
+                                tint = MysticGold,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = btnGalleryText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MysticGold
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = onPickPhoto,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MysticBronze.copy(0.15f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Image,
-                            contentDescription = "Gallery",
-                            tint = MysticGold,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                } else {
+                    Text(
+                        text = "Готово к анализу",
+                        style = MaterialTheme.typography.bodySmall.copy(color = MysticGold)
+                    )
                 }
             }
         }
@@ -928,109 +973,108 @@ fun UploadScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        HandSlotCard(
-                            title = strings.slotLeftPalm,
-                            bitmap = bitmapLeftPalm,
-                            onTakePhoto = {
-                                activeSlot = "left_palm"
-                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context,
-                                    android.Manifest.permission.CAMERA
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (hasCameraPermission) {
-                                    cameraLauncher.launch(null)
-                                } else {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                }
-                            },
-                            onPickPhoto = {
-                                activeSlot = "left_palm"
-                                photoPickerLauncher.launch("image/*")
-                            },
-                            onClear = { bitmapLeftPalm = null },
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        HandSlotCard(
-                            title = strings.slotLeftBack,
-                            bitmap = bitmapLeftBack,
-                            onTakePhoto = {
-                                activeSlot = "left_back"
-                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context,
-                                    android.Manifest.permission.CAMERA
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (hasCameraPermission) {
-                                    cameraLauncher.launch(null)
-                                } else {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                }
-                            },
-                            onPickPhoto = {
-                                activeSlot = "left_back"
-                                photoPickerLauncher.launch("image/*")
-                            },
-                            onClear = { bitmapLeftBack = null },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    // Sequential full-width vertical layout instead of 2x2 grid
+                    HandSlotCard(
+                        title = strings.slotLeftPalm,
+                        bitmap = bitmapLeftPalm,
+                        onTakePhoto = {
+                            activeSlot = "left_palm"
+                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.CAMERA
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (hasCameraPermission) {
+                                cameraLauncher.launch(null)
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPickPhoto = {
+                            activeSlot = "left_palm"
+                            photoPickerLauncher.launch("image/*")
+                        },
+                        onClear = { bitmapLeftPalm = null },
+                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        HandSlotCard(
-                            title = strings.slotRightPalm,
-                            bitmap = bitmapRightPalm,
-                            onTakePhoto = {
-                                activeSlot = "right_palm"
-                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context,
-                                    android.Manifest.permission.CAMERA
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (hasCameraPermission) {
-                                    cameraLauncher.launch(null)
-                                } else {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                }
-                            },
-                            onPickPhoto = {
-                                activeSlot = "right_palm"
-                                photoPickerLauncher.launch("image/*")
-                            },
-                            onClear = { bitmapRightPalm = null },
-                            modifier = Modifier.weight(1f)
-                        )
+                    HandSlotCard(
+                        title = strings.slotLeftBack,
+                        bitmap = bitmapLeftBack,
+                        onTakePhoto = {
+                            activeSlot = "left_back"
+                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.CAMERA
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (hasCameraPermission) {
+                                cameraLauncher.launch(null)
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPickPhoto = {
+                            activeSlot = "left_back"
+                            photoPickerLauncher.launch("image/*")
+                        },
+                        onClear = { bitmapLeftBack = null },
+                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                    )
 
-                        HandSlotCard(
-                            title = strings.slotRightBack,
-                            bitmap = bitmapRightBack,
-                            onTakePhoto = {
-                                activeSlot = "right_back"
-                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context,
-                                    android.Manifest.permission.CAMERA
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (hasCameraPermission) {
-                                    cameraLauncher.launch(null)
-                                } else {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                }
-                            },
-                            onPickPhoto = {
-                                activeSlot = "right_back"
-                                photoPickerLauncher.launch("image/*")
-                            },
-                            onClear = { bitmapRightBack = null },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    HandSlotCard(
+                        title = strings.slotRightPalm,
+                        bitmap = bitmapRightPalm,
+                        onTakePhoto = {
+                            activeSlot = "right_palm"
+                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.CAMERA
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (hasCameraPermission) {
+                                cameraLauncher.launch(null)
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPickPhoto = {
+                            activeSlot = "right_palm"
+                            photoPickerLauncher.launch("image/*")
+                        },
+                        onClear = { bitmapRightPalm = null },
+                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    HandSlotCard(
+                        title = strings.slotRightBack,
+                        bitmap = bitmapRightBack,
+                        onTakePhoto = {
+                            activeSlot = "right_back"
+                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.CAMERA
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (hasCameraPermission) {
+                                cameraLauncher.launch(null)
+                            } else {
+                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            }
+                        },
+                        onPickPhoto = {
+                            activeSlot = "right_back"
+                            photoPickerLauncher.launch("image/*")
+                        },
+                        onClear = { bitmapRightBack = null },
+                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                    )
                 }
             }
 
@@ -1397,6 +1441,14 @@ fun ResultsScreen(
     var ttsGenderState by remember { mutableStateOf("Female") } // "Male" or "Female"
     var ttsRateState by remember { mutableStateOf(1.0f) }
 
+    var activeLineBlockIndex by remember { mutableStateOf(-1) }
+    val lineReadingBlocks = remember(palmistReport) {
+        palmistReport?.lines ?: emptyList()
+    }
+
+    val scope = rememberCoroutineScope()
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
     // Initialize Android TTS
     DisposableEffect(Unit) {
         tts = TextToSpeech(context) { status ->
@@ -1410,25 +1462,62 @@ fun ResultsScreen(
         }
     }
 
-    fun playTtsOfReport() {
-        if (palmistReport == null) return
+    DisposableEffect(tts) {
+        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    isPlayingTts = true
+                }
+            }
+            override fun onDone(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    if (activeLineBlockIndex < lineReadingBlocks.size - 1) {
+                        activeLineBlockIndex++
+                    } else {
+                        isPlayingTts = false
+                        activeLineBlockIndex = -1
+                    }
+                }
+            }
+            override fun onError(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    isPlayingTts = false
+                }
+            }
+        })
+        onDispose {
+            tts?.setOnUtteranceProgressListener(null)
+        }
+    }
+
+    LaunchedEffect(activeLineBlockIndex, isPlayingTts) {
+        if (isPlayingTts && activeLineBlockIndex in lineReadingBlocks.indices) {
+            val line = lineReadingBlocks[activeLineBlockIndex]
+            val textToSpeak = "${line.name}. ${line.fullDescription}"
+            
+            tts?.setPitch(if (ttsGenderState == "Female") 1.25f else 0.85f)
+            tts?.setSpeechRate(ttsRateState)
+            
+            val params = android.os.Bundle().apply {
+                putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "line_$activeLineBlockIndex")
+            }
+            tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "line_$activeLineBlockIndex")
+            
+            try {
+                listState.animateScrollToItem(activeLineBlockIndex + 3)
+            } catch (e: Exception) {}
+        }
+    }
+
+    fun playTtsOfLines() {
+        if (lineReadingBlocks.isEmpty()) return
         if (isPlayingTts) {
             tts?.stop()
             isPlayingTts = false
         } else {
-            // Build text to read
-            val textBuilder = StringBuilder()
-            textBuilder.append(palmistReport.overallPortrait).append(". ")
-            palmistReport.lines.forEach {
-                textBuilder.append(it.name).append(": ").append(it.shortDescription).append(". ")
+            if (activeLineBlockIndex !in lineReadingBlocks.indices) {
+                activeLineBlockIndex = 0
             }
-            textBuilder.append(palmistReport.marriageChildren).append(". ")
-            textBuilder.append(palmistReport.predictions)
-
-            // Adjust voice pitch/speed to simulate gender
-            tts?.setPitch(if (ttsGenderState == "Female") 1.25f else 0.85f)
-            tts?.setSpeechRate(ttsRateState)
-            tts?.speak(textBuilder.toString(), TextToSpeech.QUEUE_FLUSH, null, "PalmistReport")
             isPlayingTts = true
         }
     }
@@ -1481,92 +1570,6 @@ fun ResultsScreen(
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // --- AUDIO VOICE TTS PLAYER CONTROLLER panel ---
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0x33B87333)),
-                                border = BorderStroke(1.dp, MysticBronze.copy(0.5f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = strings.resAudioTitle,
-                                        style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Play Button
-                                        IconButton(
-                                            onClick = { playTtsOfReport() },
-                                            modifier = Modifier
-                                                .size(50.dp)
-                                                .background(MysticGold, CircleShape)
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isPlayingTts) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                                contentDescription = null,
-                                                tint = Color.Black
-                                            )
-                                        }
-
-                                        // Stop
-                                        IconButton(
-                                            onClick = {
-                                                tts?.stop()
-                                                isPlayingTts = false
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Stop,
-                                                contentDescription = null,
-                                                tint = Color.White
-                                            )
-                                        }
-
-                                        // Male/Female
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 4.dp)
-                                        ) {
-                                            Text(strings.resVoiceMale, fontSize = 11.sp)
-                                            Switch(
-                                                checked = ttsGenderState == "Female",
-                                                onCheckedChange = { ttsGenderState = if (it) "Female" else "Male" },
-                                                colors = SwitchDefaults.colors(
-                                                    checkedThumbColor = MysticGold,
-                                                    checkedTrackColor = MysticBronze
-                                                )
-                                            )
-                                            Text(strings.resVoiceFemale, fontSize = 11.sp)
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    // Speed slider
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(strings.resVoiceSpeed, fontSize = 11.sp, modifier = Modifier.width(80.dp))
-                                        Slider(
-                                            value = ttsRateState,
-                                            onValueChange = { ttsRateState = it },
-                                            valueRange = 0.5f..2.0f,
-                                            modifier = Modifier.weight(1f),
-                                            colors = SliderDefaults.colors(activeTrackColor = MysticGold)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
                             // Overall summary
                             Text(
                                 text = strings.resOverallPortrait,
@@ -1597,22 +1600,6 @@ fun ResultsScreen(
                             Divider(color = MysticBronze.copy(0.3f))
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            Text(
-                                text = strings.resLinesHeader,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                        }
-
-                        // Palm lines
-                        items(palmistReport.lines) { line ->
-                            LineReportCard(line)
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Divider(color = MysticBronze.copy(0.3f))
-                            Spacer(modifier = Modifier.height(20.dp))
-
                             // Mounts
                             Text(
                                 text = strings.resMountsHeader,
@@ -1639,6 +1626,7 @@ fun ResultsScreen(
                             Spacer(modifier = Modifier.height(10.dp))
                         }
 
+                        // Signs list
                         items(palmistReport.signs) { sign ->
                             SignReportCard(sign)
                         }
@@ -1785,112 +1773,288 @@ fun ResultsScreen(
                     }
                 } else {
                     // --- MAP VIEW TAB WITH ACTIVE TAP CLICKS ---
-                    Box(
-                        contentAlignment = Alignment.Center,
+                    LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .padding(20.dp)
+                            .padding(horizontal = 16.dp)
                     ) {
-                        // Drawing an interactive abstract Palm Outline layout where lines pulse on click
-                        Canvas(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onTap = { offset ->
-                                            val w = size.width.toFloat()
-                                            val h = size.height.toFloat()
-                                            
-                                            // Elementary bounding boxes for line points
-                                            val xPct = offset.x / w
-                                            val yPct = offset.y / h
+                        // 1. Palm Map Box
+                        item {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(350.dp)
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onTap = { offset ->
+                                                    val w = size.width.toFloat()
+                                                    val h = size.height.toFloat()
+                                                    
+                                                    // Elementary bounding boxes for line points
+                                                    val xPct = offset.x / w
+                                                    val yPct = offset.y / h
+                                                    
+                                                    val tappedLine = if (yPct in 0.4f..0.55f && xPct in 0.25f..0.7f) {
+                                                        palmistReport.lines.find { it.name.contains("Серд") || it.name.contains("Heart") }
+                                                    } else if (yPct in 0.52f..0.62f && xPct in 0.25f..0.7f) {
+                                                        palmistReport.lines.find { it.name.contains("Голо") || it.name.contains("Head") }
+                                                    } else if (yPct in 0.58f..0.85f && xPct in 0.2f..0.55f) {
+                                                        palmistReport.lines.find { it.name.contains("Жизн") || it.name.contains("Life") }
+                                                    } else if (xPct in 0.45f..0.58f && yPct in 0.35f..0.8f) {
+                                                        palmistReport.lines.find { it.name.contains("Судь") || it.name.contains("Destiny") }
+                                                    } else null
 
-                                            // Resolve click to Line index
-                                            if (yPct in 0.4f..0.55f && xPct in 0.25f..0.7f) {
-                                                // Heart line
-                                                selectedLineInfo = palmistReport.lines.find { it.name.contains("Серд") || it.name.contains("Heart") }
-                                            } else if (yPct in 0.52f..0.62f && xPct in 0.25f..0.7f) {
-                                                // Head line
-                                                selectedLineInfo = palmistReport.lines.find { it.name.contains("Голо") || it.name.contains("Head") }
-                                            } else if (yPct in 0.58f..0.85f && xPct in 0.2f..0.55f) {
-                                                // Life line
-                                                selectedLineInfo = palmistReport.lines.find { it.name.contains("Жизн") || it.name.contains("Life") }
-                                            } else if (xPct in 0.45f..0.58f && yPct in 0.35f..0.8f) {
-                                                // Destiny line
-                                                selectedLineInfo = palmistReport.lines.find { it.name.contains("Судь") || it.name.contains("Destiny") }
-                                            }
+                                                    if (tappedLine != null) {
+                                                        // When tapped on the canvas line, set active TTS line block and start speaking!
+                                                        val lineIndex = palmistReport.lines.indexOf(tappedLine)
+                                                        if (lineIndex != -1) {
+                                                            activeLineBlockIndex = lineIndex
+                                                            isPlayingTts = true
+                                                        }
+                                                    }
+                                                }
+                                            )
                                         }
+                                ) {
+                                    val w = size.width
+                                    val h = size.height
+
+                                    // Draw palm base background
+                                    drawCircle(
+                                        color = Color(0x331E1E2D),
+                                        radius = w * 0.45f
+                                    )
+
+                                    // Heart line (Pink)
+                                    val heartPath = Path().apply {
+                                        moveTo(w * 0.3f, h * 0.48f)
+                                        quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
+                                    }
+                                    drawPath(
+                                        path = heartPath,
+                                        color = LineHeartColor,
+                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+
+                                    // Head line (Blue)
+                                    val headPath = Path().apply {
+                                        moveTo(w * 0.28f, h * 0.52f)
+                                        quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
+                                    }
+                                    drawPath(
+                                        path = headPath,
+                                        color = LineHeadColor,
+                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+
+                                    // Life line (Red)
+                                    val lifePath = Path().apply {
+                                        moveTo(w * 0.28f, h * 0.52f)
+                                        quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
+                                    }
+                                    drawPath(
+                                        path = lifePath,
+                                        color = LineLifeColor,
+                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+
+                                    // Destiny line (Green)
+                                    val destinyPath = Path().apply {
+                                        moveTo(w * 0.52f, h * 0.8f)
+                                        quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
+                                    }
+                                    drawPath(
+                                        path = destinyPath,
+                                        color = LineDestinyColor,
+                                        style = Stroke(width = 6.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
                                     )
                                 }
-                        ) {
-                            val w = size.width
-                            val h = size.height
-
-                            // Draw palm base background
-                            drawCircle(
-                                color = Color(0x331E1E2D),
-                                radius = w * 0.45f
-                            )
-
-                            // Heart line (Pink)
-                            val heartPath = Path().apply {
-                                moveTo(w * 0.3f, h * 0.48f)
-                                quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
                             }
-                            drawPath(
-                                path = heartPath,
-                                color = LineHeartColor,
-                                style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            )
-
-                            // Head line (Blue)
-                            val headPath = Path().apply {
-                                moveTo(w * 0.28f, h * 0.52f)
-                                quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
-                            }
-                            drawPath(
-                                path = headPath,
-                                color = LineHeadColor,
-                                style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            )
-
-                            // Life line (Red)
-                            val lifePath = Path().apply {
-                                moveTo(w * 0.28f, h * 0.52f)
-                                quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
-                            }
-                            drawPath(
-                                path = lifePath,
-                                color = LineLifeColor,
-                                style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            )
-
-                            // Destiny line (Green)
-                            val destinyPath = Path().apply {
-                                moveTo(w * 0.52f, h * 0.8f)
-                                quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
-                            }
-                            drawPath(
-                                path = destinyPath,
-                                color = LineDestinyColor,
-                                style = Stroke(width = 6.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                            )
                         }
 
-                        // Floating Tips
-                        Card(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xCC000000))
-                        ) {
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS) "Тапните по любой линии ладони для просмотра подробностей" else "Tap any line overlay on the palm to reveal specifics",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MysticGold,
-                                modifier = Modifier.padding(12.dp),
-                                textAlign = TextAlign.Center
+                        // 2. Click Tip
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0x99000000))
+                            ) {
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Тапните по любой линии ладони или карточке ниже для прослушивания подробностей" else "Tap any line overlay on the palm or any card below to start speech description",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MysticGold,
+                                    modifier = Modifier.padding(12.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        // 3. TTS Player Control Card
+                        item {
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0x33B87333)),
+                                border = BorderStroke(1.dp, MysticBronze.copy(0.5f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = strings.resAudioTitle,
+                                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        // Play/Pause button and its label
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Старт/Пауза" else "Play/Pause",
+                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
+                                                modifier = Modifier.padding(bottom = 6.dp)
+                                            )
+                                            IconButton(
+                                                onClick = { playTtsOfLines() },
+                                                modifier = Modifier
+                                                    .size(44.dp)
+                                                    .background(MysticGold, CircleShape)
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isPlayingTts) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Color.Black
+                                                )
+                                            }
+                                        }
+
+                                        // Stop button and its label
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Стоп" else "Stop",
+                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
+                                                modifier = Modifier.padding(bottom = 6.dp)
+                                            )
+                                            IconButton(
+                                                onClick = {
+                                                    tts?.stop()
+                                                    isPlayingTts = false
+                                                    activeLineBlockIndex = -1
+                                                },
+                                                modifier = Modifier
+                                                    .size(44.dp)
+                                                    .background(Color.White.copy(0.1f), CircleShape)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Stop,
+                                                    contentDescription = null,
+                                                    tint = Color.White
+                                                )
+                                            }
+                                        }
+
+                                        // Voice switch and its label
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.weight(1.5f)
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Выбор голоса" else "Voice Selector",
+                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
+                                                modifier = Modifier.padding(bottom = 6.dp)
+                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.height(44.dp)
+                                            ) {
+                                                Text(strings.resVoiceMale, fontSize = 11.sp, color = Color.White)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Switch(
+                                                    checked = ttsGenderState == "Female",
+                                                    onCheckedChange = { ttsGenderState = if (it) "Female" else "Male" },
+                                                    colors = SwitchDefaults.colors(
+                                                        checkedThumbColor = MysticGold,
+                                                        checkedTrackColor = MysticBronze,
+                                                        uncheckedThumbColor = MysticBronze,
+                                                        uncheckedTrackColor = Color.DarkGray
+                                                    )
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(strings.resVoiceFemale, fontSize = 11.sp, color = Color.White)
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Speed slider
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = "${strings.resVoiceSpeed}: ${String.format("%.1fx", ttsRateState)}",
+                                            style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                        Slider(
+                                            value = ttsRateState,
+                                            onValueChange = { newRate ->
+                                                ttsRateState = newRate
+                                                if (isPlayingTts && activeLineBlockIndex in lineReadingBlocks.indices) {
+                                                    val line = lineReadingBlocks[activeLineBlockIndex]
+                                                    val textToSpeak = "${line.name}. ${line.fullDescription}"
+                                                    tts?.setSpeechRate(newRate)
+                                                    val params = android.os.Bundle().apply {
+                                                        putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "line_$activeLineBlockIndex")
+                                                    }
+                                                    tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "line_$activeLineBlockIndex")
+                                                }
+                                            },
+                                            valueRange = 0.5f..2.0f,
+                                            colors = SliderDefaults.colors(
+                                                activeTrackColor = MysticGold,
+                                                thumbColor = MysticGold
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 4. Line report description cards
+                        items(lineReadingBlocks.size) { index ->
+                            val line = lineReadingBlocks[index]
+                            LineReportCard(
+                                line = line,
+                                isActive = (index == activeLineBlockIndex && isPlayingTts),
+                                onPlayClick = {
+                                    if (activeLineBlockIndex == index && isPlayingTts) {
+                                        tts?.stop()
+                                        isPlayingTts = false
+                                    } else {
+                                        activeLineBlockIndex = index
+                                        isPlayingTts = true
+                                    }
+                                }
                             )
                         }
                     }
@@ -1951,7 +2115,11 @@ fun ResultsScreen(
 }
 
 @Composable
-fun LineReportCard(line: com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis) {
+fun LineReportCard(
+    line: com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis,
+    isActive: Boolean,
+    onPlayClick: () -> Unit
+) {
     val parsedColor = remember(line.color) {
         try {
             Color(android.graphics.Color.parseColor(line.color))
@@ -1962,24 +2130,52 @@ fun LineReportCard(line: com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalys
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-        border = BorderStroke(1.dp, MysticBronze.copy(0.2f)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) Color(0x44B87333) else Color(0x22141420)
+        ),
+        border = BorderStroke(
+            width = if (isActive) 1.5.dp else 1.dp,
+            color = if (isActive) MysticGold else MysticBronze.copy(0.2f)
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
+            .clickable { onPlayClick() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(parsedColor, CircleShape)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = line.name,
-                    style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(parsedColor, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = line.name,
+                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
+                    )
+                }
+
+                if (isActive) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = "Speaking",
+                        tint = MysticGold,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.PlayCircle,
+                        contentDescription = "Read",
+                        tint = MysticBronze,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -2692,13 +2888,18 @@ fun FaqItem(question: String, answer: String) {
 @Composable
 fun SettingsScreen(
     viewModel: PalmistViewModel,
-    onNavigateToLanguage: () -> Unit
+    onNavigateToLanguage: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
     val billingState by viewModel.billingState.collectAsState()
+    val fontScale by viewModel.fontScale.collectAsState()
+
+    var aboutProgramExpanded by remember { mutableStateOf(false) }
+    var aboutDevExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -2709,9 +2910,30 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            MysticHeader(strings.settTitle)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MysticGold
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = strings.settTitle,
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        color = MysticGold,
+                        fontSize = 32.sp
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -2740,6 +2962,142 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Font scale row
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Масштаб шрифта" else "Font Scale",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { if (fontScale > 0.85f) viewModel.changeFontScale(fontScale - 0.1f) }
+                        ) {
+                            Icon(imageVector = Icons.Default.Remove, contentDescription = "Decrease", tint = MysticGold)
+                        }
+                        Text(
+                            text = "${(fontScale * 100).toInt()}%",
+                            color = MysticGold,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { if (fontScale < 1.55f) viewModel.changeFontScale(fontScale + 0.1f) }
+                        ) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = "Increase", tint = MysticGold)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Expandable card: "О программе"
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { aboutProgramExpanded = !aboutProgramExpanded },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.MenuBook, contentDescription = null, tint = MysticGold)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "О программе" else "About Program",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
+                        Icon(
+                            imageVector = if (aboutProgramExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MysticGold
+                        )
+                    }
+                    if (aboutProgramExpanded) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) {
+                                "Программа «Хиромант» — это ваш персональный проводник в мир древних знаний о ладонях. С помощью современных алгоритмов искусственного интеллекта и нейросетей Gemini, приложение анализирует форму рук, пальцев и переплетение линий на ладони, сопоставляя их с канонами классической ведической и западной хиромантии. Программа считывает холмы планет, особые знаки (такие как Мистический Крест или Кольцо Соломона) и линии сердца, головы, жизни и судьбы, чтобы раскрыть ваш врождённый потенциал и дать практические советы на жизненном пути."
+                            } else {
+                                "The 'Palmist' app is your personal guide to the ancient wisdom of palm reading. Powered by modern Gemini AI algorithms, the app analyzes your hand shape, finger proportions, and palm line networks, mapping them to the canons of classic Vedic and Western palmistry. It reads planetary mounts, sacred markings (like the Mystic Cross or Ring of Solomon), and the primary lines of Heart, Head, Life, and Destiny to unlock your innate potential and deliver actionable life guidelines."
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFFC0C0D0),
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Expandable card: "О разработчике"
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { aboutDevExpanded = !aboutDevExpanded },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MysticGold)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "О разработчике" else "About Developer",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
+                        Icon(
+                            imageVector = if (aboutDevExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MysticGold
+                        )
+                    }
+                    if (aboutDevExpanded) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) {
+                                "Разработчик: Арсений (ArsMaxim)\nКонтакты: arsmaxim@gmail.com\n\nЯ увлечён созданием интеллектуальных, красивых и полезных мобильных приложений, которые объединяют современные технологии ИИ и классическое наследие человечества. Спасибо, что выбрали моё приложение!"
+                            } else {
+                                "Developer: Arseniy (ArsMaxim)\nContact: arsmaxim@gmail.com\n\nI am passionate about creating smart, beautiful, and helpful mobile applications that merge cutting-edge AI technologies with classical human heritage. Thank you for choosing my app!"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFFC0C0D0),
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Sub Status Card
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -2756,7 +3114,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Доступные полные анализы: ${billingState?.remainingAnalyses ?: 0}",
+                        text = if (currentLang == AppLanguage.RUS) "Доступные полные анализы: ${billingState?.remainingAnalyses ?: 0}" else "Available full readings: ${billingState?.remainingAnalyses ?: 0}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White
                     )

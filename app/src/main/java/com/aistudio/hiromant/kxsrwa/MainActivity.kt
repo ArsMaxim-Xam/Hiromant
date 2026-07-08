@@ -170,17 +170,28 @@ class MainActivity : ComponentActivity() {
             setContent {
                 MyApplicationTheme {
                     val navController = rememberNavController()
-                    val startDest = remember {
-                        if (viewModel.isLanguageSelected()) "splash" else "language"
+                    val fontScaleValue by viewModel.fontScale.collectAsState()
+                    val density = androidx.compose.ui.platform.LocalDensity.current
+                    val customDensity = remember(density, fontScaleValue) {
+                        object : androidx.compose.ui.unit.Density by density {
+                            override val fontScale: Float
+                                get() = density.fontScale * fontScaleValue
+                        }
                     }
-
-                    NavHost(
-                        navController = navController,
-                        startDestination = startDest,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MysticDarkBackground)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalDensity provides customDensity
                     ) {
+                        val startDest = remember {
+                            if (viewModel.isLanguageSelected()) "splash" else "language"
+                        }
+
+                        NavHost(
+                            navController = navController,
+                            startDestination = startDest,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MysticDarkBackground)
+                        ) {
                         // 1. Language selector
                         composable("language") {
                             LanguageSelectionScreen(
@@ -275,13 +286,15 @@ class MainActivity : ComponentActivity() {
                         composable("settings") {
                             SettingsScreen(
                                 viewModel = viewModel,
-                                onNavigateToLanguage = { navController.navigate("language") }
+                                onNavigateToLanguage = { navController.navigate("language") },
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
                     }
                 }
             }
-        } catch (e: Throwable) {
+        }
+    } catch (e: Throwable) {
             // Log any early runtime crash to a file
             logException(e)
             val logFile = File(getExternalFilesDir(null), "crash.log")
@@ -423,20 +436,6 @@ fun MainContainerScreen(
                 )
             }
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToSettings,
-                containerColor = MysticGold,
-                contentColor = Color.Black,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings"
-                )
-            }
-        },
         contentWindowInsets = WindowInsets.navigationBars,
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
@@ -462,6 +461,21 @@ fun MainContainerScreen(
                     onNavigateToResult = onNavigateToLoading
                 )
                 "about" -> AboutScreen(viewModel = viewModel)
+            }
+
+            // Settings button in top-right corner
+            IconButton(
+                onClick = onNavigateToSettings,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MysticGold,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }
