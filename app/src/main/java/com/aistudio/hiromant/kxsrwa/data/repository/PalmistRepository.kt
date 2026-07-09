@@ -392,7 +392,7 @@ class PalmistRepository(
         // Generate incredibly rich mock contents based on name and physical characteristics to look incredibly authentic!
         val report = if (isRussian) {
             PalmistReport(
-                overallPortrait = "Общий анализ ладони для ${profile.name} указывает на яркую, духовно развитую личность. Ваша ладонь сочетает черты Огня и Воздуха, свидетельствуя о высоком интеллектуальном потенциале, творческой импульсивности и стремлении к гармонии с внешним миром. У вас развитая интуиция, которая часто помогает в кризисных ситуациях.",
+                overallPortrait = "⚠️ ЭТО ПРИМЕР ИНТЕРПРЕТАЦИИ (Демонстрационный режим). Чтобы получить настоящий астрологический анализ ваших ладоней по фотографии, пожалуйста, подключите ваш API-ключ Gemini в панели Secrets в AI Studio.\n\nОбщий анализ ладони для ${profile.name} указывает на яркую, духовно развитую личность. Ваша ладонь сочетает черты Огня и Воздуха, свидетельствуя о высоком интеллектуальном потенциале, творческой импульсивности и стремлении к гармонии с внешним миром. У вас развитая интуиция, которая часто помогает в кризисных ситуациях.",
                 handType = "Смешанный тип (Воздух-Огонь)",
                 lines = listOf(
                     PalmLineAnalysis(
@@ -443,7 +443,7 @@ class PalmistRepository(
             )
         } else {
             PalmistReport(
-                overallPortrait = "The overall analysis of the palm for ${profile.name} points to a vivid, spiritually evolved individual. Your hand archetypically balances elements of Air and Fire, signaling high intellectual potential, creative spontaneity, and a quest for cosmic harmony.",
+                overallPortrait = "⚠️ THIS IS A SAMPLE INTERPRETATION (Demo Mode). To get a real chiromancy analysis of your hands from a photograph, please connect your Gemini API key in the AI Studio Secrets panel.\n\nThe overall analysis of the palm for ${profile.name} points to a vivid, spiritually evolved individual. Your hand archetypically balances elements of Air and Fire, signaling high intellectual potential, creative spontaneity, and a quest for cosmic harmony.",
                 handType = "Mixed Archetype (Air-Fire)",
                 lines = listOf(
                     PalmLineAnalysis(
@@ -505,7 +505,7 @@ class PalmistRepository(
         val report = if (isRussian) {
             CompatibilityReport(
                 compatibilityPercent = 88,
-                partner1Portrait = "$selfName обладает глубокой эмпатией и ищет духовное единение в союзе. Основной упор делается на искренность чувств и эмоциональную честность.",
+                partner1Portrait = "⚠️ ЭТО ПРИМЕР СОВМЕСТИМОСТИ (Демонстрационный режим). Подключите API-ключ Gemini для реального анализа.\n\n$selfName обладает глубокой эмпатией и ищет духовное единение в союзе. Основной упор делается на искренность чувств и эмоциональную честность.",
                 partner2Portrait = "$partnerName ценит надёжность, стабильность и преданность. Сильная натура, стремящаяся оберегать близких и создавать уют.",
                 combinedAnalysis = "Ваш союз благословлен гармонией линий Сердца. Изгибы ваших линий ладони плавно дополняют друг друга, что обеспечивает высокое взаимопонимание на интуитивном уровне. Мелкие различия в буграх Сатурна лишь помогают вам уравновешивать качества друг друга.",
                 strongPoints = listOf("Абсолютное доверие и уважение", "Взаимная эмоциональная поддержка", "Схожие духовные и семейные ориентиры"),
@@ -518,7 +518,7 @@ class PalmistRepository(
         } else {
             CompatibilityReport(
                 compatibilityPercent = 88,
-                partner1Portrait = "$selfName values spiritual connection, intense emotional honesty, and deep cosmic affinity in relationships.",
+                partner1Portrait = "⚠️ THIS IS A SAMPLE COMPATIBILITY REPORT (Demo Mode). Please connect your Gemini API key for a real analysis.\n\n$selfName values spiritual connection, intense emotional honesty, and deep cosmic affinity in relationships.",
                 partner2Portrait = "$partnerName holds devotion, safety, and domestic harmony in extremely high regard. A shielding, protective soul.",
                 combinedAnalysis = "Your heart currents are beautifully matched. The alignment of your primary romantic lines showcases high mutual empathy and intuitive alignment. Differences in Saturn mount structures help ground and elevate each other.",
                 strongPoints = listOf("Absolute mutual trust", "Profound empathy and comfort", "Identical family and life goals"),

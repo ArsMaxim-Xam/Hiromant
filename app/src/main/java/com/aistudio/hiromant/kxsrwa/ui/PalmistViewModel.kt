@@ -55,6 +55,19 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val currentReading = MutableStateFlow<ReadingEntity?>(null)
     val currentCompatibilityReading = MutableStateFlow<ReadingEntity?>(null)
 
+    // Persisted states for UploadScreen
+    val bitmapLeftPalm = MutableStateFlow<Bitmap?>(null)
+    val bitmapLeftBack = MutableStateFlow<Bitmap?>(null)
+    val bitmapRightPalm = MutableStateFlow<Bitmap?>(null)
+    val bitmapRightBack = MutableStateFlow<Bitmap?>(null)
+
+    val leftPalmPath = MutableStateFlow<String?>(null)
+    val leftBackPath = MutableStateFlow<String?>(null)
+    val rightPalmPath = MutableStateFlow<String?>(null)
+    val rightBackPath = MutableStateFlow<String?>(null)
+
+    val videoUri = MutableStateFlow<android.net.Uri?>(null)
+
     init {
         // Load initially selected language
         val code = repository.getSelectedLanguage()

@@ -28,6 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -1402,6 +1404,20 @@ fun HandSlotCard(
 }
 
 
+fun getVideoThumbnail(context: Context, uri: Uri?): Bitmap? {
+    if (uri == null) return null
+    return try {
+        val retriever = android.media.MediaMetadataRetriever()
+        retriever.setDataSource(context, uri)
+        val bitmap = retriever.getFrameAtTime(0, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+        retriever.release()
+        bitmap
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
 // --- SCREEN 4: MEDIA UPLOAD & RUN ANALYSES ---
 
 @Composable
@@ -1417,17 +1433,25 @@ fun UploadScreen(
     val billingState by viewModel.billingState.collectAsState()
 
     var activeSlot by remember { mutableStateOf<String?>(null) }
-    var bitmapLeftPalm by remember { mutableStateOf<Bitmap?>(null) }
-    var bitmapLeftBack by remember { mutableStateOf<Bitmap?>(null) }
-    var bitmapRightPalm by remember { mutableStateOf<Bitmap?>(null) }
-    var bitmapRightBack by remember { mutableStateOf<Bitmap?>(null) }
+    val bitmapLeftPalm by viewModel.bitmapLeftPalm.collectAsState()
+    val bitmapLeftBack by viewModel.bitmapLeftBack.collectAsState()
+    val bitmapRightPalm by viewModel.bitmapRightPalm.collectAsState()
+    val bitmapRightBack by viewModel.bitmapRightBack.collectAsState()
 
-    var leftPalmPath by remember { mutableStateOf<String?>(null) }
-    var leftBackPath by remember { mutableStateOf<String?>(null) }
-    var rightPalmPath by remember { mutableStateOf<String?>(null) }
-    var rightBackPath by remember { mutableStateOf<String?>(null) }
+    val leftPalmPath by viewModel.leftPalmPath.collectAsState()
+    val leftBackPath by viewModel.leftBackPath.collectAsState()
+    val rightPalmPath by viewModel.rightPalmPath.collectAsState()
+    val rightBackPath by viewModel.rightBackPath.collectAsState()
 
-    var videoUri by remember { mutableStateOf<Uri?>(null) }
+    val videoUri by viewModel.videoUri.collectAsState()
+
+    val videoThumbnail = remember(videoUri) {
+        if (videoUri != null) {
+            getVideoThumbnail(context, videoUri)
+        } else {
+            null
+        }
+    }
     var showInterpretationScreen by remember { mutableStateOf(false) }
 
     // Media Store URI values for system-native cameras
@@ -1443,20 +1467,20 @@ fun UploadScreen(
                 if (bitmap != null) {
                     when (activeSlot) {
                         "left_palm" -> {
-                            bitmapLeftPalm = bitmap
-                            leftPalmPath = it.toString()
+                            viewModel.bitmapLeftPalm.value = bitmap
+                            viewModel.leftPalmPath.value = it.toString()
                         }
                         "left_back" -> {
-                            bitmapLeftBack = bitmap
-                            leftBackPath = it.toString()
+                            viewModel.bitmapLeftBack.value = bitmap
+                            viewModel.leftBackPath.value = it.toString()
                         }
                         "right_palm" -> {
-                            bitmapRightPalm = bitmap
-                            rightPalmPath = it.toString()
+                            viewModel.bitmapRightPalm.value = bitmap
+                            viewModel.rightPalmPath.value = it.toString()
                         }
                         "right_back" -> {
-                            bitmapRightBack = bitmap
-                            rightBackPath = it.toString()
+                            viewModel.bitmapRightBack.value = bitmap
+                            viewModel.rightBackPath.value = it.toString()
                         }
                     }
                 }
@@ -1468,7 +1492,7 @@ fun UploadScreen(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
             uri?.let {
-                videoUri = it
+                viewModel.videoUri.value = it
                 Toast.makeText(context, strings.uploadPreviewVideo, Toast.LENGTH_SHORT).show()
             }
         }
@@ -1483,20 +1507,20 @@ fun UploadScreen(
                     if (bitmap != null) {
                         when (activeSlot) {
                             "left_palm" -> {
-                                bitmapLeftPalm = bitmap
-                                leftPalmPath = uri.toString()
+                                viewModel.bitmapLeftPalm.value = bitmap
+                                viewModel.leftPalmPath.value = uri.toString()
                             }
                             "left_back" -> {
-                                bitmapLeftBack = bitmap
-                                leftBackPath = uri.toString()
+                                viewModel.bitmapLeftBack.value = bitmap
+                                viewModel.leftBackPath.value = uri.toString()
                             }
                             "right_palm" -> {
-                                bitmapRightPalm = bitmap
-                                rightPalmPath = uri.toString()
+                                viewModel.bitmapRightPalm.value = bitmap
+                                viewModel.rightPalmPath.value = uri.toString()
                             }
                             "right_back" -> {
-                                bitmapRightBack = bitmap
-                                rightBackPath = uri.toString()
+                                viewModel.bitmapRightBack.value = bitmap
+                                viewModel.rightBackPath.value = uri.toString()
                             }
                         }
                     }
@@ -1510,7 +1534,7 @@ fun UploadScreen(
         onResult = { success ->
             if (success) {
                 tempVideoUri?.let { uri ->
-                    videoUri = uri
+                    viewModel.videoUri.value = uri
                     Toast.makeText(context, strings.uploadPreviewVideo, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -1624,8 +1648,8 @@ fun UploadScreen(
                                 photoPickerLauncher.launch("image/*")
                             },
                             onClear = {
-                                bitmapLeftPalm = null
-                                leftPalmPath = null
+                                viewModel.bitmapLeftPalm.value = null
+                                viewModel.leftPalmPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
                             btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
@@ -1658,8 +1682,8 @@ fun UploadScreen(
                                 photoPickerLauncher.launch("image/*")
                             },
                             onClear = {
-                                bitmapLeftBack = null
-                                leftBackPath = null
+                                viewModel.bitmapLeftBack.value = null
+                                viewModel.leftBackPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
                             btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
@@ -1692,8 +1716,8 @@ fun UploadScreen(
                                 photoPickerLauncher.launch("image/*")
                             },
                             onClear = {
-                                bitmapRightPalm = null
-                                rightPalmPath = null
+                                viewModel.bitmapRightPalm.value = null
+                                viewModel.rightPalmPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
                             btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
@@ -1726,8 +1750,8 @@ fun UploadScreen(
                                 photoPickerLauncher.launch("image/*")
                             },
                             onClear = {
-                                bitmapRightBack = null
-                                rightBackPath = null
+                                viewModel.bitmapRightBack.value = null
+                                viewModel.rightBackPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
                             btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
@@ -1780,25 +1804,47 @@ fun UploadScreen(
                                 }
                         ) {
                             if (videoUri != null) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.VideoFile,
-                                        contentDescription = null,
-                                        tint = MysticGold,
-                                        modifier = Modifier.size(54.dp)
+                                if (videoThumbnail != null) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(videoThumbnail),
+                                        contentDescription = "Video Preview",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = strings.uploadPreviewVideo,
-                                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(Color.Black.copy(0.4f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = "Play",
+                                            tint = MysticGold,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                } else {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.VideoFile,
+                                            contentDescription = null,
+                                            tint = MysticGold,
+                                            modifier = Modifier.size(54.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = strings.uploadPreviewVideo,
+                                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                                        )
+                                    }
                                 }
                                 
                                 IconButton(
-                                    onClick = { videoUri = null },
+                                    onClick = { viewModel.videoUri.value = null },
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .padding(8.dp)
@@ -2351,6 +2397,8 @@ fun SelectableInterpretationText(
         }
     }
     
+    var isFocused by remember { mutableStateOf(false) }
+    
     Box(modifier = modifier) {
         BasicTextField(
             value = value,
@@ -2363,68 +2411,39 @@ fun SelectableInterpretationText(
                 lineHeight = 24.sp
             ),
             onTextLayout = { textLayoutResult = it },
-            cursorBrush = SolidColor(Color.Transparent),
+            cursorBrush = SolidColor(MysticGold),
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(16.dp)
                 .padding(top = 60.dp)
+                .onFocusChanged { isFocused = it.isFocused }
         )
         
-        if (value.selection.length > 0) {
-            val selectedText = value.text.substring(value.selection.start, value.selection.end)
-            
+        if (isFocused) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .padding(bottom = 24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
-                    border = BorderStroke(1.dp, MysticGold),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                IconButton(
+                    onClick = {
+                        onReadFromCursor(value.selection.start)
+                    },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(MysticGold, CircleShape)
+                        .border(1.dp, Color.White.copy(0.3f), CircleShape)
+                        .shadow(6.dp, CircleShape)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(selectedText))
-                                onValueChange(value.copy(selection = TextRange.Zero))
-                            }
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MysticGold, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Копировать", color = MysticGold, fontSize = 12.sp)
-                        }
-                        
-                        TextButton(
-                            onClick = {
-                                onSpeakSelected(selectedText)
-                            }
-                        ) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = "Speak", tint = MysticGold, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("ОЗВУЧИТЬ", color = MysticGold, fontSize = 12.sp)
-                        }
-                        
-                        TextButton(
-                            onClick = {
-                                onReadFromCursor(value.selection.start)
-                            }
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Read from cursor", tint = MysticGold, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("От курсора", color = MysticGold, fontSize = 12.sp)
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = "Read from cursor",
+                        tint = Color.Black,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
         }
@@ -2439,9 +2458,15 @@ fun TtsVoiceController(
     onRateChange: (Float) -> Unit,
     gender: String,
     onGenderChange: (String) -> Unit,
+    maleVoices: List<android.speech.tts.Voice>,
+    femaleVoices: List<android.speech.tts.Voice>,
+    selectedVoice: android.speech.tts.Voice?,
+    onVoiceSelected: (android.speech.tts.Voice) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var maleMenuExpanded by remember { mutableStateOf(false) }
+    var femaleMenuExpanded by remember { mutableStateOf(false) }
     
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -2477,22 +2502,63 @@ fun TtsVoiceController(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                IconButton(
-                    onClick = { onGenderChange("Male") },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            if (gender == "Male") MysticGold else Color.White.copy(0.1f),
-                            CircleShape
+                // Male voice button & dropdown
+                Box {
+                    IconButton(
+                        onClick = {
+                            onGenderChange("Male")
+                            maleMenuExpanded = true
+                        },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                if (gender == "Male") MysticGold else Color.White.copy(0.1f),
+                                CircleShape
+                            )
+                            .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
+                    ) {
+                        Text(
+                            text = "м",
+                            color = if (gender == "Male") Color.Black else Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         )
-                        .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
-                ) {
-                    Text(
-                        text = "м",
-                        color = if (gender == "Male") Color.Black else Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    }
+
+                    DropdownMenu(
+                        expanded = maleMenuExpanded,
+                        onDismissRequest = { maleMenuExpanded = false },
+                        modifier = Modifier.background(MysticDarkSurface)
+                    ) {
+                        if (maleVoices.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Мужской стандартный", color = Color.White) },
+                                onClick = {
+                                    onGenderChange("Male")
+                                    maleMenuExpanded = false
+                                }
+                            )
+                        } else {
+                            maleVoices.forEachIndexed { index, voice ->
+                                val isSelected = selectedVoice?.name == voice.name
+                                val cleanName = voice.name.substringAfterLast(".").substringBefore("-local")
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Голос М${index + 1} ($cleanName)",
+                                            color = if (isSelected) MysticGold else Color.White,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    onClick = {
+                                        onVoiceSelected(voice)
+                                        onGenderChange("Male")
+                                        maleMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -2513,22 +2579,63 @@ fun TtsVoiceController(
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                IconButton(
-                    onClick = { onGenderChange("Female") },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            if (gender == "Female") MysticGold else Color.White.copy(0.1f),
-                            CircleShape
+                // Female voice button & dropdown
+                Box {
+                    IconButton(
+                        onClick = {
+                            onGenderChange("Female")
+                            femaleMenuExpanded = true
+                        },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(
+                                if (gender == "Female") MysticGold else Color.White.copy(0.1f),
+                                CircleShape
+                            )
+                            .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
+                    ) {
+                        Text(
+                            text = "ж",
+                            color = if (gender == "Female") Color.Black else Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         )
-                        .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
-                ) {
-                    Text(
-                        text = "ж",
-                        color = if (gender == "Female") Color.Black else Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    }
+
+                    DropdownMenu(
+                        expanded = femaleMenuExpanded,
+                        onDismissRequest = { femaleMenuExpanded = false },
+                        modifier = Modifier.background(MysticDarkSurface)
+                    ) {
+                        if (femaleVoices.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Женский стандартный", color = Color.White) },
+                                onClick = {
+                                    onGenderChange("Female")
+                                    femaleMenuExpanded = false
+                                }
+                            )
+                        } else {
+                            femaleVoices.forEachIndexed { index, voice ->
+                                val isSelected = selectedVoice?.name == voice.name
+                                val cleanName = voice.name.substringAfterLast(".").substringBefore("-local")
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Голос Ж${index + 1} ($cleanName)",
+                                            color = if (isSelected) MysticGold else Color.White,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    onClick = {
+                                        onVoiceSelected(voice)
+                                        onGenderChange("Female")
+                                        femaleMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2574,6 +2681,57 @@ fun ResultsScreen(
     var activeLineName by remember { mutableStateOf<String?>(null) }
     var ttsOffset by remember { mutableStateOf(0) }
 
+    var selectedMaleVoice by remember { mutableStateOf<android.speech.tts.Voice?>(null) }
+    var selectedFemaleVoice by remember { mutableStateOf<android.speech.tts.Voice?>(null) }
+
+    val allAvailableVoices = remember(tts, currentLang) {
+        try {
+            val currentLocale = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
+            val voices = tts?.voices?.toList() ?: emptyList()
+            voices.filter { it.locale.language == currentLocale.language }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    val femaleVoicesList = remember(allAvailableVoices) {
+        allAvailableVoices.filter { voice ->
+            val nameLower = voice.name.lowercase(Locale.US)
+            nameLower.contains("female") || 
+            nameLower.contains("f-local") || 
+            nameLower.contains("ruf") || 
+            nameLower.contains("dfc") || 
+            nameLower.contains("dfh") || 
+            nameLower.contains("rua") || 
+            nameLower.contains("ruc") || 
+            nameLower.contains("rue") ||
+            nameLower.contains("ru-ru-a") ||
+            nameLower.contains("ru-ru-c") ||
+            nameLower.contains("ru-ru-e") ||
+            nameLower.contains("-f-") ||
+            nameLower.contains("-f_") ||
+            nameLower.contains("_f_")
+        }
+    }
+
+    val maleVoicesList = remember(allAvailableVoices) {
+        allAvailableVoices.filter { voice ->
+            val nameLower = voice.name.lowercase(Locale.US)
+            nameLower.contains("male") || 
+            nameLower.contains("m-local") || 
+            nameLower.contains("rum") || 
+            nameLower.contains("dfd") || 
+            nameLower.contains("dfg") || 
+            nameLower.contains("rub") || 
+            nameLower.contains("rud") ||
+            nameLower.contains("ru-ru-b") ||
+            nameLower.contains("ru-ru-d") ||
+            nameLower.contains("-m-") ||
+            nameLower.contains("-m_") ||
+            nameLower.contains("_m_")
+        }
+    }
+
     val lineReadingBlocks = remember(palmistReport) {
         palmistReport?.lines ?: emptyList()
     }
@@ -2602,57 +2760,25 @@ fun ResultsScreen(
         tts?.setSpeechRate(ttsRateState)
         tts?.setPitch(if (isFemale) 1.35f else 0.75f)
         try {
-            val currentLocale = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
-            val voices = tts?.voices?.toList() ?: emptyList()
-            val langVoices = voices.filter { it.locale.language == currentLocale.language }
-            
-            if (langVoices.isNotEmpty()) {
-                val femaleVoices = langVoices.filter { voice ->
-                    val nameLower = voice.name.lowercase(Locale.US)
-                    nameLower.contains("female") || 
-                    nameLower.contains("f-local") || 
-                    nameLower.contains("ruf") || 
-                    nameLower.contains("dfc") || 
-                    nameLower.contains("dfh") || 
-                    nameLower.contains("rua") || 
-                    nameLower.contains("ruc") || 
-                    nameLower.contains("rue") ||
-                    nameLower.contains("ru-ru-a") ||
-                    nameLower.contains("ru-ru-c") ||
-                    nameLower.contains("ru-ru-e") ||
-                    nameLower.contains("-f-") ||
-                    nameLower.contains("-f_") ||
-                    nameLower.contains("_f_")
-                }
-                
-                val maleVoices = langVoices.filter { voice ->
-                    val nameLower = voice.name.lowercase(Locale.US)
-                    nameLower.contains("male") || 
-                    nameLower.contains("m-local") || 
-                    nameLower.contains("rum") || 
-                    nameLower.contains("dfd") || 
-                    nameLower.contains("dfg") || 
-                    nameLower.contains("rub") || 
-                    nameLower.contains("rud") ||
-                    nameLower.contains("ru-ru-b") ||
-                    nameLower.contains("ru-ru-d") ||
-                    nameLower.contains("-m-") ||
-                    nameLower.contains("-m_") ||
-                    nameLower.contains("_m_")
-                }
-                
-                val selectedVoice = if (isFemale) {
-                    femaleVoices.firstOrNull() 
-                        ?: langVoices.firstOrNull { it !in maleVoices } 
-                        ?: langVoices.firstOrNull()
+            if (allAvailableVoices.isNotEmpty()) {
+                val preferredVoice = if (isFemale) {
+                    selectedFemaleVoice ?: femaleVoicesList.firstOrNull() 
+                        ?: allAvailableVoices.firstOrNull { it !in maleVoicesList } 
+                        ?: allAvailableVoices.firstOrNull()
                 } else {
-                    maleVoices.firstOrNull() 
-                        ?: langVoices.firstOrNull { it !in femaleVoices } 
-                        ?: langVoices.firstOrNull()
+                    selectedMaleVoice ?: maleVoicesList.firstOrNull() 
+                        ?: allAvailableVoices.firstOrNull { it !in femaleVoicesList } 
+                        ?: allAvailableVoices.firstOrNull()
                 }
                 
-                if (selectedVoice != null) {
-                    tts?.voice = selectedVoice
+                if (preferredVoice != null) {
+                    tts?.voice = preferredVoice
+                    // Synchronize state
+                    if (isFemale) {
+                        selectedFemaleVoice = preferredVoice
+                    } else {
+                        selectedMaleVoice = preferredVoice
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -2836,6 +2962,21 @@ fun ResultsScreen(
                                             speakTextFromIndex(reportTextState.text, currentWordStart)
                                         }
                                     },
+                                    maleVoices = maleVoicesList,
+                                    femaleVoices = femaleVoicesList,
+                                    selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
+                                    onVoiceSelected = { voice ->
+                                        if (ttsGenderState == "Female") {
+                                            selectedFemaleVoice = voice
+                                        } else {
+                                            selectedMaleVoice = voice
+                                        }
+                                        applyTtsSettings()
+                                        if (isPlayingTts) {
+                                            val currentWordStart = spokenWordRange?.first ?: 0
+                                            speakTextFromIndex(reportTextState.text, currentWordStart)
+                                        }
+                                    },
                                     modifier = Modifier
                                         .align(Alignment.TopStart)
                                         .padding(16.dp)
@@ -3012,6 +3153,21 @@ fun ResultsScreen(
                                 gender = ttsGenderState,
                                 onGenderChange = { newGender ->
                                     ttsGenderState = newGender
+                                    applyTtsSettings()
+                                    if (isPlayingTts) {
+                                        val currentWordStart = spokenWordRange?.first ?: 0
+                                        speakTextFromIndex(mapTextState.text, currentWordStart)
+                                    }
+                                },
+                                maleVoices = maleVoicesList,
+                                femaleVoices = femaleVoicesList,
+                                selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
+                                onVoiceSelected = { voice ->
+                                    if (ttsGenderState == "Female") {
+                                        selectedFemaleVoice = voice
+                                    } else {
+                                        selectedMaleVoice = voice
+                                    }
                                     applyTtsSettings()
                                     if (isPlayingTts) {
                                         val currentWordStart = spokenWordRange?.first ?: 0
@@ -4130,8 +4286,52 @@ fun BillingScreen(
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
-    var cardNum by remember { mutableStateOf("") }
+    var walletNum by remember { mutableStateOf("410013630971157") } // User's custom wallet number
+    var paymentAmount by remember { mutableStateOf("250") } // Default amount in rubles
     var chosenMethod by remember { mutableStateOf<String?>(null) } // "yookassa", "google"
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+
+    if (showConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            title = {
+                Text(
+                    text = "Ожидание оплаты ЮMoney",
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Официальная страница оплаты была открыта в вашем браузере.\n\n" +
+                           "После успешного завершения перевода в системе ЮMoney вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы разблокировать сеансы.",
+                    color = Color.White
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmationDialog = false
+                        viewModel.simulateBuySubscription()
+                        Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
+                        onNavigateBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                ) {
+                    Text("Подтвердить", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showConfirmationDialog = false }
+                ) {
+                    Text("Отмена", color = Color.Gray)
+                }
+            },
+            containerColor = MysticDarkSurface,
+            textContentColor = Color.White
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -4144,6 +4344,7 @@ fun BillingScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             MysticHeader(strings.billDialogTitle)
             MysticSubtitle(strings.billDialogChoosePay)
@@ -4168,7 +4369,7 @@ fun BillingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // YooKassa simulated
+            // YooKassa / YooMoney
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = if (chosenMethod == "yookassa") Color(0x33D4AF37) else Color(0x22141420)),
@@ -4181,22 +4382,76 @@ fun BillingScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.CreditCard, contentDescription = null, tint = MysticGold, modifier = Modifier.size(36.dp))
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text(strings.billDialogYooKassa, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        Text(
+                            text = "ЮMoney / ЮKassa (Карты/СБП)",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
                     }
 
                     if (chosenMethod == "yookassa") {
                         Spacer(modifier = Modifier.height(16.dp))
-                        MysticTextField(
-                            value = cardNum,
-                            onValueChange = { cardNum = it },
-                            label = strings.billDialogCardNum,
-                            placeholder = "1111 2222 3333 4444"
+                        
+                        Text(
+                            text = "Введите номер кошелька ЮMoney получателя:",
+                            fontSize = 12.sp,
+                            color = Color.Gray
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        MysticTextField(
+                            value = walletNum,
+                            onValueChange = { walletNum = it },
+                            label = "Номер кошелька ЮMoney",
+                            placeholder = "41001xxxxxxxxxx"
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Text(
+                            text = "Выберите сумму перевода (рубли):",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("100", "250", "1000").forEach { valAmount ->
+                                val isSelected = paymentAmount == valAmount
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .background(
+                                            if (isSelected) MysticGold else Color.White.copy(0.05f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) MysticGold else MysticBronze.copy(0.3f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { paymentAmount = valAmount }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "$valAmount ₽",
+                                        color = if (isSelected) Color.Black else Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -4210,12 +4465,40 @@ fun BillingScreen(
                 )
 
                 MysticButton(
-                    text = "PAY / ОПЛАТИТЬ",
+                    text = "ОПЛАТИТЬ",
                     onClick = {
-                        if (chosenMethod != null) {
+                        if (chosenMethod == "google") {
                             viewModel.simulateBuySubscription()
                             Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
                             onNavigateBack()
+                        } else if (chosenMethod == "yookassa") {
+                            try {
+                                val cleanWallet = walletNum.replace(" ", "").trim()
+                                if (cleanWallet.length < 10) {
+                                    Toast.makeText(context, "Пожалуйста, введите корректный номер кошелька ЮMoney", Toast.LENGTH_LONG).show()
+                                    return@MysticButton
+                                }
+                                val amountVal = paymentAmount.trim()
+                                if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) {
+                                    Toast.makeText(context, "Пожалуйста, введите корректную сумму", Toast.LENGTH_LONG).show()
+                                    return@MysticButton
+                                }
+                                val targets = "Hiromant App Premium Activation"
+                                val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
+                                val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
+                                        "receiver=$cleanWallet&" +
+                                        "quickpay-form=button&" +
+                                        "targets=$encodedTargets&" +
+                                        "paymentType=AC&" +
+                                        "sum=$amountVal"
+                                
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                context.startActivity(intent)
+                                showConfirmationDialog = true
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                Toast.makeText(context, "Не удалось открыть страницу оплаты: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
                         } else {
                             Toast.makeText(context, "Please choose a payment option", Toast.LENGTH_SHORT).show()
                         }
