@@ -146,7 +146,11 @@ class PalmistRepository(
         bitmaps: List<Bitmap>,
         videoUri: String?,
         analysisType: String, // "brief_char", "full_char", "brief_path", "full_path"
-        langCode: String
+        langCode: String,
+        leftPalmPath: String? = null,
+        leftBackPath: String? = null,
+        rightPalmPath: String? = null,
+        rightBackPath: String? = null
     ): ReadingEntity = withContext(Dispatchers.IO) {
         val profile = dao.getUserProfileSync() ?: UserProfileEntity(name = "Искатель", age = 25)
 
@@ -257,7 +261,12 @@ class PalmistRepository(
             height = profile.height,
             dominantHand = profile.dominantHand,
             analysisType = analysisType,
-            resultJson = resultJsonStr
+            resultJson = resultJsonStr,
+            leftPalmPath = leftPalmPath,
+            leftBackPath = leftBackPath,
+            rightPalmPath = rightPalmPath,
+            rightBackPath = rightBackPath,
+            videoPath = videoUri
         )
 
         val id = dao.insertReading(reading)

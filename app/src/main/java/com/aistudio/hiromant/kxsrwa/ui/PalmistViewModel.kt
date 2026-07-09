@@ -149,6 +149,10 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         bitmaps: List<Bitmap>,
         videoUri: String?,
         analysisType: String, // "brief_char", "full_char", "brief_path", "full_path"
+        leftPalmPath: String? = null,
+        leftBackPath: String? = null,
+        rightPalmPath: String? = null,
+        rightBackPath: String? = null,
         onCompleted: () -> Unit
     ) {
         isAnalyzing.value = true
@@ -188,7 +192,11 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                     bitmaps = bitmaps,
                     videoUri = videoUri,
                     analysisType = analysisType,
-                    langCode = _selectedLanguage.value.code
+                    langCode = _selectedLanguage.value.code,
+                    leftPalmPath = leftPalmPath,
+                    leftBackPath = leftBackPath,
+                    rightPalmPath = rightPalmPath,
+                    rightBackPath = rightBackPath
                 )
                 
                 currentReading.value = reading

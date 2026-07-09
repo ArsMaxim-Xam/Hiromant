@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
         UserProfileEntity::class,
         BillingStateEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class PalmistDatabase : RoomDatabase() {

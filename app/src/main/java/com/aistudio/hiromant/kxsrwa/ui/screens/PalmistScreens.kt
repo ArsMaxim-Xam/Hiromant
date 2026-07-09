@@ -1217,6 +1217,34 @@ fun ProfileScreen(
 
 // --- SCREEN 4: MEDIA UPLOAD & RUN ANALYSES ---
 
+fun createGalleryImageUri(context: Context, title: String): Uri? {
+    try {
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "${title}_${System.currentTimeMillis()}.jpg")
+            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Palmist")
+        }
+        return context.contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
+fun createGalleryVideoUri(context: Context, title: String): Uri? {
+    try {
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, "${title}_${System.currentTimeMillis()}.mp4")
+            put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            put(android.provider.MediaStore.Video.Media.RELATIVE_PATH, "Movies/Palmist")
+        }
+        return context.contentResolver.insert(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
 @Composable
 fun HandSlotCard(
     title: String,
@@ -1228,139 +1256,136 @@ fun HandSlotCard(
     btnGalleryText: String,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x1F1E1E2C)),
-        border = BorderStroke(1.dp, if (bitmap != null) MysticGold else MysticBronze.copy(0.3f)),
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxWidth()
-            .height(115.dp)
+            .padding(vertical = 8.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        // 1. Label above the preview window
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = if (bitmap != null) MysticGold else Color.White,
+                fontSize = 16.sp
+            ),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // 2. Preview Window
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
+                .size(180.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0x1F1E1E2C))
+                .border(2.dp, if (bitmap != null) MysticGold else MysticBronze.copy(0.3f), RoundedCornerShape(16.dp))
+                .clickable { onTakePhoto() } // Tapping triggers camera
         ) {
-            // Left Side: Image Preview / Icon Placeholder
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x10FFFFFF))
-                    .border(1.dp, MysticBronze.copy(0.2f), RoundedCornerShape(12.dp))
-            ) {
-                if (bitmap != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(bitmap),
-                        contentDescription = title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+            if (bitmap != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(bitmap),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Clear button in the corner
+                IconButton(
+                    onClick = { onClear() },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(28.dp)
+                        .background(Color.Black.copy(0.6f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Clear",
+                        tint = Color.Red,
+                        modifier = Modifier.size(14.dp)
                     )
-                    IconButton(
-                        onClick = onClear,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(24.dp)
-                            .background(Color.Black.copy(0.6f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Clear",
-                            tint = Color.Red,
-                            modifier = Modifier.size(12.dp)
-                        )
-                    }
-                } else {
+                }
+            } else {
+                // Large placeholder in the middle
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Icon(
                         imageVector = Icons.Outlined.PhotoCamera,
                         contentDescription = null,
-                        tint = MysticBronze.copy(0.4f),
-                        modifier = Modifier.size(28.dp)
+                        tint = MysticBronze.copy(0.6f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Тапните для фото",
+                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, fontSize = 11.sp)
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-            // Right Side: Label and Actions
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
+        // 3. Upload buttons UNDER the preview window
+        Row(
+            modifier = Modifier.width(220.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Take Photo Button
+            Button(
+                onClick = onTakePhoto,
+                colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = if (bitmap != null) MysticGold else Color.White,
-                        fontSize = 15.sp
-                    ),
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                Icon(
+                    imageVector = Icons.Default.AddAPhoto,
+                    contentDescription = "Take Photo",
+                    tint = MysticGold,
+                    modifier = Modifier.size(14.dp)
                 )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = btnCameraText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = MysticGold,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (bitmap == null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        // Take Photo Button
-                        Button(
-                            onClick = onTakePhoto,
-                            colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).height(34.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AddAPhoto,
-                                contentDescription = "Take Photo",
-                                tint = MysticGold,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = btnCameraText,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                color = MysticGold,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-
-                        // Pick Gallery Button
-                        Button(
-                            onClick = onPickPhoto,
-                            colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f).height(34.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Image,
-                                contentDescription = "Gallery",
-                                tint = MysticGold,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = btnGalleryText,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                color = MysticGold,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "Готово к анализу",
-                        style = MaterialTheme.typography.bodySmall.copy(color = MysticGold)
-                    )
-                }
+            // Pick Gallery Button
+            Button(
+                onClick = onPickPhoto,
+                colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Image,
+                    contentDescription = "Gallery",
+                    tint = MysticGold,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = btnGalleryText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = MysticGold,
+                    maxLines = 1,
+                    softWrap = false
+                )
             }
         }
     }
@@ -1387,11 +1412,17 @@ fun UploadScreen(
     var bitmapRightPalm by remember { mutableStateOf<Bitmap?>(null) }
     var bitmapRightBack by remember { mutableStateOf<Bitmap?>(null) }
 
-    var videoUri by remember { mutableStateOf<Uri?>(null) }
+    var leftPalmPath by remember { mutableStateOf<String?>(null) }
+    var leftBackPath by remember { mutableStateOf<String?>(null) }
+    var rightPalmPath by remember { mutableStateOf<String?>(null) }
+    var rightBackPath by remember { mutableStateOf<String?>(null) }
 
-    // CameraX recording simulated state
-    var isRecordingVideo by remember { mutableStateOf(false) }
-    var recordingTimeLeft by remember { mutableStateOf(60) }
+    var videoUri by remember { mutableStateOf<Uri?>(null) }
+    var showInterpretationScreen by remember { mutableStateOf(false) }
+
+    // Media Store URI values for system-native cameras
+    var tempImageUri by remember { mutableStateOf<Uri?>(null) }
+    var tempVideoUri by remember { mutableStateOf<Uri?>(null) }
 
     // Launchers for media
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -1399,11 +1430,25 @@ fun UploadScreen(
         onResult = { uri ->
             uri?.let {
                 val bitmap = BitmapUtils.uriToBitmap(context, it)
-                when (activeSlot) {
-                    "left_palm" -> bitmapLeftPalm = bitmap
-                    "left_back" -> bitmapLeftBack = bitmap
-                    "right_palm" -> bitmapRightPalm = bitmap
-                    "right_back" -> bitmapRightBack = bitmap
+                if (bitmap != null) {
+                    when (activeSlot) {
+                        "left_palm" -> {
+                            bitmapLeftPalm = bitmap
+                            leftPalmPath = it.toString()
+                        }
+                        "left_back" -> {
+                            bitmapLeftBack = bitmap
+                            leftBackPath = it.toString()
+                        }
+                        "right_palm" -> {
+                            bitmapRightPalm = bitmap
+                            rightPalmPath = it.toString()
+                        }
+                        "right_back" -> {
+                            bitmapRightBack = bitmap
+                            rightBackPath = it.toString()
+                        }
+                    }
                 }
             }
         }
@@ -1412,49 +1457,86 @@ fun UploadScreen(
     val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            uri?.let { videoUri = it }
+            uri?.let {
+                videoUri = it
+                Toast.makeText(context, strings.uploadPreviewVideo, Toast.LENGTH_SHORT).show()
+            }
         }
     )
 
-    // Camera launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-        onResult = { bitmap ->
-            bitmap?.let {
-                when (activeSlot) {
-                    "left_palm" -> bitmapLeftPalm = it
-                    "left_back" -> bitmapLeftBack = it
-                    "right_palm" -> bitmapRightPalm = it
-                    "right_back" -> bitmapRightBack = it
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                tempImageUri?.let { uri ->
+                    val bitmap = BitmapUtils.uriToBitmap(context, uri)
+                    if (bitmap != null) {
+                        when (activeSlot) {
+                            "left_palm" -> {
+                                bitmapLeftPalm = bitmap
+                                leftPalmPath = uri.toString()
+                            }
+                            "left_back" -> {
+                                bitmapLeftBack = bitmap
+                                leftBackPath = uri.toString()
+                            }
+                            "right_palm" -> {
+                                bitmapRightPalm = bitmap
+                                rightPalmPath = uri.toString()
+                            }
+                            "right_back" -> {
+                                bitmapRightBack = bitmap
+                                rightBackPath = uri.toString()
+                            }
+                        }
+                    }
                 }
             }
         }
     )
 
-    // Camera permission launcher
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+    val videoCaptureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo(),
+        onResult = { success ->
+            if (success) {
+                tempVideoUri?.let { uri ->
+                    videoUri = uri
+                    Toast.makeText(context, strings.uploadPreviewVideo, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    )
+
+    // Camera permission launchers
+    val cameraPermissionLauncherForPhoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (isGranted) {
-                cameraLauncher.launch(null)
+                val uri = createGalleryImageUri(context, "hand_photo")
+                if (uri != null) {
+                    tempImageUri = uri
+                    takePictureLauncher.launch(uri)
+                }
             } else {
                 Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
             }
         }
     )
 
-    // Timer simulation for CameraX video recording
-    LaunchedEffect(isRecordingVideo, recordingTimeLeft) {
-        if (isRecordingVideo && recordingTimeLeft > 0) {
-            delay(1000)
-            recordingTimeLeft--
-            if (recordingTimeLeft == 0) {
-                isRecordingVideo = false
-                videoUri = Uri.parse("content://palmist/recorded_video")
-                Toast.makeText(context, strings.uploadPreviewVideo, Toast.LENGTH_SHORT).show()
+    val cameraPermissionLauncherForVideo = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                val uri = createGalleryVideoUri(context, "hand_video")
+                if (uri != null) {
+                    tempVideoUri = uri
+                    videoCaptureLauncher.launch(uri)
+                }
+            } else {
+                Toast.makeText(context, "Camera permission is required to record video", Toast.LENGTH_SHORT).show()
             }
         }
-    }
+    )
 
     Box(
         modifier = Modifier
@@ -1467,303 +1549,451 @@ fun UploadScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            MysticHeader(strings.uploadTitle)
+            if (!showInterpretationScreen) {
+                // STEP 1: Upload media screen
+                MysticHeader(strings.uploadTitle)
 
-            // Warning Guidelines Box
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0x1A000000)),
-                border = BorderStroke(1.dp, MysticBronze.copy(0.4f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = strings.uploadGuideHeader,
-                        style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = strings.uploadGuideText,
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFC0C0D0), lineHeight = 18.sp)
-                    )
-                }
-            }
-
-            // Photo upload block (Grid of 4 slots)
-            MysticCard {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
+                // Warning Guidelines Box
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0x1A000000)),
+                    border = BorderStroke(1.dp, MysticBronze.copy(0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp)
                 ) {
-                    Text(
-                        text = strings.uploadPhotoSection,
-                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Sequential full-width vertical layout instead of 2x2 grid
-                    HandSlotCard(
-                        title = strings.slotLeftPalm,
-                        bitmap = bitmapLeftPalm,
-                        onTakePhoto = {
-                            activeSlot = "left_palm"
-                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.CAMERA
-                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            if (hasCameraPermission) {
-                                cameraLauncher.launch(null)
-                            } else {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }
-                        },
-                        onPickPhoto = {
-                            activeSlot = "left_palm"
-                            photoPickerLauncher.launch("image/*")
-                        },
-                        onClear = { bitmapLeftPalm = null },
-                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    HandSlotCard(
-                        title = strings.slotLeftBack,
-                        bitmap = bitmapLeftBack,
-                        onTakePhoto = {
-                            activeSlot = "left_back"
-                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.CAMERA
-                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            if (hasCameraPermission) {
-                                cameraLauncher.launch(null)
-                            } else {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }
-                        },
-                        onPickPhoto = {
-                            activeSlot = "left_back"
-                            photoPickerLauncher.launch("image/*")
-                        },
-                        onClear = { bitmapLeftBack = null },
-                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    HandSlotCard(
-                        title = strings.slotRightPalm,
-                        bitmap = bitmapRightPalm,
-                        onTakePhoto = {
-                            activeSlot = "right_palm"
-                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.CAMERA
-                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            if (hasCameraPermission) {
-                                cameraLauncher.launch(null)
-                            } else {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }
-                        },
-                        onPickPhoto = {
-                            activeSlot = "right_palm"
-                            photoPickerLauncher.launch("image/*")
-                        },
-                        onClear = { bitmapRightPalm = null },
-                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    HandSlotCard(
-                        title = strings.slotRightBack,
-                        bitmap = bitmapRightBack,
-                        onTakePhoto = {
-                            activeSlot = "right_back"
-                            val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.CAMERA
-                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                            if (hasCameraPermission) {
-                                cameraLauncher.launch(null)
-                            } else {
-                                cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }
-                        },
-                        onPickPhoto = {
-                            activeSlot = "right_back"
-                            photoPickerLauncher.launch("image/*")
-                        },
-                        onClear = { bitmapRightBack = null },
-                        btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                        btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
-                    )
-                }
-            }
-
-            // Video Upload block (CameraX limited to 60s)
-            MysticCard {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = strings.uploadVideoSection,
-                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (isRecordingVideo) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.RadioButtonChecked,
-                                contentDescription = null,
-                                tint = Color.Red,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .animateContentSize()
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Recording: ${recordingTimeLeft}s",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = strings.uploadVideoHint,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MysticBronze,
-                                    textAlign = TextAlign.Center
-                                )
-                            )
-                        }
-                    } else if (videoUri != null) {
-                        Icon(
-                            imageVector = Icons.Default.VideoFile,
-                            contentDescription = null,
-                            tint = MysticGold,
-                            modifier = Modifier.size(50.dp)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = strings.uploadPreviewVideo,
-                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
+                            text = strings.uploadGuideHeader,
+                            style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
                         )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Outlined.Videocam,
-                            contentDescription = null,
-                            tint = MysticBronze.copy(0.5f),
-                            modifier = Modifier.size(50.dp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = strings.uploadGuideText,
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFC0C0D0), lineHeight = 18.sp)
                         )
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // Photo upload block (Stack of 4 beautiful vertical slots)
+                MysticCard {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        if (!isRecordingVideo) {
-                            MysticButton(
-                                text = strings.uploadRecordVideo,
-                                onClick = {
-                                    isRecordingVideo = true
-                                    recordingTimeLeft = 60
-                                },
-                                isSecondary = true,
-                                modifier = Modifier.weight(1f)
-                            )
-                            MysticButton(
-                                text = strings.uploadLoadVideo,
-                                onClick = { videoPickerLauncher.launch("video/*") },
-                                isSecondary = true,
-                                modifier = Modifier.weight(1f)
-                            )
-                        } else {
-                            MysticButton(
-                                text = "STOP",
-                                onClick = {
-                                    isRecordingVideo = false
-                                    videoUri = Uri.parse("content://palmist/recorded_video")
-                                },
-                                isSecondary = false,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                        Text(
+                            text = strings.uploadPhotoSection,
+                            style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Left Palm Slot
+                        HandSlotCard(
+                            title = strings.slotLeftPalm,
+                            bitmap = bitmapLeftPalm,
+                            onTakePhoto = {
+                                activeSlot = "left_palm"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    val uri = createGalleryImageUri(context, "left_palm")
+                                    if (uri != null) {
+                                        tempImageUri = uri
+                                        takePictureLauncher.launch(uri)
+                                    }
+                                } else {
+                                    cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "left_palm"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = {
+                                bitmapLeftPalm = null
+                                leftPalmPath = null
+                            },
+                            btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Left Back Slot
+                        HandSlotCard(
+                            title = strings.slotLeftBack,
+                            bitmap = bitmapLeftBack,
+                            onTakePhoto = {
+                                activeSlot = "left_back"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    val uri = createGalleryImageUri(context, "left_back")
+                                    if (uri != null) {
+                                        tempImageUri = uri
+                                        takePictureLauncher.launch(uri)
+                                    }
+                                } else {
+                                    cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "left_back"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = {
+                                bitmapLeftBack = null
+                                leftBackPath = null
+                            },
+                            btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Right Palm Slot
+                        HandSlotCard(
+                            title = strings.slotRightPalm,
+                            bitmap = bitmapRightPalm,
+                            onTakePhoto = {
+                                activeSlot = "right_palm"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    val uri = createGalleryImageUri(context, "right_palm")
+                                    if (uri != null) {
+                                        tempImageUri = uri
+                                        takePictureLauncher.launch(uri)
+                                    }
+                                } else {
+                                    cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "right_palm"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = {
+                                bitmapRightPalm = null
+                                rightPalmPath = null
+                            },
+                            btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Right Back Slot
+                        HandSlotCard(
+                            title = strings.slotRightBack,
+                            bitmap = bitmapRightBack,
+                            onTakePhoto = {
+                                activeSlot = "right_back"
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    val uri = createGalleryImageUri(context, "right_back")
+                                    if (uri != null) {
+                                        tempImageUri = uri
+                                        takePictureLauncher.launch(uri)
+                                    }
+                                } else {
+                                    cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
+                                }
+                            },
+                            onPickPhoto = {
+                                activeSlot = "right_back"
+                                photoPickerLauncher.launch("image/*")
+                            },
+                            onClear = {
+                                bitmapRightBack = null
+                                rightBackPath = null
+                            },
+                            btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                        )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Video Slot Card
+                MysticCard {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = strings.uploadVideoSection,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = if (videoUri != null) MysticGold else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        // Video preview window matching photo window styling
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0x1F1E1E2C))
+                                .border(2.dp, if (videoUri != null) MysticGold else MysticBronze.copy(0.3f), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context,
+                                        android.Manifest.permission.CAMERA
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    if (hasCameraPermission) {
+                                        val uri = createGalleryVideoUri(context, "hand_video")
+                                        if (uri != null) {
+                                            tempVideoUri = uri
+                                            videoCaptureLauncher.launch(uri)
+                                        }
+                                    } else {
+                                        cameraPermissionLauncherForVideo.launch(android.Manifest.permission.CAMERA)
+                                    }
+                                }
+                        ) {
+                            if (videoUri != null) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VideoFile,
+                                        contentDescription = null,
+                                        tint = MysticGold,
+                                        modifier = Modifier.size(54.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = strings.uploadPreviewVideo,
+                                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                
+                                IconButton(
+                                    onClick = { videoUri = null },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .size(28.dp)
+                                        .background(Color.Black.copy(0.6f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Clear",
+                                        tint = Color.Red,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Videocam,
+                                        contentDescription = null,
+                                        tint = MysticBronze.copy(0.6f),
+                                        modifier = Modifier.size(54.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS) "Тапните для записи видео" else "Tap to record video",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, fontSize = 11.sp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Load Video Button under video window
+                        MysticButton(
+                            text = if (currentLang == AppLanguage.RUS) "Загрузить видео" else "Upload video",
+                            onClick = { videoPickerLauncher.launch("video/*") },
+                            isSecondary = true,
+                            modifier = Modifier.width(220.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Caption under load video button: "До 100 Mb/60 сек."
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "До 100 Mb/60 сек." else "Up to 100 Mb/60 sec.",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = MysticBronze.copy(0.8f),
+                                fontSize = 11.sp,
+                                letterSpacing = 0.5.sp
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // Below all, the "Next" (Далее) Button
+                MysticButton(
+                    text = if (currentLang == AppLanguage.RUS) "Далее" else "Next",
+                    onClick = {
+                        val hasMedia = bitmapLeftPalm != null || bitmapLeftBack != null || bitmapRightPalm != null || bitmapRightBack != null || videoUri != null
+                        if (hasMedia) {
+                            showInterpretationScreen = true
+                        } else {
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Пожалуйста, загрузите хотя бы одно фото или видео ладони!" else "Please upload at least one hand photo or video!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+            } else {
+                // STEP 2: Interpretation / Selection screen
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = { showInterpretationScreen = false }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MysticGold)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Интерпретация результатов" else "Interpretation of Results",
+                        style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = strings.uploadChooseAnalysisType,
+                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
+
+                // Brief Character Analysis
+                TriggerAnalysisButton(
+                    label = strings.btnBriefChar,
+                    priceText = strings.freeLabel,
+                    onClick = {
+                        viewModel.runPalmAnalysis(
+                            bitmaps = bitmaps,
+                            videoUri = videoUri?.toString(),
+                            analysisType = "brief_char",
+                            leftPalmPath = leftPalmPath,
+                            leftBackPath = leftBackPath,
+                            rightPalmPath = rightPalmPath,
+                            rightBackPath = rightBackPath,
+                            onCompleted = {
+                                showInterpretationScreen = false
+                                onNavigateToLoading()
+                            }
+                        )
+                    }
+                )
+
+                // Full Character Analysis
+                TriggerAnalysisButton(
+                    label = strings.btnFullChar,
+                    priceText = "150 ₽",
+                    onClick = {
+                        viewModel.checkFeatureUnlocked("full_char") { unlocked ->
+                            if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
+                                viewModel.runPalmAnalysis(
+                                    bitmaps = bitmaps,
+                                    videoUri = videoUri?.toString(),
+                                    analysisType = "full_char",
+                                    leftPalmPath = leftPalmPath,
+                                    leftBackPath = leftBackPath,
+                                    rightPalmPath = rightPalmPath,
+                                    rightBackPath = rightBackPath,
+                                    onCompleted = {
+                                        showInterpretationScreen = false
+                                        onNavigateToLoading()
+                                    }
+                                )
+                            } else {
+                                onNavigateToBilling()
+                            }
+                        }
+                    }
+                )
+
+                // Brief Life Path Analysis
+                TriggerAnalysisButton(
+                    label = strings.btnBriefPath,
+                    priceText = strings.freeLabel,
+                    onClick = {
+                        viewModel.runPalmAnalysis(
+                            bitmaps = bitmaps,
+                            videoUri = videoUri?.toString(),
+                            analysisType = "brief_path",
+                            leftPalmPath = leftPalmPath,
+                            leftBackPath = leftBackPath,
+                            rightPalmPath = rightPalmPath,
+                            rightBackPath = rightBackPath,
+                            onCompleted = {
+                                showInterpretationScreen = false
+                                onNavigateToLoading()
+                            }
+                        )
+                    }
+                )
+
+                // Full Life Path Analysis
+                TriggerAnalysisButton(
+                    label = strings.btnFullPath,
+                    priceText = "150 ₽",
+                    onClick = {
+                        viewModel.checkFeatureUnlocked("full_path") { unlocked ->
+                            if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
+                                viewModel.runPalmAnalysis(
+                                    bitmaps = bitmaps,
+                                    videoUri = videoUri?.toString(),
+                                    analysisType = "full_path",
+                                    leftPalmPath = leftPalmPath,
+                                    leftBackPath = leftBackPath,
+                                    rightPalmPath = rightPalmPath,
+                                    rightBackPath = rightBackPath,
+                                    onCompleted = {
+                                        showInterpretationScreen = false
+                                        onNavigateToLoading()
+                                    }
+                                )
+                            } else {
+                                onNavigateToBilling()
+                            }
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Trigger Analysis Buttons with distinct pricing models
-            Text(
-                text = strings.uploadChooseAnalysisType,
-                style = MaterialTheme.typography.titleMedium.copy(color = MysticGold),
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            // Trigger buttons
-            TriggerAnalysisButton(
-                label = strings.btnBriefChar,
-                priceText = strings.freeLabel,
-                onClick = {
-                    val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
-                    viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "brief_char", onNavigateToLoading)
-                }
-            )
-
-            TriggerAnalysisButton(
-                label = strings.btnFullChar,
-                priceText = "150 ₽",
-                onClick = {
-                    viewModel.checkFeatureUnlocked("full_char") { unlocked ->
-                        if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                            val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
-                            viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "full_char", onNavigateToLoading)
-                        } else {
-                            onNavigateToBilling()
-                        }
-                    }
-                }
-            )
-
-            TriggerAnalysisButton(
-                label = strings.btnBriefPath,
-                priceText = strings.freeLabel,
-                onClick = {
-                    val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
-                    viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "brief_path", onNavigateToLoading)
-                }
-            )
-
-            TriggerAnalysisButton(
-                label = strings.btnFullPath,
-                priceText = "150 ₽",
-                onClick = {
-                    viewModel.checkFeatureUnlocked("full_path") { unlocked ->
-                        if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                            val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
-                            viewModel.runPalmAnalysis(bitmaps, videoUri?.toString(), "full_path", onNavigateToLoading)
-                        } else {
-                            onNavigateToBilling()
-                        }
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
@@ -3311,7 +3541,7 @@ fun AboutScreen(
                     }
                     "faq" -> {
                         listOf(
-                            "Как сделать качественный снимок?" to "Положите ладонь ровно, раздвинув пальцы на плоском однотонном фоне при ярком естественном или искусственном освещении. Рядом можно положить монету для точной калибровки размеров.",
+                            "Как сделать качественный снимок?" to "Положите ладонь ровно, раздвинув пальцы на плоском однотонном фоне при ярком естественном или искусственном освещении. Рядом можно положить кредитную карту для точной калибровки размеров.",
                             "Почему анализ занимает время?" to "Мистические алгоритмы Gemini прочитывают десятки параметров руки, включая форму ногтей, длину пальцев и холмы, формируя глубокий персонализированный отчёт.",
                             "Чем отличается краткий от полного анализа?" to "Краткий даёт сжатые выводы по четырём ключевым линиям. Полный включает подробнейшую трактовку бугров, фаланг, знаков судьбы, будущих прогнозов и любовной сферы.",
                             "Насколько точны прогнозы?" to "Хиромантия — это зеркало вашей души. Линии меняются в зависимости от ваших решений, поэтому приложение предоставляет руководство и духовные ориентиры."

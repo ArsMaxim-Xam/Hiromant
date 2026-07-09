@@ -16,7 +16,12 @@ data class ReadingEntity(
     val resultJson: String,
     val imageUrl: String? = null,
     val partnerName: String? = null,
-    val partnerImageUrl: String? = null
+    val partnerImageUrl: String? = null,
+    val leftPalmPath: String? = null,
+    val leftBackPath: String? = null,
+    val rightPalmPath: String? = null,
+    val rightBackPath: String? = null,
+    val videoPath: String? = null
 )
 
 @Entity(tableName = "user_profile")
