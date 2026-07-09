@@ -36,6 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -238,28 +242,28 @@ fun MysticSplashScreen(
                 type = HandElementType.LINE,
                 name = "Life Line",
                 color = Color(0xFFFF4D4D), // Coral Red
-                points = listOf(Pair(0.33f, 0.52f), Pair(0.36f, 0.60f), Pair(0.40f, 0.70f), Pair(0.45f, 0.78f), Pair(0.50f, 0.84f))
+                points = listOf(Pair(0.67f, 0.52f), Pair(0.64f, 0.60f), Pair(0.60f, 0.70f), Pair(0.55f, 0.78f), Pair(0.50f, 0.84f))
             ),
             AnimatedElementState(
                 id = "head_line",
                 type = HandElementType.LINE,
                 name = "Head Line",
                 color = Color(0xFF00BFFF), // Cyan Blue
-                points = listOf(Pair(0.33f, 0.52f), Pair(0.46f, 0.54f), Pair(0.64f, 0.57f))
+                points = listOf(Pair(0.67f, 0.52f), Pair(0.54f, 0.54f), Pair(0.36f, 0.57f))
             ),
             AnimatedElementState(
                 id = "heart_line",
                 type = HandElementType.LINE,
                 name = "Heart Line",
                 color = Color(0xFFFF1493), // Deep Pink
-                points = listOf(Pair(0.70f, 0.50f), Pair(0.54f, 0.48f), Pair(0.36f, 0.45f))
+                points = listOf(Pair(0.30f, 0.50f), Pair(0.46f, 0.48f), Pair(0.64f, 0.45f))
             ),
             AnimatedElementState(
                 id = "destiny_line",
                 type = HandElementType.LINE,
                 name = "Destiny Line",
                 color = Color(0xFFDA70D6), // Orchid / Light Purple
-                points = listOf(Pair(0.50f, 0.85f), Pair(0.50f, 0.65f), Pair(0.49f, 0.41f))
+                points = listOf(Pair(0.50f, 0.85f), Pair(0.50f, 0.65f), Pair(0.51f, 0.41f))
             ),
             // Mounts
             AnimatedElementState(
@@ -268,7 +272,7 @@ fun MysticSplashScreen(
                 name = "Mount of Jupiter",
                 color = Color(0xFF9370DB), // Medium Purple
                 symbol = "♃",
-                position = Pair(0.38f, 0.36f)
+                position = Pair(0.62f, 0.38f)
             ),
             AnimatedElementState(
                 id = "mount_saturn",
@@ -276,7 +280,7 @@ fun MysticSplashScreen(
                 name = "Mount of Saturn",
                 color = Color(0xFFFFD700), // Gold
                 symbol = "♄",
-                position = Pair(0.49f, 0.34f)
+                position = Pair(0.51f, 0.34f)
             ),
             AnimatedElementState(
                 id = "mount_apollo",
@@ -284,7 +288,7 @@ fun MysticSplashScreen(
                 name = "Mount of Apollo",
                 color = Color(0xFFFF8C00), // Dark Orange
                 symbol = "☉",
-                position = Pair(0.61f, 0.35f)
+                position = Pair(0.39f, 0.36f)
             ),
             AnimatedElementState(
                 id = "mount_mercury",
@@ -292,7 +296,7 @@ fun MysticSplashScreen(
                 name = "Mount of Mercury",
                 color = Color(0xFF00FA9A), // Medium Spring Green
                 symbol = "☿",
-                position = Pair(0.72f, 0.37f)
+                position = Pair(0.28f, 0.41f)
             ),
             AnimatedElementState(
                 id = "mount_venus",
@@ -300,7 +304,7 @@ fun MysticSplashScreen(
                 name = "Mount of Venus",
                 color = Color(0xFFFF69B4), // Hot Pink
                 symbol = "♀",
-                position = Pair(0.34f, 0.72f)
+                position = Pair(0.65f, 0.72f)
             ),
             AnimatedElementState(
                 id = "mount_mars_lower",
@@ -308,7 +312,7 @@ fun MysticSplashScreen(
                 name = "Lower Mars",
                 color = Color(0xFFFF0000), // Pure Red
                 symbol = "♂",
-                position = Pair(0.33f, 0.48f)
+                position = Pair(0.64f, 0.50f)
             ),
             AnimatedElementState(
                 id = "mount_mars_upper",
@@ -316,7 +320,7 @@ fun MysticSplashScreen(
                 name = "Upper Mars",
                 color = Color(0xFFFF4500), // Orange Red
                 symbol = "♂",
-                position = Pair(0.71f, 0.53f)
+                position = Pair(0.28f, 0.54f)
             ),
             AnimatedElementState(
                 id = "mount_moon",
@@ -324,7 +328,7 @@ fun MysticSplashScreen(
                 name = "Mount of Moon",
                 color = Color(0xFFE6E6FA), // Lavender
                 symbol = "☽",
-                position = Pair(0.71f, 0.73f)
+                position = Pair(0.29f, 0.74f)
             )
         )
     }
@@ -341,6 +345,40 @@ fun MysticSplashScreen(
         animationSpec = tween(durationMillis = 7500, easing = androidx.compose.animation.core.EaseOutCubic),
         label = "HandScale"
     )
+
+    var triggerFlash by remember { mutableStateOf(false) }
+    val titleFlashProgress by animateFloatAsState(
+        targetValue = if (triggerFlash) 0f else 1f, // starts at 1f (white flash) and decays to 0f (gold)
+        animationSpec = tween(durationMillis = 1500, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
+        label = "TitleFlash"
+    )
+
+    val titleAlpha by animateFloatAsState(
+        targetValue = if (titleVisible) 1f else 0f,
+        animationSpec = tween(1200),
+        label = "TitleAlpha"
+    )
+
+    val titleScale by animateFloatAsState(
+        targetValue = if (titleVisible) 1.05f else 0.82f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "TitleScale"
+    )
+
+    val titleGlowRadius by animateFloatAsState(
+        targetValue = if (titleVisible) 22f else 0f,
+        animationSpec = tween(2000, delayMillis = 500),
+        label = "TitleGlowRadius"
+    )
+
+    fun lerpColor(start: Color, end: Color, fraction: Float): Color {
+        return Color(
+            red = start.red + (end.red - start.red) * fraction,
+            green = start.green + (end.green - start.green) * fraction,
+            blue = start.blue + (end.blue - start.blue) * fraction,
+            alpha = start.alpha + (end.alpha - start.alpha) * fraction
+        )
+    }
 
     LaunchedEffect(Unit) {
         // Zoom-in hand slowly
@@ -376,6 +414,7 @@ fun MysticSplashScreen(
         delay(800)
         pulseLines = true
         titleVisible = true
+        triggerFlash = true
         
         // Final presentation before automatic skip
         delay(2500)
@@ -529,27 +568,115 @@ fun MysticSplashScreen(
                         visible = titleVisible,
                         enter = fadeIn() + slideInVertically(initialOffsetY = { -30 })
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .graphicsLayer(
+                                        alpha = titleAlpha,
+                                        scaleX = titleScale,
+                                        scaleY = titleScale
+                                    )
+                            ) {
+                                val uppercaseTitle = strings.appName.uppercase()
+                                
+                                // 1. Glow underlay (Creates soft halo glow)
+                                Text(
+                                    text = uppercaseTitle,
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = Color.Transparent,
+                                        fontSize = 42.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 6.sp,
+                                        shadow = Shadow(
+                                            color = MysticGold.copy(alpha = titleAlpha * 0.9f),
+                                            offset = Offset(0f, 0f),
+                                            blurRadius = titleGlowRadius
+                                        )
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
+                                )
+                                
+                                // 2. Outer contour / outline layer (Dark backing)
+                                Text(
+                                    text = uppercaseTitle,
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = Color.Black,
+                                        fontSize = 42.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 6.sp,
+                                        drawStyle = Stroke(
+                                            width = 12f, // thick backing outline
+                                            join = StrokeJoin.Round
+                                        )
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
+                                )
+                                
+                                // 3. Golden contour / outline layer
+                                Text(
+                                    text = uppercaseTitle,
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = MysticGold.copy(alpha = 0.85f),
+                                        fontSize = 42.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 6.sp,
+                                        drawStyle = Stroke(
+                                            width = 4f, // fine gold outline
+                                            join = StrokeJoin.Round
+                                        )
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
+                                )
+                                
+                                // 4. Main inner text layer with brightness flash
+                                val flashColor = lerpColor(MysticGold, Color.White, titleFlashProgress)
+                                Text(
+                                    text = uppercaseTitle,
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        color = flashColor,
+                                        fontSize = 42.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 6.sp
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Highlighted, high-legibility subtitle
                             Text(
-                                text = strings.appName.uppercase(),
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    color = MysticGold,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 3.sp
-                                ),
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = strings.splashLogoSubtitle,
+                                text = strings.splashLogoSubtitle.uppercase(),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MysticBronze,
-                                    letterSpacing = 1.5.sp,
-                                    fontSize = 10.sp
+                                    color = MysticGold.copy(alpha = 0.95f),
+                                    letterSpacing = 2.5.sp,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    shadow = Shadow(
+                                        color = Color.Black,
+                                        offset = Offset(0f, 2f),
+                                        blurRadius = 6f
+                                    )
                                 ),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(horizontal = 24.dp)
+                                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     }
