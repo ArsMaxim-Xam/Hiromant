@@ -2321,10 +2321,35 @@ fun SelectableInterpretationText(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
+    spokenWordRange: Pair<Int, Int>? = null,
     onSpeakSelected: (String) -> Unit,
     onReadFromCursor: (Int) -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
+    var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+    
+    val startOffset = spokenWordRange?.first
+    LaunchedEffect(startOffset) {
+        if (startOffset != null && textLayoutResult != null) {
+            try {
+                val layout = textLayoutResult!!
+                val line = layout.getLineForOffset(startOffset)
+                val lineTop = layout.getLineTop(line)
+                val lineBottom = layout.getLineBottom(line)
+                val viewportHeight = scrollState.viewportSize
+                if (viewportHeight > 0) {
+                    val targetScroll = (lineTop + lineBottom) / 2f - viewportHeight / 2f
+                    val clampedScroll = targetScroll.coerceIn(0f, scrollState.maxValue.toFloat()).toInt()
+                    scrollState.animateScrollTo(clampedScroll)
+                } else {
+                    scrollState.animateScrollTo(lineTop.toInt())
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     
     Box(modifier = modifier) {
         BasicTextField(
@@ -2337,10 +2362,11 @@ fun SelectableInterpretationText(
                 fontFamily = FontFamily.Default,
                 lineHeight = 24.sp
             ),
+            onTextLayout = { textLayoutResult = it },
             cursorBrush = SolidColor(Color.Transparent),
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp)
                 .padding(top = 60.dp)
         )
@@ -2572,24 +2598,62 @@ fun ResultsScreen(
     }
 
     fun applyTtsSettings() {
+        val isFemale = ttsGenderState == "Female"
         tts?.setSpeechRate(ttsRateState)
-        tts?.setPitch(if (ttsGenderState == "Female") 1.25f else 0.85f)
+        tts?.setPitch(if (isFemale) 1.35f else 0.75f)
         try {
             val currentLocale = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
-            val voices = tts?.voices
-            val selectedVoice = voices?.find { voice ->
-                val nameLower = voice.name.lowercase(Locale.US)
-                voice.locale.language == currentLocale.language &&
-                if (ttsGenderState == "Female") {
-                    nameLower.contains("female") || nameLower.contains("f-local") || nameLower.contains("ruf")
-                } else {
-                    nameLower.contains("male") || nameLower.contains("m-local") || nameLower.contains("rum")
+            val voices = tts?.voices?.toList() ?: emptyList()
+            val langVoices = voices.filter { it.locale.language == currentLocale.language }
+            
+            if (langVoices.isNotEmpty()) {
+                val femaleVoices = langVoices.filter { voice ->
+                    val nameLower = voice.name.lowercase(Locale.US)
+                    nameLower.contains("female") || 
+                    nameLower.contains("f-local") || 
+                    nameLower.contains("ruf") || 
+                    nameLower.contains("dfc") || 
+                    nameLower.contains("dfh") || 
+                    nameLower.contains("rua") || 
+                    nameLower.contains("ruc") || 
+                    nameLower.contains("rue") ||
+                    nameLower.contains("ru-ru-a") ||
+                    nameLower.contains("ru-ru-c") ||
+                    nameLower.contains("ru-ru-e") ||
+                    nameLower.contains("-f-") ||
+                    nameLower.contains("-f_") ||
+                    nameLower.contains("_f_")
                 }
-            } ?: voices?.find { voice ->
-                voice.locale.language == currentLocale.language
-            }
-            if (selectedVoice != null) {
-                tts?.voice = selectedVoice
+                
+                val maleVoices = langVoices.filter { voice ->
+                    val nameLower = voice.name.lowercase(Locale.US)
+                    nameLower.contains("male") || 
+                    nameLower.contains("m-local") || 
+                    nameLower.contains("rum") || 
+                    nameLower.contains("dfd") || 
+                    nameLower.contains("dfg") || 
+                    nameLower.contains("rub") || 
+                    nameLower.contains("rud") ||
+                    nameLower.contains("ru-ru-b") ||
+                    nameLower.contains("ru-ru-d") ||
+                    nameLower.contains("-m-") ||
+                    nameLower.contains("-m_") ||
+                    nameLower.contains("_m_")
+                }
+                
+                val selectedVoice = if (isFemale) {
+                    femaleVoices.firstOrNull() 
+                        ?: langVoices.firstOrNull { it !in maleVoices } 
+                        ?: langVoices.firstOrNull()
+                } else {
+                    maleVoices.firstOrNull() 
+                        ?: langVoices.firstOrNull { it !in femaleVoices } 
+                        ?: langVoices.firstOrNull()
+                }
+                
+                if (selectedVoice != null) {
+                    tts?.voice = selectedVoice
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -2727,6 +2791,7 @@ fun ResultsScreen(
                                     value = reportTextState,
                                     onValueChange = { reportTextState = it },
                                     modifier = Modifier.fillMaxSize(),
+                                    spokenWordRange = spokenWordRange,
                                     onSpeakSelected = { selectedText ->
                                         tts?.stop()
                                         applyTtsSettings()
@@ -2907,6 +2972,7 @@ fun ResultsScreen(
                                 value = mapTextState,
                                 onValueChange = { mapTextState = it },
                                 modifier = Modifier.fillMaxSize(),
+                                spokenWordRange = spokenWordRange,
                                 onSpeakSelected = { selectedText ->
                                     tts?.stop()
                                     applyTtsSettings()
