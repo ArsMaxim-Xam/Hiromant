@@ -590,9 +590,9 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = Color.Transparent,
-                                        fontSize = 42.sp,
+                                        fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
-                                        letterSpacing = 6.sp,
+                                        letterSpacing = 4.sp,
                                         shadow = Shadow(
                                             color = MysticGold.copy(alpha = titleAlpha * 0.9f),
                                             offset = Offset(0f, 0f),
@@ -609,9 +609,9 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = Color.Black,
-                                        fontSize = 42.sp,
+                                        fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
-                                        letterSpacing = 6.sp,
+                                        letterSpacing = 4.sp,
                                         drawStyle = Stroke(
                                             width = 12f, // thick backing outline
                                             join = StrokeJoin.Round
@@ -627,9 +627,9 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = MysticGold.copy(alpha = 0.85f),
-                                        fontSize = 42.sp,
+                                        fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
-                                        letterSpacing = 6.sp,
+                                        letterSpacing = 4.sp,
                                         drawStyle = Stroke(
                                             width = 4f, // fine gold outline
                                             join = StrokeJoin.Round
@@ -646,9 +646,9 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = flashColor,
-                                        fontSize = 42.sp,
+                                        fontSize = 28.sp,
                                         fontWeight = FontWeight.Bold,
-                                        letterSpacing = 6.sp
+                                        letterSpacing = 4.sp
                                     ),
                                     maxLines = 1,
                                     softWrap = false,
@@ -662,7 +662,7 @@ fun MysticSplashScreen(
                             Text(
                                 text = strings.splashLogoSubtitle.uppercase(),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MysticGold.copy(alpha = 0.95f),
+                                    color = Color(0xFFFFF1C5),
                                     letterSpacing = 2.5.sp,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -675,8 +675,8 @@ fun MysticSplashScreen(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .padding(horizontal = 24.dp)
-                                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -2496,7 +2496,8 @@ fun SelectableInterpretationText(
     modifier: Modifier = Modifier,
     spokenWordRange: Pair<Int, Int>? = null,
     onSpeakSelected: (String) -> Unit,
-    onReadFromCursor: (Int) -> Unit
+    onReadFromCursor: (Int) -> Unit,
+    bottomContent: @Composable () -> Unit = {}
 ) {
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
@@ -2527,25 +2528,32 @@ fun SelectableInterpretationText(
     var isFocused by remember { mutableStateOf(false) }
     
     Box(modifier = modifier) {
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            readOnly = true,
-            textStyle = TextStyle(
-                color = Color.White,
-                fontSize = 16.sp,
-                fontFamily = FontFamily.Default,
-                lineHeight = 24.sp
-            ),
-            onTextLayout = { textLayoutResult = it },
-            cursorBrush = SolidColor(MysticGold),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(16.dp)
-                .padding(top = 60.dp)
-                .onFocusChanged { isFocused = it.isFocused }
-        )
+                .padding(horizontal = 16.dp)
+                .padding(top = 60.dp, bottom = 24.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                readOnly = true,
+                textStyle = TextStyle(
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontFamily = FontFamily.Default,
+                    lineHeight = 24.sp
+                ),
+                onTextLayout = { textLayoutResult = it },
+                cursorBrush = SolidColor(MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused }
+            )
+            
+            bottomContent()
+        }
         
         if (isFocused) {
             Box(
@@ -3038,116 +3046,113 @@ fun ResultsScreen(
             if (palmistReport != null) {
                 if (activeTab == "report") {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                SelectableInterpretationText(
-                                    value = reportTextState,
-                                    onValueChange = { reportTextState = it },
-                                    modifier = Modifier.fillMaxSize(),
-                                    spokenWordRange = spokenWordRange,
-                                    onSpeakSelected = { selectedText ->
-                                        tts?.stop()
-                                        applyTtsSettings()
-                                        ttsOffset = reportTextState.selection.start
-                                        val params = android.os.Bundle().apply {
-                                            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
-                                        }
-                                        tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
-                                        isPlayingTts = true
-                                    },
-                                    onReadFromCursor = { cursorIndex ->
-                                        speakTextFromIndex(reportTextState.text, cursorIndex)
-                                    }
-                                )
-                                
-                                TtsVoiceController(
-                                    isPlaying = isPlayingTts,
-                                    onPlayToggle = {
-                                        if (isPlayingTts) {
-                                            tts?.stop()
-                                            isPlayingTts = false
-                                            spokenWordRange = null
-                                        } else {
-                                            speakTextFromIndex(reportTextState.text, 0)
-                                        }
-                                    },
-                                    rate = ttsRateState,
-                                    onRateChange = { newRate ->
-                                        ttsRateState = newRate
-                                        tts?.setSpeechRate(newRate)
-                                        if (isPlayingTts) {
-                                            val currentWordStart = spokenWordRange?.first ?: 0
-                                            speakTextFromIndex(reportTextState.text, currentWordStart)
-                                        }
-                                    },
-                                    gender = ttsGenderState,
-                                    onGenderChange = { newGender ->
-                                        ttsGenderState = newGender
-                                        applyTtsSettings()
-                                        if (isPlayingTts) {
-                                            val currentWordStart = spokenWordRange?.first ?: 0
-                                            speakTextFromIndex(reportTextState.text, currentWordStart)
-                                        }
-                                    },
-                                    maleVoices = maleVoicesList,
-                                    femaleVoices = femaleVoicesList,
-                                    selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
-                                    onVoiceSelected = { voice ->
-                                        if (ttsGenderState == "Female") {
-                                            selectedFemaleVoice = voice
-                                        } else {
-                                            selectedMaleVoice = voice
-                                        }
-                                        applyTtsSettings()
-                                        if (isPlayingTts) {
-                                            val currentWordStart = spokenWordRange?.first ?: 0
-                                            speakTextFromIndex(reportTextState.text, currentWordStart)
-                                        }
-                                    },
+                        SelectableInterpretationText(
+                            value = reportTextState,
+                            onValueChange = { reportTextState = it },
+                            modifier = Modifier.fillMaxSize(),
+                            spokenWordRange = spokenWordRange,
+                            onSpeakSelected = { selectedText ->
+                                tts?.stop()
+                                applyTtsSettings()
+                                ttsOffset = reportTextState.selection.start
+                                val params = android.os.Bundle().apply {
+                                    putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
+                                }
+                                tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
+                                isPlayingTts = true
+                            },
+                            onReadFromCursor = { cursorIndex ->
+                                speakTextFromIndex(reportTextState.text, cursorIndex)
+                            },
+                            bottomContent = {
+                                Column(
                                     modifier = Modifier
-                                        .align(Alignment.TopStart)
-                                        .padding(16.dp)
-                                )
+                                        .fillMaxWidth()
+                                        .padding(top = 24.dp, bottom = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    MysticButton(
+                                        text = strings.resExportPdf,
+                                        onClick = {
+                                            Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
+                                        },
+                                        isSecondary = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    
+                                    Text(
+                                        text = "MONETIZATION PREMIUM UNLOCKS:",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    
+                                    MysticButton(
+                                        text = strings.resBtnBuy10,
+                                        onClick = {
+                                            viewModel.simulateBuySubscription()
+                                            Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    
+                                    MysticButton(
+                                        text = strings.resBtnBuyCompat,
+                                        onClick = onNavigateToCompatibility,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        isSecondary = true
+                                    )
+                                }
                             }
-                            
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                MysticButton(
-                                    text = strings.resExportPdf,
-                                    onClick = {
-                                        Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
-                                    },
-                                    isSecondary = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                
-                                Text(
-                                    text = "MONETIZATION PREMIUM UNLOCKS:",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                
-                                MysticButton(
-                                    text = strings.resBtnBuy10,
-                                    onClick = {
-                                        viewModel.simulateBuySubscription()
-                                        Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                
-                                MysticButton(
-                                    text = strings.resBtnBuyCompat,
-                                    onClick = onNavigateToCompatibility,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    isSecondary = true
-                                )
-                            }
-                        }
+                        )
+                        
+                        TtsVoiceController(
+                            isPlaying = isPlayingTts,
+                            onPlayToggle = {
+                                if (isPlayingTts) {
+                                    tts?.stop()
+                                    isPlayingTts = false
+                                    spokenWordRange = null
+                                } else {
+                                    speakTextFromIndex(reportTextState.text, 0)
+                                }
+                            },
+                            rate = ttsRateState,
+                            onRateChange = { newRate ->
+                                ttsRateState = newRate
+                                tts?.setSpeechRate(newRate)
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(reportTextState.text, currentWordStart)
+                                }
+                            },
+                            gender = ttsGenderState,
+                            onGenderChange = { newGender ->
+                                ttsGenderState = newGender
+                                applyTtsSettings()
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(reportTextState.text, currentWordStart)
+                                }
+                            },
+                            maleVoices = maleVoicesList,
+                            femaleVoices = femaleVoicesList,
+                            selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
+                            onVoiceSelected = { voice ->
+                                if (ttsGenderState == "Female") {
+                                    selectedFemaleVoice = voice
+                                } else {
+                                    selectedMaleVoice = voice
+                                }
+                                applyTtsSettings()
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(reportTextState.text, currentWordStart)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(16.dp)
+                        )
                     }
                 } else {
                     Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
