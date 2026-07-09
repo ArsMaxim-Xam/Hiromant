@@ -60,6 +60,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 
 // --- SCREEN 0: LANGUAGE SELECTION ---
 
@@ -2167,6 +2177,338 @@ fun MysticLoadingScreen(
 
 // --- SCREEN 6: ANALYSIS RESULTS + INTERACTIVE LINES OVERLAY ---
 
+fun buildReportAnnotatedString(
+    report: com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport,
+    strings: com.aistudio.hiromant.kxsrwa.ui.language.PalmistStrings,
+    spokenWordRange: Pair<Int, Int>?
+): AnnotatedString {
+    return buildAnnotatedString {
+        fun appendHeader(text: String) {
+            withStyle(SpanStyle(color = MysticGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+                append(text)
+            }
+            append("\n")
+        }
+        
+        fun appendBody(text: String) {
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(text)
+            }
+            append("\n\n")
+        }
+        
+        appendHeader(strings.resOverallPortrait)
+        appendBody(report.overallPortrait)
+        
+        appendHeader(strings.resHandType)
+        appendBody(report.handType)
+        
+        appendHeader(strings.resMountsHeader)
+        report.mounts.forEach { mount ->
+            withStyle(SpanStyle(color = MysticGold, fontWeight = FontWeight.Bold, fontSize = 16.sp)) {
+                append("${mount.name}: ")
+            }
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(mount.description)
+            }
+            append("\n")
+        }
+        append("\n")
+        
+        appendHeader(strings.resSignsHeader)
+        report.signs.forEach { sign ->
+            withStyle(SpanStyle(color = MysticGold, fontWeight = FontWeight.Bold, fontSize = 16.sp)) {
+                append("${sign.name} (${sign.location}): ")
+            }
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(sign.description)
+            }
+            append("\n")
+        }
+        append("\n")
+        
+        appendHeader(strings.resMarriageChildren)
+        appendBody(report.marriageChildren)
+        
+        appendHeader(strings.resLifeEvents)
+        appendBody(report.lifeEvents)
+        
+        appendHeader(strings.resPredictions)
+        appendBody(report.predictions)
+        
+        appendHeader(strings.resRecommendations)
+        appendBody(report.recommendations)
+        
+        appendHeader(strings.resInheritedPotentials)
+        appendBody(report.leftHand)
+        
+        appendHeader(strings.resAcquiredTraits)
+        appendBody(report.rightHand)
+        
+        // Apply highlight on spokenWordRange if present
+        spokenWordRange?.let { (start, end) ->
+            if (start in 0..length && end in start..length) {
+                addStyle(
+                    style = SpanStyle(
+                        background = MysticGold.copy(alpha = 0.4f),
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    start = start,
+                    end = end
+                )
+            }
+        }
+    }
+}
+
+fun buildLinesAnnotatedString(
+    lines: List<com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis>,
+    spokenWordRange: Pair<Int, Int>?,
+    onLineRangesCalculated: (Map<String, IntRange>) -> Unit
+): AnnotatedString {
+    val ranges = mutableMapOf<String, IntRange>()
+    val annotated = buildAnnotatedString {
+        lines.forEach { line ->
+            val startIdx = length
+            
+            withStyle(SpanStyle(color = MysticGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+                append(line.name)
+            }
+            append("\n")
+            
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(line.fullDescription)
+            }
+            append("\n")
+            
+            line.keyTakeaways.forEach { takeaway ->
+                withStyle(SpanStyle(color = MysticBronze, fontSize = 14.sp)) {
+                    append("• ")
+                }
+                withStyle(SpanStyle(color = Color(0xFFC0C0D0), fontSize = 14.sp)) {
+                    append(takeaway)
+                }
+                append("\n")
+            }
+            append("\n")
+            
+            val endIdx = length
+            ranges[line.name] = startIdx until endIdx
+        }
+        
+        // Apply highlight on spokenWordRange if present
+        spokenWordRange?.let { (start, end) ->
+            if (start in 0..length && end in start..length) {
+                addStyle(
+                    style = SpanStyle(
+                        background = MysticGold.copy(alpha = 0.4f),
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    start = start,
+                    end = end
+                )
+            }
+        }
+    }
+    onLineRangesCalculated(ranges)
+    return annotated
+}
+
+@Composable
+fun SelectableInterpretationText(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    modifier: Modifier = Modifier,
+    onSpeakSelected: (String) -> Unit,
+    onReadFromCursor: (Int) -> Unit
+) {
+    val clipboardManager = LocalClipboardManager.current
+    
+    Box(modifier = modifier) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            readOnly = true,
+            textStyle = TextStyle(
+                color = Color.White,
+                fontSize = 16.sp,
+                fontFamily = FontFamily.Default,
+                lineHeight = 24.sp
+            ),
+            cursorBrush = SolidColor(Color.Transparent),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .padding(top = 60.dp)
+        )
+        
+        if (value.selection.length > 0) {
+            val selectedText = value.text.substring(value.selection.start, value.selection.end)
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                    border = BorderStroke(1.dp, MysticGold),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(selectedText))
+                                onValueChange(value.copy(selection = TextRange.Zero))
+                            }
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MysticGold, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Копировать", color = MysticGold, fontSize = 12.sp)
+                        }
+                        
+                        TextButton(
+                            onClick = {
+                                onSpeakSelected(selectedText)
+                            }
+                        ) {
+                            Icon(Icons.Default.VolumeUp, contentDescription = "Speak", tint = MysticGold, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("ОЗВУЧИТЬ", color = MysticGold, fontSize = 12.sp)
+                        }
+                        
+                        TextButton(
+                            onClick = {
+                                onReadFromCursor(value.selection.start)
+                            }
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Read from cursor", tint = MysticGold, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("От курсора", color = MysticGold, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TtsVoiceController(
+    isPlaying: Boolean,
+    onPlayToggle: () -> Unit,
+    rate: Float,
+    onRateChange: (Float) -> Unit,
+    gender: String,
+    onGenderChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .background(Color(0xBB000000), RoundedCornerShape(22.dp))
+            .border(1.dp, MysticBronze.copy(0.4f), RoundedCornerShape(22.dp))
+            .padding(4.dp)
+            .animateContentSize()
+    ) {
+        IconButton(
+            onClick = {
+                expanded = !expanded
+                onPlayToggle()
+            },
+            modifier = Modifier
+                .size(36.dp)
+                .background(MysticGold, CircleShape)
+        ) {
+            Text(
+                text = if (isPlaying) "||" else ">",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+        }
+        
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandHorizontally(),
+            exit = fadeOut() + shrinkHorizontally()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                IconButton(
+                    onClick = { onGenderChange("Male") },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            if (gender == "Male") MysticGold else Color.White.copy(0.1f),
+                            CircleShape
+                        )
+                        .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
+                ) {
+                    Text(
+                        text = "м",
+                        color = if (gender == "Male") Color.Black else Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Slider(
+                    value = rate,
+                    onValueChange = onRateChange,
+                    valueRange = 0.5f..2.0f,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = MysticGold,
+                        inactiveTrackColor = Color.Gray,
+                        thumbColor = MysticGold
+                    ),
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(32.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                IconButton(
+                    onClick = { onGenderChange("Female") },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            if (gender == "Female") MysticGold else Color.White.copy(0.1f),
+                            CircleShape
+                        )
+                        .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
+                ) {
+                    Text(
+                        text = "ж",
+                        color = if (gender == "Female") Color.Black else Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ResultsScreen(
     viewModel: PalmistViewModel,
@@ -2202,14 +2544,19 @@ fun ResultsScreen(
     var isPlayingTts by remember { mutableStateOf(false) }
     var ttsGenderState by remember { mutableStateOf("Female") } // "Male" or "Female"
     var ttsRateState by remember { mutableStateOf(1.0f) }
+    var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var activeLineName by remember { mutableStateOf<String?>(null) }
+    var ttsOffset by remember { mutableStateOf(0) }
 
-    var activeLineBlockIndex by remember { mutableStateOf(-1) }
     val lineReadingBlocks = remember(palmistReport) {
         palmistReport?.lines ?: emptyList()
     }
 
     val scope = rememberCoroutineScope()
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    // Selectable Text Field states
+    var reportTextState by remember { mutableStateOf(TextFieldValue()) }
+    var mapTextState by remember { mutableStateOf(TextFieldValue()) }
 
     // Initialize Android TTS
     DisposableEffect(Unit) {
@@ -2224,6 +2571,60 @@ fun ResultsScreen(
         }
     }
 
+    fun applyTtsSettings() {
+        tts?.setSpeechRate(ttsRateState)
+        tts?.setPitch(if (ttsGenderState == "Female") 1.25f else 0.85f)
+        try {
+            val currentLocale = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
+            val voices = tts?.voices
+            val selectedVoice = voices?.find { voice ->
+                val nameLower = voice.name.lowercase(Locale.US)
+                voice.locale.language == currentLocale.language &&
+                if (ttsGenderState == "Female") {
+                    nameLower.contains("female") || nameLower.contains("f-local") || nameLower.contains("ruf")
+                } else {
+                    nameLower.contains("male") || nameLower.contains("m-local") || nameLower.contains("rum")
+                }
+            } ?: voices?.find { voice ->
+                voice.locale.language == currentLocale.language
+            }
+            if (selectedVoice != null) {
+                tts?.voice = selectedVoice
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    val lineRanges = remember { mutableStateMapOf<String, IntRange>() }
+
+    val reportAnnotatedString = remember(palmistReport, strings, spokenWordRange) {
+        if (palmistReport != null) {
+            buildReportAnnotatedString(palmistReport, strings, spokenWordRange)
+        } else {
+            AnnotatedString("")
+        }
+    }
+
+    val mapAnnotatedString = remember(palmistReport, spokenWordRange) {
+        if (palmistReport != null) {
+            buildLinesAnnotatedString(palmistReport.lines, spokenWordRange) { calculatedRanges ->
+                lineRanges.clear()
+                lineRanges.putAll(calculatedRanges)
+            }
+        } else {
+            AnnotatedString("")
+        }
+    }
+
+    LaunchedEffect(reportAnnotatedString) {
+        reportTextState = reportTextState.copy(annotatedString = reportAnnotatedString)
+    }
+
+    LaunchedEffect(mapAnnotatedString) {
+        mapTextState = mapTextState.copy(annotatedString = mapAnnotatedString)
+    }
+
     DisposableEffect(tts) {
         tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
@@ -2233,17 +2634,31 @@ fun ResultsScreen(
             }
             override fun onDone(utteranceId: String?) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    if (activeLineBlockIndex < lineReadingBlocks.size - 1) {
-                        activeLineBlockIndex++
-                    } else {
-                        isPlayingTts = false
-                        activeLineBlockIndex = -1
-                    }
+                    isPlayingTts = false
+                    spokenWordRange = null
+                    activeLineName = null
                 }
             }
             override fun onError(utteranceId: String?) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     isPlayingTts = false
+                }
+            }
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    val absStart = start + ttsOffset
+                    val absEnd = end + ttsOffset
+                    spokenWordRange = Pair(absStart, absEnd)
+                    
+                    if (activeTab == "map") {
+                        val activeLine = lineReadingBlocks.find { line ->
+                            val range = lineRanges[line.name]
+                            range != null && absStart in range
+                        }
+                        if (activeLine != null) {
+                            activeLineName = activeLine.name
+                        }
+                    }
                 }
             }
         })
@@ -2252,36 +2667,19 @@ fun ResultsScreen(
         }
     }
 
-    LaunchedEffect(activeLineBlockIndex, isPlayingTts) {
-        if (isPlayingTts && activeLineBlockIndex in lineReadingBlocks.indices) {
-            val line = lineReadingBlocks[activeLineBlockIndex]
-            val textToSpeak = "${line.name}. ${line.fullDescription}"
-            
-            tts?.setPitch(if (ttsGenderState == "Female") 1.25f else 0.85f)
-            tts?.setSpeechRate(ttsRateState)
-            
-            val params = android.os.Bundle().apply {
-                putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "line_$activeLineBlockIndex")
-            }
-            tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "line_$activeLineBlockIndex")
-            
-            try {
-                listState.animateScrollToItem(activeLineBlockIndex + 3)
-            } catch (e: Exception) {}
+    fun speakTextFromIndex(text: String, startIndex: Int) {
+        if (text.isEmpty()) return
+        tts?.stop()
+        applyTtsSettings()
+        
+        val textToSpeak = text.substring(startIndex)
+        val params = android.os.Bundle().apply {
+            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "reading_text")
         }
-    }
-
-    fun playTtsOfLines() {
-        if (lineReadingBlocks.isEmpty()) return
-        if (isPlayingTts) {
-            tts?.stop()
-            isPlayingTts = false
-        } else {
-            if (activeLineBlockIndex !in lineReadingBlocks.indices) {
-                activeLineBlockIndex = 0
-            }
-            isPlayingTts = true
-        }
+        
+        ttsOffset = startIndex
+        tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
+        isPlayingTts = true
     }
 
     Box(
@@ -2322,501 +2720,241 @@ fun ResultsScreen(
 
             if (palmistReport != null) {
                 if (activeTab == "report") {
-                    // --- SCROLLABLE REPORT TEXT VIEWS ---
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Overall summary
-                            Text(
-                                text = strings.resOverallPortrait,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = palmistReport.overallPortrait,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Hand Type
-                            Text(
-                                text = strings.resHandType,
-                                style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                            )
-                            Text(
-                                text = palmistReport.handType,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MysticBronze,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Divider(color = MysticBronze.copy(0.3f))
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Mounts
-                            Text(
-                                text = strings.resMountsHeader,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-
-                        // Mounts list
-                        items(palmistReport.mounts) { mount ->
-                            MountReportRow(mount)
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Divider(color = MysticBronze.copy(0.3f))
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Signs
-                            Text(
-                                text = strings.resSignsHeader,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-
-                        // Signs list
-                        items(palmistReport.signs) { sign ->
-                            SignReportCard(sign)
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Divider(color = MysticBronze.copy(0.3f))
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Relationship marriage kids
-                            Text(
-                                text = strings.resMarriageChildren,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = palmistReport.marriageChildren,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Historical key transitions
-                            Text(
-                                text = strings.resLifeEvents,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = palmistReport.lifeEvents,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Forecasts
-                            Text(
-                                text = strings.resPredictions,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = palmistReport.predictions,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Practical guidelines
-                            Text(
-                                text = strings.resRecommendations,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = palmistReport.recommendations,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            // Active hands divisions
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-                                    border = BorderStroke(1.dp, MysticBronze.copy(0.2f))
-                                ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(
-                                            text = strings.resInheritedPotentials,
-                                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = palmistReport.leftHand, fontSize = 12.sp, color = Color.White)
-                                    }
-                                }
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-                                    border = BorderStroke(1.dp, MysticBronze.copy(0.2f))
-                                ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(
-                                            text = strings.resAcquiredTraits,
-                                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = palmistReport.rightHand, fontSize = 12.sp, color = Color.White)
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Share / Export to PDF
-                            MysticButton(
-                                text = strings.resExportPdf,
-                                onClick = {
-                                    Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
-                                },
-                                isSecondary = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Subscriptions buy panel
-                            Text(
-                                text = "MONETIZATION PREMIUM UNLOCKS:",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            MysticButton(
-                                text = strings.resBtnBuy10,
-                                onClick = {
-                                    viewModel.simulateBuySubscription()
-                                    Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            MysticButton(
-                                text = strings.resBtnBuyCompat,
-                                onClick = onNavigateToCompatibility,
-                                modifier = Modifier.fillMaxWidth(),
-                                isSecondary = true
-                            )
-
-                            Spacer(modifier = Modifier.height(40.dp))
-                        }
-                    }
-                } else {
-                    // --- MAP VIEW TAB WITH ACTIVE TAP CLICKS ---
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        // 1. Palm Map Box
-                        item {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(350.dp)
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                Canvas(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .pointerInput(Unit) {
-                                            detectTapGestures(
-                                                onTap = { offset ->
-                                                    val w = size.width.toFloat()
-                                                    val h = size.height.toFloat()
-                                                    
-                                                    // Elementary bounding boxes for line points
-                                                    val xPct = offset.x / w
-                                                    val yPct = offset.y / h
-                                                    
-                                                    val tappedLine = if (yPct in 0.4f..0.55f && xPct in 0.25f..0.7f) {
-                                                        palmistReport.lines.find { it.name.contains("Серд") || it.name.contains("Heart") }
-                                                    } else if (yPct in 0.52f..0.62f && xPct in 0.25f..0.7f) {
-                                                        palmistReport.lines.find { it.name.contains("Голо") || it.name.contains("Head") }
-                                                    } else if (yPct in 0.58f..0.85f && xPct in 0.2f..0.55f) {
-                                                        palmistReport.lines.find { it.name.contains("Жизн") || it.name.contains("Life") }
-                                                    } else if (xPct in 0.45f..0.58f && yPct in 0.35f..0.8f) {
-                                                        palmistReport.lines.find { it.name.contains("Судь") || it.name.contains("Destiny") }
-                                                    } else null
-
-                                                    if (tappedLine != null) {
-                                                        // When tapped on the canvas line, set active TTS line block and start speaking!
-                                                        val lineIndex = palmistReport.lines.indexOf(tappedLine)
-                                                        if (lineIndex != -1) {
-                                                            activeLineBlockIndex = lineIndex
-                                                            isPlayingTts = true
-                                                        }
-                                                    }
-                                                }
-                                            )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                SelectableInterpretationText(
+                                    value = reportTextState,
+                                    onValueChange = { reportTextState = it },
+                                    modifier = Modifier.fillMaxSize(),
+                                    onSpeakSelected = { selectedText ->
+                                        tts?.stop()
+                                        applyTtsSettings()
+                                        ttsOffset = reportTextState.selection.start
+                                        val params = android.os.Bundle().apply {
+                                            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
                                         }
-                                ) {
-                                    val w = size.width
-                                    val h = size.height
-
-                                    // Draw palm base background
-                                    drawCircle(
-                                        color = Color(0x331E1E2D),
-                                        radius = w * 0.45f
-                                    )
-
-                                    // Heart line (Pink)
-                                    val heartPath = Path().apply {
-                                        moveTo(w * 0.3f, h * 0.48f)
-                                        quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
+                                        tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
+                                        isPlayingTts = true
+                                    },
+                                    onReadFromCursor = { cursorIndex ->
+                                        speakTextFromIndex(reportTextState.text, cursorIndex)
                                     }
-                                    drawPath(
-                                        path = heartPath,
-                                        color = LineHeartColor,
-                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-
-                                    // Head line (Blue)
-                                    val headPath = Path().apply {
-                                        moveTo(w * 0.28f, h * 0.52f)
-                                        quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
-                                    }
-                                    drawPath(
-                                        path = headPath,
-                                        color = LineHeadColor,
-                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-
-                                    // Life line (Red)
-                                    val lifePath = Path().apply {
-                                        moveTo(w * 0.28f, h * 0.52f)
-                                        quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
-                                    }
-                                    drawPath(
-                                        path = lifePath,
-                                        color = LineLifeColor,
-                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-
-                                    // Destiny line (Green)
-                                    val destinyPath = Path().apply {
-                                        moveTo(w * 0.52f, h * 0.8f)
-                                        quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
-                                    }
-                                    drawPath(
-                                        path = destinyPath,
-                                        color = LineDestinyColor,
-                                        style = Stroke(width = 6.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-                                }
+                                )
+                                
+                                TtsVoiceController(
+                                    isPlaying = isPlayingTts,
+                                    onPlayToggle = {
+                                        if (isPlayingTts) {
+                                            tts?.stop()
+                                            isPlayingTts = false
+                                            spokenWordRange = null
+                                        } else {
+                                            speakTextFromIndex(reportTextState.text, 0)
+                                        }
+                                    },
+                                    rate = ttsRateState,
+                                    onRateChange = { newRate ->
+                                        ttsRateState = newRate
+                                        tts?.setSpeechRate(newRate)
+                                        if (isPlayingTts) {
+                                            val currentWordStart = spokenWordRange?.first ?: 0
+                                            speakTextFromIndex(reportTextState.text, currentWordStart)
+                                        }
+                                    },
+                                    gender = ttsGenderState,
+                                    onGenderChange = { newGender ->
+                                        ttsGenderState = newGender
+                                        applyTtsSettings()
+                                        if (isPlayingTts) {
+                                            val currentWordStart = spokenWordRange?.first ?: 0
+                                            speakTextFromIndex(reportTextState.text, currentWordStart)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(16.dp)
+                                )
                             }
-                        }
-
-                        // 2. Click Tip
-                        item {
-                            Card(
+                            
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0x99000000))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
+                                MysticButton(
+                                    text = strings.resExportPdf,
+                                    onClick = {
+                                        Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
+                                    },
+                                    isSecondary = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
                                 Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Тапните по любой линии ладони или карточке ниже для прослушивания подробностей" else "Tap any line overlay on the palm or any card below to start speech description",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MysticGold,
-                                    modifier = Modifier.padding(12.dp),
-                                    textAlign = TextAlign.Center
+                                    text = "MONETIZATION PREMIUM UNLOCKS:",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                MysticButton(
+                                    text = strings.resBtnBuy10,
+                                    onClick = {
+                                        viewModel.simulateBuySubscription()
+                                        Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                MysticButton(
+                                    text = strings.resBtnBuyCompat,
+                                    onClick = onNavigateToCompatibility,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    isSecondary = true
                                 )
                             }
                         }
-
-                        // 3. TTS Player Control Card
-                        item {
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0x33B87333)),
-                                border = BorderStroke(1.dp, MysticBronze.copy(0.5f)),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = strings.resAudioTitle,
-                                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        // Play/Pause button and its label
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Старт/Пауза" else "Play/Pause",
-                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
-                                                modifier = Modifier.padding(bottom = 6.dp)
-                                            )
-                                            IconButton(
-                                                onClick = { playTtsOfLines() },
-                                                modifier = Modifier
-                                                    .size(44.dp)
-                                                    .background(MysticGold, CircleShape)
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (isPlayingTts) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                                    contentDescription = null,
-                                                    tint = Color.Black
-                                                )
-                                            }
-                                        }
-
-                                        // Stop button and its label
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Стоп" else "Stop",
-                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
-                                                modifier = Modifier.padding(bottom = 6.dp)
-                                            )
-                                            IconButton(
-                                                onClick = {
-                                                    tts?.stop()
-                                                    isPlayingTts = false
-                                                    activeLineBlockIndex = -1
-                                                },
-                                                modifier = Modifier
-                                                    .size(44.dp)
-                                                    .background(Color.White.copy(0.1f), CircleShape)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Stop,
-                                                    contentDescription = null,
-                                                    tint = Color.White
-                                                )
-                                            }
-                                        }
-
-                                        // Voice switch and its label
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            modifier = Modifier.weight(1.5f)
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Выбор голоса" else "Voice Selector",
-                                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
-                                                modifier = Modifier.padding(bottom = 6.dp)
-                                            )
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.height(44.dp)
-                                            ) {
-                                                Text(strings.resVoiceMale, fontSize = 11.sp, color = Color.White)
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Switch(
-                                                    checked = ttsGenderState == "Female",
-                                                    onCheckedChange = { ttsGenderState = if (it) "Female" else "Male" },
-                                                    colors = SwitchDefaults.colors(
-                                                        checkedThumbColor = MysticGold,
-                                                        checkedTrackColor = MysticBronze,
-                                                        uncheckedThumbColor = MysticBronze,
-                                                        uncheckedTrackColor = Color.DarkGray
-                                                    )
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(strings.resVoiceFemale, fontSize = 11.sp, color = Color.White)
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    // Speed slider
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(
-                                            text = "${strings.resVoiceSpeed}: ${String.format("%.1fx", ttsRateState)}",
-                                            style = MaterialTheme.typography.labelSmall.copy(color = MysticGold),
-                                            modifier = Modifier.padding(bottom = 4.dp)
-                                        )
-                                        Slider(
-                                            value = ttsRateState,
-                                            onValueChange = { newRate ->
-                                                ttsRateState = newRate
-                                                if (isPlayingTts && activeLineBlockIndex in lineReadingBlocks.indices) {
-                                                    val line = lineReadingBlocks[activeLineBlockIndex]
-                                                    val textToSpeak = "${line.name}. ${line.fullDescription}"
-                                                    tts?.setSpeechRate(newRate)
-                                                    val params = android.os.Bundle().apply {
-                                                        putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "line_$activeLineBlockIndex")
-                                                    }
-                                                    tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "line_$activeLineBlockIndex")
-                                                }
-                                            },
-                                            valueRange = 0.5f..2.0f,
-                                            colors = SliderDefaults.colors(
-                                                activeTrackColor = MysticGold,
-                                                thumbColor = MysticGold
-                                            )
-                                        )
-                                    }
+                    }
+                } else {
+                    Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val painter = rememberAsyncImagePainter(
+                                model = reading?.leftPalmPath ?: reading?.rightPalmPath ?: reading?.leftBackPath ?: reading?.rightBackPath
+                            )
+                            Image(
+                                painter = painter,
+                                contentDescription = "Hand Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+                            
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val w = size.width
+                                val h = size.height
+                                
+                                val isHeartActive = activeLineName?.let { it.contains("Серд") || it.contains("Heart") } ?: false
+                                val heartPath = Path().apply {
+                                    moveTo(w * 0.3f, h * 0.48f)
+                                    quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
                                 }
+                                drawPath(
+                                    path = heartPath,
+                                    color = if (isHeartActive) LineHeartColor else LineHeartColor.copy(alpha = 0.2f),
+                                    style = Stroke(
+                                        width = (if (isHeartActive) 14.dp else 6.dp).toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    )
+                                )
+                                
+                                val isHeadActive = activeLineName?.let { it.contains("Голо") || it.contains("Ум") || it.contains("Head") } ?: false
+                                val headPath = Path().apply {
+                                    moveTo(w * 0.28f, h * 0.52f)
+                                    quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
+                                }
+                                drawPath(
+                                    path = headPath,
+                                    color = if (isHeadActive) LineHeadColor else LineHeadColor.copy(alpha = 0.2f),
+                                    style = Stroke(
+                                        width = (if (isHeadActive) 14.dp else 6.dp).toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    )
+                                )
+                                
+                                val isLifeActive = activeLineName?.let { it.contains("Жизн") || it.contains("Life") } ?: false
+                                val lifePath = Path().apply {
+                                    moveTo(w * 0.28f, h * 0.52f)
+                                    quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
+                                }
+                                drawPath(
+                                    path = lifePath,
+                                    color = if (isLifeActive) LineLifeColor else LineLifeColor.copy(alpha = 0.2f),
+                                    style = Stroke(
+                                        width = (if (isLifeActive) 14.dp else 6.dp).toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    )
+                                )
+                                
+                                val isDestinyActive = activeLineName?.let { it.contains("Суд") || it.contains("Dest") } ?: false
+                                val destinyPath = Path().apply {
+                                    moveTo(w * 0.52f, h * 0.8f)
+                                    quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
+                                }
+                                drawPath(
+                                    path = destinyPath,
+                                    color = if (isDestinyActive) LineDestinyColor else LineDestinyColor.copy(alpha = 0.2f),
+                                    style = Stroke(
+                                        width = (if (isDestinyActive) 12.dp else 4.dp).toPx(),
+                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    )
+                                )
                             }
                         }
-
-                        // 4. Line report description cards
-                        items(lineReadingBlocks.size) { index ->
-                            val line = lineReadingBlocks[index]
-                            LineReportCard(
-                                line = line,
-                                isActive = (index == activeLineBlockIndex && isPlayingTts),
-                                onPlayClick = {
-                                    if (activeLineBlockIndex == index && isPlayingTts) {
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .background(MysticDarkBackground)
+                        ) {
+                            SelectableInterpretationText(
+                                value = mapTextState,
+                                onValueChange = { mapTextState = it },
+                                modifier = Modifier.fillMaxSize(),
+                                onSpeakSelected = { selectedText ->
+                                    tts?.stop()
+                                    applyTtsSettings()
+                                    ttsOffset = mapTextState.selection.start
+                                    val params = android.os.Bundle().apply {
+                                        putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
+                                    }
+                                    tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
+                                    isPlayingTts = true
+                                },
+                                onReadFromCursor = { cursorIndex ->
+                                    speakTextFromIndex(mapTextState.text, cursorIndex)
+                                }
+                            )
+                            
+                            TtsVoiceController(
+                                isPlaying = isPlayingTts,
+                                onPlayToggle = {
+                                    if (isPlayingTts) {
                                         tts?.stop()
                                         isPlayingTts = false
+                                        spokenWordRange = null
+                                        activeLineName = null
                                     } else {
-                                        activeLineBlockIndex = index
-                                        isPlayingTts = true
+                                        speakTextFromIndex(mapTextState.text, 0)
                                     }
-                                }
+                                },
+                                rate = ttsRateState,
+                                onRateChange = { newRate ->
+                                    ttsRateState = newRate
+                                    tts?.setSpeechRate(newRate)
+                                    if (isPlayingTts) {
+                                        val currentWordStart = spokenWordRange?.first ?: 0
+                                        speakTextFromIndex(mapTextState.text, currentWordStart)
+                                    }
+                                },
+                                gender = ttsGenderState,
+                                onGenderChange = { newGender ->
+                                    ttsGenderState = newGender
+                                    applyTtsSettings()
+                                    if (isPlayingTts) {
+                                        val currentWordStart = spokenWordRange?.first ?: 0
+                                        speakTextFromIndex(mapTextState.text, currentWordStart)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(16.dp)
                             )
                         }
                     }
