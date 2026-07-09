@@ -131,6 +131,26 @@ secrets {
       // Safe fallback
     }
   }
+
+  // Automatically propagate environment variables (such as GEMINI_API_KEY from AI Studio Secrets panel)
+  // into the local .env file so the Secrets Gradle Plugin can read and inject them into BuildConfig.
+  val envFile = rootProject.file(".env")
+  val envKeys = listOf("GEMINI_API_KEY")
+  val envContent = StringBuilder()
+  for (key in envKeys) {
+    val value = System.getenv(key)
+    if (!value.isNullOrEmpty()) {
+      envContent.append("$key=$value\n")
+    }
+  }
+  if (envContent.isNotEmpty()) {
+    try {
+      envFile.writeText(envContent.toString())
+    } catch (e: Exception) {
+      // Safe fallback
+    }
+  }
+
   defaultPropertiesFileName = ".env.example"
 }
 

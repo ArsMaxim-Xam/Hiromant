@@ -80,15 +80,18 @@ data class PalmSign(
 data class PalmistReport(
     val overallPortrait: String,
     val handType: String,
-    val lines: List<PalmLineAnalysis>,
-    val mounts: List<PalmMountAnalysis>,
-    val signs: List<PalmSign>,
-    val marriageChildren: String,
-    val lifeEvents: String,
-    val predictions: String,
-    val recommendations: String,
-    val leftHand: String,
-    val rightHand: String
+    val lines: List<PalmLineAnalysis> = emptyList(),
+    val mounts: List<PalmMountAnalysis> = emptyList(),
+    val signs: List<PalmSign> = emptyList(),
+    val leftHand: String = "",
+    val rightHand: String = "",
+    val characterQualities: String = "",
+    val lifePathEvents: String = "",
+    val lifeSituationsInfluence: String = "",
+    val marriageChildren: String = "",
+    val recommendations: String = "",
+    val lifeEvents: String? = null,
+    val predictions: String? = null
 )
 
 @JsonClass(generateAdapter = true)

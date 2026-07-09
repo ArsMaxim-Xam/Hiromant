@@ -315,7 +315,12 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToCompatibility = {
                                     navController.navigate("main_container")
                                 },
-                                onNavigateToBilling = { navController.navigate("billing") }
+                                onNavigateToBilling = { navController.navigate("billing") },
+                                onClose = {
+                                    navController.navigate("main_container") {
+                                        popUpTo("main_container") { inclusive = true }
+                                    }
+                                }
                             )
                         }
 

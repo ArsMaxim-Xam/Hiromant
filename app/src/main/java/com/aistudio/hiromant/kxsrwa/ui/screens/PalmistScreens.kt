@@ -242,28 +242,28 @@ fun MysticSplashScreen(
                 type = HandElementType.LINE,
                 name = "Life Line",
                 color = Color(0xFFFF4D4D), // Coral Red
-                points = listOf(Pair(0.67f, 0.52f), Pair(0.64f, 0.60f), Pair(0.60f, 0.70f), Pair(0.55f, 0.78f), Pair(0.50f, 0.84f))
+                points = listOf(Pair(0.62f, 0.50f), Pair(0.58f, 0.58f), Pair(0.53f, 0.68f), Pair(0.48f, 0.77f), Pair(0.46f, 0.82f))
             ),
             AnimatedElementState(
                 id = "head_line",
                 type = HandElementType.LINE,
                 name = "Head Line",
                 color = Color(0xFF00BFFF), // Cyan Blue
-                points = listOf(Pair(0.67f, 0.52f), Pair(0.54f, 0.54f), Pair(0.36f, 0.57f))
+                points = listOf(Pair(0.62f, 0.50f), Pair(0.50f, 0.53f), Pair(0.38f, 0.58f))
             ),
             AnimatedElementState(
                 id = "heart_line",
                 type = HandElementType.LINE,
                 name = "Heart Line",
                 color = Color(0xFFFF1493), // Deep Pink
-                points = listOf(Pair(0.30f, 0.50f), Pair(0.46f, 0.48f), Pair(0.64f, 0.45f))
+                points = listOf(Pair(0.32f, 0.50f), Pair(0.45f, 0.48f), Pair(0.56f, 0.44f))
             ),
             AnimatedElementState(
                 id = "destiny_line",
                 type = HandElementType.LINE,
                 name = "Destiny Line",
                 color = Color(0xFFDA70D6), // Orchid / Light Purple
-                points = listOf(Pair(0.50f, 0.85f), Pair(0.50f, 0.65f), Pair(0.51f, 0.41f))
+                points = listOf(Pair(0.46f, 0.85f), Pair(0.47f, 0.64f), Pair(0.48f, 0.43f))
             ),
             // Mounts
             AnimatedElementState(
@@ -272,7 +272,7 @@ fun MysticSplashScreen(
                 name = "Mount of Jupiter",
                 color = Color(0xFF9370DB), // Medium Purple
                 symbol = "♃",
-                position = Pair(0.62f, 0.38f)
+                position = Pair(0.60f, 0.40f)
             ),
             AnimatedElementState(
                 id = "mount_saturn",
@@ -280,7 +280,7 @@ fun MysticSplashScreen(
                 name = "Mount of Saturn",
                 color = Color(0xFFFFD700), // Gold
                 symbol = "♄",
-                position = Pair(0.51f, 0.34f)
+                position = Pair(0.50f, 0.38f)
             ),
             AnimatedElementState(
                 id = "mount_apollo",
@@ -288,7 +288,7 @@ fun MysticSplashScreen(
                 name = "Mount of Apollo",
                 color = Color(0xFFFF8C00), // Dark Orange
                 symbol = "☉",
-                position = Pair(0.39f, 0.36f)
+                position = Pair(0.40f, 0.39f)
             ),
             AnimatedElementState(
                 id = "mount_mercury",
@@ -296,7 +296,7 @@ fun MysticSplashScreen(
                 name = "Mount of Mercury",
                 color = Color(0xFF00FA9A), // Medium Spring Green
                 symbol = "☿",
-                position = Pair(0.28f, 0.41f)
+                position = Pair(0.30f, 0.43f)
             ),
             AnimatedElementState(
                 id = "mount_venus",
@@ -304,7 +304,7 @@ fun MysticSplashScreen(
                 name = "Mount of Venus",
                 color = Color(0xFFFF69B4), // Hot Pink
                 symbol = "♀",
-                position = Pair(0.65f, 0.72f)
+                position = Pair(0.64f, 0.68f)
             ),
             AnimatedElementState(
                 id = "mount_mars_lower",
@@ -312,7 +312,7 @@ fun MysticSplashScreen(
                 name = "Lower Mars",
                 color = Color(0xFFFF0000), // Pure Red
                 symbol = "♂",
-                position = Pair(0.64f, 0.50f)
+                position = Pair(0.59f, 0.53f)
             ),
             AnimatedElementState(
                 id = "mount_mars_upper",
@@ -320,7 +320,7 @@ fun MysticSplashScreen(
                 name = "Upper Mars",
                 color = Color(0xFFFF4500), // Orange Red
                 symbol = "♂",
-                position = Pair(0.28f, 0.54f)
+                position = Pair(0.33f, 0.57f)
             ),
             AnimatedElementState(
                 id = "mount_moon",
@@ -328,7 +328,7 @@ fun MysticSplashScreen(
                 name = "Mount of Moon",
                 color = Color(0xFFE6E6FA), // Lavender
                 symbol = "☽",
-                position = Pair(0.29f, 0.74f)
+                position = Pair(0.36f, 0.75f)
             )
         )
     }
@@ -366,7 +366,7 @@ fun MysticSplashScreen(
     )
 
     val titleGlowRadius by animateFloatAsState(
-        targetValue = if (titleVisible) 22f else 0f,
+        targetValue = if (titleVisible) 40f else 0f,
         animationSpec = tween(2000, delayMillis = 500),
         label = "TitleGlowRadius"
     )
@@ -590,7 +590,7 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = Color.Transparent,
-                                        fontSize = 28.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 4.sp,
                                         shadow = Shadow(
@@ -609,7 +609,7 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = Color.Black,
-                                        fontSize = 28.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 4.sp,
                                         drawStyle = Stroke(
@@ -627,7 +627,7 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = MysticGold.copy(alpha = 0.85f),
-                                        fontSize = 28.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 4.sp,
                                         drawStyle = Stroke(
@@ -646,7 +646,7 @@ fun MysticSplashScreen(
                                     text = uppercaseTitle,
                                     style = MaterialTheme.typography.displayLarge.copy(
                                         color = flashColor,
-                                        fontSize = 28.sp,
+                                        fontSize = 36.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 4.sp
                                     ),
@@ -662,21 +662,22 @@ fun MysticSplashScreen(
                             Text(
                                 text = strings.splashLogoSubtitle.uppercase(),
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Color(0xFFFFF1C5),
+                                    color = MysticGold,
                                     letterSpacing = 2.5.sp,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
                                     shadow = Shadow(
                                         color = Color.Black,
                                         offset = Offset(0f, 2f),
-                                        blurRadius = 6f
+                                        blurRadius = 8f
                                     )
                                 ),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .padding(horizontal = 24.dp)
-                                    .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    .background(Color.Black.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
+                                    .border(1.dp, MysticGold.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
                             )
                         }
                     }
@@ -2400,23 +2401,42 @@ fun buildReportAnnotatedString(
         }
         append("\n")
         
-        appendHeader(strings.resMarriageChildren)
-        appendBody(report.marriageChildren)
-        
-        appendHeader(strings.resLifeEvents)
-        appendBody(report.lifeEvents)
-        
-        appendHeader(strings.resPredictions)
-        appendBody(report.predictions)
-        
-        appendHeader(strings.resRecommendations)
-        appendBody(report.recommendations)
-        
-        appendHeader(strings.resInheritedPotentials)
-        appendBody(report.leftHand)
-        
-        appendHeader(strings.resAcquiredTraits)
-        appendBody(report.rightHand)
+        if (report.leftHand.isNotBlank()) {
+            appendHeader(strings.resInheritedPotentials)
+            appendBody(report.leftHand)
+        }
+
+        if (report.rightHand.isNotBlank()) {
+            appendHeader(strings.resAcquiredTraits)
+            appendBody(report.rightHand)
+        }
+
+        if (report.characterQualities.isNotBlank()) {
+            appendHeader(strings.resCharacterQualities)
+            appendBody(report.characterQualities)
+        }
+
+        val lifePathEventsVal = if (report.lifePathEvents?.isNotBlank() == true) report.lifePathEvents else report.lifeEvents
+        if (!lifePathEventsVal.isNullOrBlank()) {
+            appendHeader(strings.resLifeEvents)
+            appendBody(lifePathEventsVal)
+        }
+
+        val predictionsVal = if (report.lifeSituationsInfluence?.isNotBlank() == true) report.lifeSituationsInfluence else report.predictions
+        if (!predictionsVal.isNullOrBlank()) {
+            appendHeader(strings.resPredictions)
+            appendBody(predictionsVal)
+        }
+
+        if (report.marriageChildren.isNotBlank()) {
+            appendHeader(strings.resMarriageChildren)
+            appendBody(report.marriageChildren)
+        }
+
+        if (report.recommendations.isNotBlank()) {
+            appendHeader(strings.resRecommendations)
+            appendBody(report.recommendations)
+        }
         
         // Apply highlight on spokenWordRange if present
         spokenWordRange?.let { (start, end) ->
@@ -2781,7 +2801,8 @@ fun TtsVoiceController(
 fun ResultsScreen(
     viewModel: PalmistViewModel,
     onNavigateToCompatibility: () -> Unit,
-    onNavigateToBilling: () -> Unit
+    onNavigateToBilling: () -> Unit,
+    onClose: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
@@ -3071,17 +3092,8 @@ fun ResultsScreen(
                                         .padding(top = 24.dp, bottom = 16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    MysticButton(
-                                        text = strings.resExportPdf,
-                                        onClick = {
-                                            Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
-                                        },
-                                        isSecondary = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    
                                     Text(
-                                        text = "MONETIZATION PREMIUM UNLOCKS:",
+                                        text = "PREMIUM SERVICES:",
                                         style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -3092,6 +3104,22 @@ fun ResultsScreen(
                                             viewModel.simulateBuySubscription()
                                             Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
                                         },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    
+                                    MysticButton(
+                                        text = strings.btnClose,
+                                        onClick = onClose,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        isSecondary = false
+                                    )
+
+                                    MysticButton(
+                                        text = strings.resExportPdf,
+                                        onClick = {
+                                            Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
+                                        },
+                                        isSecondary = true,
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                     
