@@ -83,7 +83,7 @@ fun LanguageSelectionScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(horizontal = 8.dp, vertical = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(60.dp))
             
@@ -385,6 +385,122 @@ fun MysticSplashScreen(
                 .border(1.5.dp, MysticGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                 .background(Color(0xFF07070F))
         ) {
+            // Background Layer: Hand representation scaled to fill the entire box!
+            androidx.compose.animation.AnimatedVisibility(
+                visible = scrollOpened,
+                enter = scaleIn(animationSpec = tween(1200)) + fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(handScale)
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
+                                .crossfade(true)
+                                .build()
+                        ),
+                        contentDescription = "Realistic Mystic Hand",
+                        contentScale = ContentScale.FillBounds, // Stretched to fill the screen bounds so Canvas matches perfectly!
+                        modifier = Modifier.fillMaxSize(),
+                        alpha = imageAlpha
+                    )
+                    
+                    // Canvas overlays exactly in coordinates covering full screen
+                    Canvas(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        val w = size.width
+                        val h = size.height
+                        val toAndroidColor = { c: Color ->
+                            android.graphics.Color.argb(
+                                (c.alpha * 255).toInt(),
+                                (c.red * 255).toInt(),
+                                (c.green * 255).toInt(),
+                                (c.blue * 255).toInt()
+                            )
+                        }
+
+                        elements.forEach { element ->
+                            val op = element.opacity.value
+                            val fl = element.flash.value
+                            if (op > 0f) {
+                                val baseColor = element.color
+                                if (element.type == HandElementType.LINE && element.points.isNotEmpty()) {
+                                    val path = Path().apply {
+                                        val first = element.points.first()
+                                        moveTo(first.first * w, first.second * h)
+                                        for (i in 1 until element.points.size) {
+                                            val pt = element.points[i]
+                                            lineTo(pt.first * w, pt.second * h)
+                                        }
+                                    }
+                                    
+                                    // 1. Outer glow
+                                    drawPath(
+                                        path = path,
+                                        color = baseColor.copy(alpha = op * 0.15f * fl),
+                                        style = Stroke(width = 16.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+                                    
+                                    // 2. Medium glow
+                                    drawPath(
+                                        path = path,
+                                        color = baseColor.copy(alpha = op * 0.4f * fl),
+                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+                                    
+                                    // 3. Bright core
+                                    drawPath(
+                                        path = path,
+                                        color = Color.White.copy(alpha = op * 0.9f),
+                                        style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    )
+                                } else if (element.type == HandElementType.MOUNT) {
+                                    val px = element.position.first * w
+                                    val py = element.position.second * h
+                                    
+                                    // Draw outer halo
+                                    drawContext.canvas.nativeCanvas.drawText(
+                                        element.symbol,
+                                        px,
+                                        py,
+                                        android.graphics.Paint().apply {
+                                            color = toAndroidColor(baseColor.copy(alpha = op * 0.3f * fl))
+                                            textSize = 36.dp.toPx()
+                                            textAlign = android.graphics.Paint.Align.CENTER
+                                            isAntiAlias = true
+                                            style = android.graphics.Paint.Style.FILL_AND_STROKE
+                                            strokeWidth = 6.dp.toPx()
+                                        }
+                                    )
+                                    
+                                    // Draw core text with shadow
+                                    drawContext.canvas.nativeCanvas.drawText(
+                                        element.symbol,
+                                        px,
+                                        py,
+                                        android.graphics.Paint().apply {
+                                            color = toAndroidColor(Color.White.copy(alpha = op))
+                                            textSize = 24.dp.toPx()
+                                            textAlign = android.graphics.Paint.Align.CENTER
+                                            isAntiAlias = true
+                                            style = android.graphics.Paint.Style.FILL
+                                            setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Foreground Layer: Content on top of background hand
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -427,136 +543,18 @@ fun MysticSplashScreen(
                     }
                 }
 
-                // Center: Hand representation (1:1 square ratio centered horizontally/vertically)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                ) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = scrollOpened,
-                        enter = scaleIn(animationSpec = tween(1200)) + fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .scale(handScale)
-                        ) {
-                            Image(
-                                painter = rememberAsyncImagePainter(
-                                    model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                        .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
-                                        .crossfade(true)
-                                        .build()
-                                ),
-                                contentDescription = "Realistic Mystic Hand",
-                                contentScale = ContentScale.Fit, // Visible COMPLETELY
-                                modifier = Modifier.fillMaxSize(),
-                                alpha = imageAlpha
-                            )
-                            
-                            // Canvas overlays exactly in 1:1 square coordinates
-                            Canvas(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                val w = size.width
-                                val h = size.height
-                                val toAndroidColor = { c: Color ->
-                                    android.graphics.Color.argb(
-                                        (c.alpha * 255).toInt(),
-                                        (c.red * 255).toInt(),
-                                        (c.green * 255).toInt(),
-                                        (c.blue * 255).toInt()
-                                    )
-                                }
-
-                                elements.forEach { element ->
-                                    val op = element.opacity.value
-                                    val fl = element.flash.value
-                                    if (op > 0f) {
-                                        val baseColor = element.color
-                                        if (element.type == HandElementType.LINE && element.points.isNotEmpty()) {
-                                            val path = Path().apply {
-                                                val first = element.points.first()
-                                                moveTo(first.first * w, first.second * h)
-                                                for (i in 1 until element.points.size) {
-                                                    val pt = element.points[i]
-                                                    lineTo(pt.first * w, pt.second * h)
-                                                }
-                                            }
-                                            
-                                            // 1. Outer glow
-                                            drawPath(
-                                                path = path,
-                                                color = baseColor.copy(alpha = op * 0.15f * fl),
-                                                style = Stroke(width = 16.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                            )
-                                            
-                                            // 2. Medium glow
-                                            drawPath(
-                                                path = path,
-                                                color = baseColor.copy(alpha = op * 0.4f * fl),
-                                                style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                            )
-                                            
-                                            // 3. Bright core
-                                            drawPath(
-                                                path = path,
-                                                color = Color.White.copy(alpha = op * 0.9f),
-                                                style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                            )
-                                        } else if (element.type == HandElementType.MOUNT) {
-                                            val px = element.position.first * w
-                                            val py = element.position.second * h
-                                            
-                                            // Draw outer halo
-                                            drawContext.canvas.nativeCanvas.drawText(
-                                                element.symbol,
-                                                px,
-                                                py,
-                                                android.graphics.Paint().apply {
-                                                    color = toAndroidColor(baseColor.copy(alpha = op * 0.3f * fl))
-                                                    textSize = 36.dp.toPx()
-                                                    textAlign = android.graphics.Paint.Align.CENTER
-                                                    isAntiAlias = true
-                                                    style = android.graphics.Paint.Style.FILL_AND_STROKE
-                                                    strokeWidth = 6.dp.toPx()
-                                                }
-                                            )
-                                            
-                                            // Draw core text with shadow
-                                            drawContext.canvas.nativeCanvas.drawText(
-                                                element.symbol,
-                                                px,
-                                                py,
-                                                android.graphics.Paint().apply {
-                                                    color = toAndroidColor(Color.White.copy(alpha = op))
-                                                    textSize = 24.dp.toPx()
-                                                    textAlign = android.graphics.Paint.Align.CENTER
-                                                    isAntiAlias = true
-                                                    style = android.graphics.Paint.Style.FILL
-                                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Middle: spacer to push the button to the bottom
+                Spacer(modifier = Modifier.weight(1f))
 
                 // Bottom: "Пропустить заставку" button
                 Box(
                     modifier = Modifier
                         .padding(bottom = 12.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .border(1.dp, MysticGold.copy(0.4f), RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(0.4f))
+                        .background(Color.Black.copy(0.6f)) // Semi-transparent black behind button
+                        .border(1.5.dp, MysticGold.copy(0.6f), RoundedCornerShape(20.dp))
                         .clickable { onNavigateNext() }
-                        .padding(horizontal = 24.dp, vertical = 10.dp)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = strings.splashTapToSkip,
@@ -687,14 +685,22 @@ fun AuthScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(horizontal = 8.dp, vertical = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(50.dp))
 
-            MysticHeader(
+            Text(
                 text = strings.authTitle,
-                modifier = Modifier.fillMaxWidth()
+                style = MaterialTheme.typography.displayLarge.copy(
+                    color = MysticGold,
+                    fontSize = 26.sp // Smaller to fit on one line
+                ),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -964,16 +970,14 @@ fun ProfileScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(horizontal = 8.dp, vertical = 12.dp)
         ) {
             MysticHeader(strings.profileTitle)
             MysticSubtitle(strings.profileSubtitle)
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            MysticCard(
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-            ) {
+            MysticCard {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Name and Gender Row
@@ -984,8 +988,8 @@ fun ProfileScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     // Left Column: Name Field
@@ -1001,7 +1005,7 @@ fun ProfileScreen(
                                 name = it
                                 nameError = if (it.trim().length < 2) strings.profileNameError else null
                             },
-                            placeholder = { Text("Александр", color = Color.Gray) },
+                            placeholder = { Text("Максим", color = Color.Gray) },
                             singleLine = true,
                             isError = nameError != null,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -1032,7 +1036,7 @@ fun ProfileScreen(
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             listOf(
                                 maleLabel to "Male",
@@ -1048,12 +1052,13 @@ fun ProfileScreen(
                                         contentColor = if (selected) MysticGold else Color.White
                                     ),
                                     contentPadding = PaddingValues(0.dp),
-                                    modifier = Modifier.size(52.dp)
+                                    modifier = Modifier.size(width = 50.dp, height = 54.dp)
                                 ) {
                                     Text(
                                         text = label,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 }
@@ -1066,8 +1071,8 @@ fun ProfileScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Birth Year Input
                     Column(modifier = Modifier.weight(1f)) {
@@ -1092,7 +1097,7 @@ fun ProfileScreen(
                                 unfocusedBorderColor = MysticBronze.copy(0.4f)
                             ),
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("1995", color = Color.Gray) },
+                            placeholder = { Text("1982", color = Color.Gray) },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -1129,7 +1134,7 @@ fun ProfileScreen(
                 }
 
                 // Dominant hand selector (ESSENTIAL)
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                     Text(
                         text = strings.profileHandLabel,
                         style = MaterialTheme.typography.labelMedium.copy(color = MysticGold),
@@ -1137,7 +1142,7 @@ fun ProfileScreen(
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(
                             strings.profileHandLeft to "Left",
@@ -1152,12 +1157,13 @@ fun ProfileScreen(
                                     containerColor = if (selected) Color(0x22D4AF37) else Color.Transparent,
                                     contentColor = if (selected) MysticGold else Color.White
                                 ),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
                                     text = label,
                                     fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
                                     maxLines = 1,
                                     softWrap = false,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -1173,7 +1179,7 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MysticBronze,
                             fontSize = 11.5.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Justify,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             lineHeight = 16.sp
                         ),
                         modifier = Modifier
@@ -1298,15 +1304,16 @@ fun HandSlotCard(
 
                 if (bitmap == null) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // Take Photo Button
                         Button(
                             onClick = onTakePhoto,
                             colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(34.dp)
+                            modifier = Modifier.weight(1f).height(34.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AddAPhoto,
@@ -1317,8 +1324,10 @@ fun HandSlotCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = btnCameraText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MysticGold
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                color = MysticGold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
 
@@ -1326,9 +1335,9 @@ fun HandSlotCard(
                         Button(
                             onClick = onPickPhoto,
                             colors = ButtonDefaults.buttonColors(containerColor = MysticBronze.copy(0.2f)),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(34.dp)
+                            modifier = Modifier.weight(1f).height(34.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
@@ -1339,8 +1348,10 @@ fun HandSlotCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = btnGalleryText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MysticGold
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                color = MysticGold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -1456,7 +1467,7 @@ fun UploadScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(horizontal = 8.dp, vertical = 12.dp)
         ) {
             MysticHeader(strings.uploadTitle)
 

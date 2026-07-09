@@ -134,11 +134,11 @@ fun MysticButton(
 
 @Composable
 fun MysticCard(
-    modifier: Modifier = Modifier.padding(16.dp),
+    modifier: Modifier = Modifier.padding(bottom = 12.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF141210)
         ),
