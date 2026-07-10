@@ -12,7 +12,20 @@
           "package_name": "com.aistudio.hiromant.kxsrwa"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "618780786712-235i7imfolmf32dc66omdj24474r2e97.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.hiromant.kxsrwa",
+            "certificate_hash": "21898d645d0998ed247734bd3e6f2b36b5f9394e"
+          }
+        },
+        {
+          "client_id": "618780786712-6mmg3tu3iajglcjmqsm0f7e9tcm3g2ab.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDLdfWxrQLM2FUG97wIUeTYKVitoDh99dA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "618780786712-6mmg3tu3iajglcjmqsm0f7e9tcm3g2ab.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
