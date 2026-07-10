@@ -383,7 +383,10 @@ class PalmistRepository(
         }
 
         val apiKey = BuildConfig.GEMINI_API_KEY
-        val hasValidKey = apiKey.isNotEmpty() && apiKey != "MY_GEMINI_API_KEY"
+        val hasValidKey = apiKey.isNotEmpty() && 
+                apiKey != "MY_GEMINI_API_KEY" && 
+                apiKey != "GEMINI_API_KEY" && 
+                apiKey != "YOUR_GEMINI_API_KEY"
 
         var resultJsonStr = ""
 
@@ -483,7 +486,10 @@ class PalmistRepository(
         val systemInstructionText = "You are a compatibility palmist. Generate a structured JSON relationship audit. No markdown tags, no wrapper conversations."
 
         val apiKey = BuildConfig.GEMINI_API_KEY
-        val hasValidKey = apiKey.isNotEmpty() && apiKey != "MY_GEMINI_API_KEY"
+        val hasValidKey = apiKey.isNotEmpty() && 
+                apiKey != "MY_GEMINI_API_KEY" && 
+                apiKey != "GEMINI_API_KEY" && 
+                apiKey != "YOUR_GEMINI_API_KEY"
 
         var resultJsonStr = ""
 
