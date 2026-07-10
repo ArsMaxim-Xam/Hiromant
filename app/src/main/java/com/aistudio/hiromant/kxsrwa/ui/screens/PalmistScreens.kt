@@ -3992,6 +3992,14 @@ fun AboutScreen(
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
+    val appVersionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (e: Exception) {
+            "1.0"
+        }
+    }
+
     var activeSubTab by remember { mutableStateOf("theory") } // "theory", "faq", "contacts"
 
     Box(
@@ -4135,6 +4143,12 @@ fun AboutScreen(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "${strings.appVersionLabel}: $appVersionName",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray.copy(alpha = 0.6f)),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }

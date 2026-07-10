@@ -153,6 +153,7 @@ data class PalmistStrings(
     val aboutEmailSupport: String,
     val aboutPrivacyPolicy: String,
     val aboutSupportSuccess: String,
+    val appVersionLabel: String,
 
     // Settings Screen
     val settTitle: String,
@@ -315,6 +316,7 @@ object LocalizedStrings {
         aboutEmailSupport = "Связаться с поддержкой: support@palmist-mystic.com",
         aboutPrivacyPolicy = "Политика конфиденциальности и защиты данных",
         aboutSupportSuccess = "Спасибо за вашу щедрость и поддержку!",
+        appVersionLabel = "Версия приложения",
 
         settTitle = "Настройки",
         settLanguage = "Язык интерфейса",
@@ -473,6 +475,7 @@ object LocalizedStrings {
         aboutEmailSupport = "Email us: support@palmist-mystic.com",
         aboutPrivacyPolicy = "Privacy Policy and Data Protection",
         aboutSupportSuccess = "Thank you for your generosity and cosmic support!",
+        appVersionLabel = "App Version",
 
         settTitle = "Settings",
         settLanguage = "Interface Language",
