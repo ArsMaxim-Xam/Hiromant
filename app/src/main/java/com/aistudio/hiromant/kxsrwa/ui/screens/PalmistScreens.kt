@@ -3864,10 +3864,29 @@ fun HistoryScreen(
                 .statusBarsPadding()
                 .padding(24.dp)
         ) {
-            MysticHeader(strings.histTitle)
-            MysticSubtitle(strings.histSubtitle)
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                val maxWidthDp = maxWidth
+                val calculatedSize = (maxWidthDp.value * 0.065f).coerceIn(18f, 26f).sp
+                Text(
+                    text = strings.histTitle,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MysticGold,
+                        fontSize = calculatedSize,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif
+                    ),
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (readings.isEmpty()) {
                 Box(

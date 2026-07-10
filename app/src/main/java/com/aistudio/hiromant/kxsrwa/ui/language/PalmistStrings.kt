@@ -296,8 +296,8 @@ object LocalizedStrings {
         compatIntellectual = "Интеллектуальное единство",
         compatFinancial = "Финансовая стабильность",
 
-        histTitle = "История гаданий",
-        histSubtitle = "Предыдущие анализы ваших ладоней. Проследите, как меняются ваши линии времени",
+        histTitle = "История Интерпретаций",
+        histSubtitle = "",
         histNoRecords = "Вы ещё не проводили анализ ладоней",
         histClearHistory = "Очистить историю",
 
@@ -454,8 +454,8 @@ object LocalizedStrings {
         compatIntellectual = "Intellectual Alignment",
         compatFinancial = "Financial Stability",
 
-        histTitle = "Reading History",
-        histSubtitle = "Previous analyses of your hands. Track how your lines shift over the course of time",
+        histTitle = "Interpretation History",
+        histSubtitle = "",
         histNoRecords = "No palm readings found",
         histClearHistory = "Clear History",
 

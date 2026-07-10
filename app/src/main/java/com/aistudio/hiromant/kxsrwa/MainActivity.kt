@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
@@ -415,7 +416,7 @@ fun MainContainerScreen(
                             contentDescription = null
                         )
                     },
-                    label = { Text(strings.navScan, fontSize = 10.sp) },
+                    label = { Text(strings.navScan, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MysticGold,
                         selectedTextColor = MysticGold,
@@ -435,7 +436,7 @@ fun MainContainerScreen(
                             contentDescription = null
                         )
                     },
-                    label = { Text(strings.navCompat, fontSize = 10.sp) },
+                    label = { Text(strings.navCompat, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MysticGold,
                         selectedTextColor = MysticGold,
@@ -455,7 +456,7 @@ fun MainContainerScreen(
                             contentDescription = null
                         )
                     },
-                    label = { Text(strings.navHistory, fontSize = 10.sp) },
+                    label = { Text(strings.navHistory, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MysticGold,
                         selectedTextColor = MysticGold,
@@ -475,7 +476,7 @@ fun MainContainerScreen(
                             contentDescription = null
                         )
                     },
-                    label = { Text(strings.navAbout, fontSize = 10.sp) },
+                    label = { Text(strings.navAbout, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MysticGold,
                         selectedTextColor = MysticGold,
