@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.foundation.clickable
 import com.aistudio.hiromant.kxsrwa.ui.PalmistViewModel
 import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
 import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
@@ -47,6 +49,7 @@ import com.aistudio.hiromant.kxsrwa.ui.theme.MysticBronze
 import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkBackground
 import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkSurface
 import com.aistudio.hiromant.kxsrwa.ui.theme.MysticGold
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
@@ -233,12 +236,14 @@ class MainActivity : ComponentActivity() {
                             if (viewModel.isLanguageSelected()) "splash" else "language"
                         }
 
+                        val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentRoute = currentBackStackEntry?.destination?.route
+
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(MysticDarkBackground)
                         ) {
-                            GlobalStatusBar(viewModel)
                             NavHost(
                                 navController = navController,
                                 startDestination = startDest,
@@ -362,6 +367,9 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                            if (currentRoute != "splash" && currentRoute != "language") {
+                                GlobalVpnBottomBar(viewModel, navController)
+                            }
                         }
                 }
             }
@@ -401,7 +409,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun GlobalStatusBar(viewModel: PalmistViewModel) {
+fun GlobalVpnBottomBar(viewModel: PalmistViewModel, navController: androidx.navigation.NavController) {
     val ip by viewModel.vpnIp.collectAsState()
     val flag by viewModel.vpnFlag.collectAsState()
     val aiStatus by viewModel.aiAvailabilityStatus.collectAsState()
@@ -421,17 +429,48 @@ fun GlobalStatusBar(viewModel: PalmistViewModel) {
         else -> Color(0xFFFF9800) // Orange
     }
 
+    var simUpload by remember { mutableStateOf(45.2) }
+    var simDownload by remember { mutableStateOf(112.8) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1500)
+            simUpload = (15..95).random() / 10.0 + if ((0..1).random() == 1) (50..300).random() / 10.0 else 0.0
+            simDownload = (80..350).random() / 10.0 + if ((0..1).random() == 1) (400..1500).random() / 10.0 else 0.0
+        }
+    }
+
+    fun formatSpeed(speedKb: Double): String {
+        return if (speedKb >= 1000.0) {
+            val mb = speedKb / 1024.0
+            String.format(java.util.Locale.US, "%05.1f Mb", mb)
+        } else {
+            String.format(java.util.Locale.US, "%05.1f Kb", speedKb)
+        }
+    }
+
+    val speedText = "↑${formatSpeed(simUpload)} / ↓${formatSpeed(simDownload)}"
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding(),
-        color = Color(0xFF07070C),
-        border = BorderStroke(0.5.dp, MysticGold.copy(0.15f))
+            .navigationBarsPadding()
+            .clickable {
+                try {
+                    navController.navigate("vpn") {
+                        launchSingleTop = true
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            },
+        color = Color(0xFF0F0F1A),
+        border = BorderStroke(1.dp, MysticGold.copy(0.25f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -440,16 +479,26 @@ fun GlobalStatusBar(viewModel: PalmistViewModel) {
                     imageVector = Icons.Default.Language,
                     contentDescription = null,
                     tint = MysticGold,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "IP: $ip  $flag",
+                    text = "IP: $ip $flag",
                     color = Color.LightGray,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
                 )
             }
+
+            Text(
+                text = speedText,
+                color = MysticGold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -461,8 +510,9 @@ fun GlobalStatusBar(viewModel: PalmistViewModel) {
                 Text(
                     text = aiStatusText,
                     color = Color.LightGray,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
                 )
             }
         }

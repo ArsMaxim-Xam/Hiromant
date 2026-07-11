@@ -72,7 +72,8 @@ fun MysticButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isSecondary: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    height: androidx.compose.ui.unit.Dp = 54.dp
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -110,7 +111,7 @@ fun MysticButton(
         border = if (enabled) (if (isSecondary) borderStroke else BorderStroke(0.dp, Color.Transparent)) else BorderStroke(1.dp, Color.Gray),
         modifier = modifier
             .scale(scale)
-            .height(54.dp)
+            .height(height)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {

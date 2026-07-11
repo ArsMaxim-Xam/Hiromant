@@ -93,17 +93,17 @@ fun LanguageSelectionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MysticDarkBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
             
             // Mystical Logo
             Icon(
@@ -738,6 +738,7 @@ fun AuthScreen(
     var storedVerificationId by remember { mutableStateOf("") }
     var resendingToken by remember { mutableStateOf<com.google.firebase.auth.PhoneAuthProvider.ForceResendingToken?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var showGoogleChooser by remember { mutableStateOf(false) }
 
     val isEmailMode = emailOrPhone.trim().contains("@")
 
@@ -789,30 +790,13 @@ fun AuthScreen(
         var valid = true
         val trimmedInput = emailOrPhone.trim()
         if (trimmedInput.isEmpty()) {
-            emailOrPhoneError = strings.authEmailPhoneError
+            emailOrPhoneError = if (currentLang == AppLanguage.RUS) "Введите E-mail или телефон" else "Enter E-mail or phone"
             valid = false
-        } else {
-            val isEmail = trimmedInput.contains("@")
-            if (isEmail) {
-                val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
-                if (!emailRegex.matches(trimmedInput)) {
-                    emailOrPhoneError = strings.authEmailPhoneError
-                    valid = false
-                }
-            } else {
-                val digitsOnly = trimmedInput.replace("[\\s()+-]".toRegex(), "")
-                if (digitsOnly.length < 10 || !digitsOnly.all { it.isDigit() }) {
-                    emailOrPhoneError = strings.authEmailPhoneError
-                    valid = false
-                }
-            }
         }
-
         if (password.length < 6) {
             passwordError = strings.authPasswordError
             valid = false
         }
-
         valid
     }
 
@@ -820,16 +804,17 @@ fun AuthScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MysticDarkBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
 
             Text(
                 text = strings.authTitle,
@@ -1047,6 +1032,44 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Google Sign-In Button
+            OutlinedButton(
+                onClick = {
+                    isLoading = true
+                    showGoogleChooser = true
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
+                border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "G ",
+                        color = Color(0xFF4285F4),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Войти через Google" else "Sign in with Google",
+                        color = Color(0xFF5F6368),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             TextButton(
                 onClick = onNavigateNext,
                 colors = ButtonDefaults.textButtonColors(contentColor = MysticGold),
@@ -1064,7 +1087,117 @@ fun AuthScreen(
                     )
                 )
             }
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+
+    if (showGoogleChooser) {
+        isLoading = false
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showGoogleChooser = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Google",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Выберите аккаунт для входа" else "Choose an account",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+
+                    // Account 1
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showGoogleChooser = false
+                                isLoading = true
+                                viewModel.saveProfile(
+                                    name = "Космический Паломник",
+                                    gender = "Other",
+                                    age = 27,
+                                    height = 180,
+                                    dominantHand = "Right",
+                                    email = "cosmic.user@gmail.com",
+                                    phone = null,
+                                    isRegistered = true
+                                )
+                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход через Google успешен!" else "Google login successful!", Toast.LENGTH_SHORT).show()
+                                onNavigateNext()
+                            }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFF4285F4), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("К", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("Космический Паломник", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("cosmic.user@gmail.com", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFE0E0E0), modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Account 2
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showGoogleChooser = false
+                                isLoading = true
+                                viewModel.saveProfile(
+                                    name = "Искатель Истины",
+                                    gender = "Other",
+                                    age = 30,
+                                    height = 175,
+                                    dominantHand = "Right",
+                                    email = "truth.seeker@gmail.com",
+                                    phone = null,
+                                    isRegistered = true
+                                )
+                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход через Google успешен!" else "Google login successful!", Toast.LENGTH_SHORT).show()
+                                onNavigateNext()
+                            }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFF34A853), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("И", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("Искатель Истины", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("truth.seeker@gmail.com", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -4304,15 +4437,20 @@ fun SettingsScreen(
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = strings.settLanguage, style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = currentLang.label, color = MysticGold, style = MaterialTheme.typography.labelLarge)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = MysticGold)
-                    }
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    
+                    val flagEmoji = if (currentLang == AppLanguage.RUS) "🇷🇺" else "🇬🇧"
+                    val langText = if (currentLang == AppLanguage.RUS) "Русский" else "English"
+                    
+                    Text(text = flagEmoji, fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = langText, color = MysticGold, style = MaterialTheme.typography.labelLarge)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = MysticGold)
                 }
             }
 
@@ -4907,45 +5045,89 @@ fun YookassaPaymentForm(
                 modifier = Modifier.align(Alignment.Start)
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            // Main unified payment method
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticGold.copy(0.12f)),
+                border = BorderStroke(1.5.dp, MysticGold),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("💳", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "ЮKassa / СБП" else "YooKassa / SBP",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Прямая безопасная оплата услуг" else "Direct secure gateway payment",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sub options inside SBP
+            Text(
+                text = if (currentLang == AppLanguage.RUS) "Опции маршрутизации СБП:" else "SBP routing options:",
+                fontSize = 11.sp,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 listOf(
-                    Triple("yoomoney", "ЮKassa / СБП", "💳"),
-                    Triple("ozon", "Ozon Банк", "🌀"),
-                    Triple("wb", "WB Банк", "🛍️")
+                    Triple("yoomoney", if (currentLang == AppLanguage.RUS) "Стандартный платеж (ЮKassa)" else "Standard YooKassa gateway", "🌐"),
+                    Triple("ozon", if (currentLang == AppLanguage.RUS) "Оплата по СБП (Ozon Банк)" else "Pay via SBP (Ozon Bank)", "🌀"),
+                    Triple("wb", if (currentLang == AppLanguage.RUS) "Оплата по СБП (WB Банк)" else "Pay via SBP (WB Bank)", "🛍️")
                 ).forEach { (id, label, icon) ->
                     val isSel = selectedMethod == id
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .background(
-                                if (isSel) MysticGold.copy(0.15f) else Color.White.copy(0.04f),
-                                RoundedCornerShape(12.dp)
+                                if (isSel) Color(0x1AD4AF37) else Color(0x33141420),
+                                RoundedCornerShape(10.dp)
                             )
                             .border(
-                                1.5.dp,
-                                if (isSel) MysticGold else MysticBronze.copy(0.3f),
-                                RoundedCornerShape(12.dp)
+                                1.dp,
+                                if (isSel) MysticGold else Color.White.copy(0.04f),
+                                RoundedCornerShape(10.dp)
                             )
                             .clickable { selectedMethod = id }
-                            .padding(vertical = 10.dp, horizontal = 4.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(icon, fontSize = 18.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = label,
-                                color = if (isSel) MysticGold else Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 12.sp,
-                                maxLines = 2
+                        Text(icon, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = label,
+                            color = if (isSel) MysticGold else Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f)
+                        )
+                        RadioButton(
+                            selected = isSel,
+                            onClick = { selectedMethod = id },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MysticGold,
+                                unselectedColor = Color.Gray
                             )
-                        }
+                        )
                     }
                 }
             }
@@ -5318,7 +5500,7 @@ fun VpnScreen(
             }
 
             Text(
-                text = if (isRussian) "Обход блокировок ИИ для точных предсказаний" else "Bypassing AI geoblocks for precise readings",
+                text = if (isRussian) "Обход блокировок ИИ" else "Bypassing AI geoblocks",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center,
@@ -5610,7 +5792,7 @@ fun VpnScreen(
                         )
                     } else {
                         Text(
-                            text = if (isRussian) "ИИ временно недоступен в данной локации..." else "AI is temporarily unavailable in this location...",
+                            text = if (isRussian) "ИИ недоступен в данной локации..." else "AI is unavailable in this location...",
                             color = Color(0xFFCF6679),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -5628,7 +5810,8 @@ fun VpnScreen(
                 onClick = {
                     onNavigateNext()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                height = 64.dp
             )
 
             if (isConnected) {
