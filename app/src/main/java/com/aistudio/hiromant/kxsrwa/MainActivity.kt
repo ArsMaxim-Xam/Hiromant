@@ -615,98 +615,73 @@ fun GlobalVpnBottomBar(
         color = Color(0xFF0C0C14),
         border = BorderStroke(1.dp, MysticGold.copy(0.2f))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Drag handle to indicate it slides up!
-            Box(
-                modifier = Modifier
-                    .width(36.dp)
-                    .height(3.dp)
-                    .background(Color.White.copy(0.15f), RoundedCornerShape(1.5.dp))
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            // 1. Flag & Speed
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$flag ",
+                    fontSize = 11.sp
+                )
+                Icon(
+                    imageVector = Icons.Default.SwapVert,
+                    contentDescription = null,
+                    tint = MysticGold.copy(0.7f),
+                    modifier = Modifier.size(11.dp)
+                )
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = speedText,
+                    color = MysticGold,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
 
-            // Single concise line containing Flag, Speed, AI Status and VPN status
+            // 2. AI Status
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f, fill = false).padding(horizontal = 8.dp)
             ) {
-                // 1. Flag & Selected App Name
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "$flag ",
-                        fontSize = 11.sp
-                    )
-                    val selectedAppName by viewModel.selectedVpnAppName.collectAsState()
-                    Text(
-                        text = selectedAppName,
-                        color = Color.LightGray,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 80.dp)
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(statusColor, CircleShape)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = aiStatusText,
+                    color = statusColor,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
-                // 2. Speed (Upload / Download)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.SwapVert,
-                        contentDescription = null,
-                        tint = MysticGold.copy(0.7f),
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = speedText,
-                        color = MysticGold,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                // 3. AI Status
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(statusColor, CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = aiStatusText,
-                        color = Color.LightGray,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                // 4. VPN status
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isConnected) Icons.Default.VpnLock else Icons.Default.VpnKey,
-                        contentDescription = null,
-                        tint = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
-                        modifier = Modifier.size(11.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = if (isConnected) (if (isRu) "ВКЛ" else "ON") else (if (isRu) "ВЫКЛ" else "OFF"),
-                        color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
+            // 3. VPN status
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isConnected) Icons.Default.VpnLock else Icons.Default.VpnKey,
+                    contentDescription = null,
+                    tint = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                    modifier = Modifier.size(11.dp)
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                    text = if (isConnected) (if (isRu) "ВКЛ" else "ON") else (if (isRu) "ВЫКЛ" else "OFF"),
+                    color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
             }
         }
     }
@@ -843,7 +818,7 @@ fun GlobalVpnSheet(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (isRussian) "КОСМИЧЕСКИЙ ВПН" else "COSMIC VPN GATEWAY",
+                        text = if (isRussian) "КОСМИЧЕСКИЙ VPN" else "COSMIC VPN GATEWAY",
                         fontSize = 18.sp,
                         color = MysticGold,
                         fontWeight = FontWeight.Bold,
@@ -866,7 +841,7 @@ fun GlobalVpnSheet(
                 }
 
                 Text(
-                    text = if (isRussian) "Обход блокировок ИИ для точных предсказаний" else "Bypassing AI geoblocks for precise readings",
+                    text = if (isRussian) "Обход блокировок AI для точных предсказаний" else "Bypassing AI geoblocks for precise readings",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.Start).padding(top = 4.dp, bottom = 16.dp)
@@ -1109,23 +1084,23 @@ fun GlobalVpnSheet(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // AI Availability Status Card
+                // AI Availability Status Card (Non-clickable)
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.5f)),
-                    border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else MysticBronze.copy(0.2f)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            showAppSelector = true
-                        }
+                    border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else Color(0xFFCF6679).copy(0.2f)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (aiStatus == "checking") {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(14.dp),
                                     color = MysticGold,
@@ -1133,7 +1108,7 @@ fun GlobalVpnSheet(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (isRussian) "Проверка доступности ИИ..." else "Checking AI availability...",
+                                    text = if (isRussian) "Проверка доступности AI..." else "Checking AI availability...",
                                     color = Color.Gray,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
@@ -1141,25 +1116,141 @@ fun GlobalVpnSheet(
                             }
                         } else if (aiStatus == "available") {
                             Text(
-                                text = if (isRussian) "Для этой локации доступен AI (Выбрать приложение)" else "AI is available for this location (Choose app)",
+                                text = if (isRussian) "Для этой локации доступен AI" else "AI is available for this location",
                                 color = Color(0xFF2ECC71),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         } else {
                             Text(
-                                text = if (isRussian) "ИИ недоступен в данной локации... (Выбрать приложение)" else "AI is unavailable in this location... (Choose app)",
+                                text = if (isRussian) "AI недоступен в данной локации..." else "AI is unavailable in this location...",
                                 color = Color(0xFFCF6679),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Separate "Выбрать приложение" Button
+                com.aistudio.hiromant.kxsrwa.ui.components.MysticButton(
+                    text = if (isRussian) "ВЫБРАТЬ ПРИЛОЖЕНИЕ" else "CHOOSE APPLICATION",
+                    onClick = {
+                        showAppSelector = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    isSecondary = true,
+                    height = 48.dp
+                )
+
                 Spacer(modifier = Modifier.weight(0.15f))
+
+                // Compact status row (Flag, Speed, AI Status, VPN Status) matching the bottom bar
+                val isRu = currentLang == AppLanguage.RUS
+                val flagVal by viewModel.vpnFlag.collectAsState()
+                val simUploadVal by viewModel.vpnUploadSpeed.collectAsState()
+                val simDownloadVal by viewModel.vpnDownloadSpeed.collectAsState()
+
+                fun formatVpnSpeed(speedKb: Double): String {
+                    return if (speedKb >= 1000.0) {
+                        val mb = speedKb / 1024.0
+                        String.format(java.util.Locale.US, "%04.1f Mb", mb)
+                    } else {
+                        String.format(java.util.Locale.US, "%04.1f Kb", speedKb)
+                    }
+                }
+                val speedTextVal = "↑${formatVpnSpeed(simUploadVal)} / ↓${formatVpnSpeed(simDownloadVal)}"
+
+                val aiStatusText = when (aiStatus) {
+                    "available" -> if (isRu) "AI: Доступен" else "AI: Available"
+                    "unavailable" -> if (isRu) "AI: Недоступен" else "AI: Unavailable"
+                    else -> if (isRu) "AI: Проверка..." else "AI: Checking..."
+                }
+                val statusColor = when (aiStatus) {
+                    "available" -> Color(0xFF4CAF50)
+                    "unavailable" -> Color(0xFFF44336)
+                    else -> Color(0xFFFF9800)
+                }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    color = Color.Transparent
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 1. Flag & Speed
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "$flagVal ",
+                                fontSize = 11.sp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.SwapVert,
+                                contentDescription = null,
+                                tint = MysticGold.copy(0.7f),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = speedTextVal,
+                                color = MysticGold,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        // 2. AI Status
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false).padding(horizontal = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(statusColor, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = aiStatusText,
+                                color = statusColor,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // 3. VPN status
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isConnected) Icons.Default.VpnLock else Icons.Default.VpnKey,
+                                contentDescription = null,
+                                tint = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = if (isConnected) (if (isRu) "ВКЛ" else "ON") else (if (isRu) "ВЫКЛ" else "OFF"),
+                                color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1180,7 +1271,7 @@ fun GlobalVpnSheet(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = if (isRussian) "Выберите приложение для VPN" else "Choose App for VPN",
+                        text = if (isRussian) "Приложение для VPN" else "App for VPN",
                         style = MaterialTheme.typography.titleLarge,
                         color = MysticGold,
                         fontWeight = FontWeight.Bold,
@@ -1194,12 +1285,22 @@ fun GlobalVpnSheet(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val pm = remember { context.packageManager }
+
                     androidx.compose.foundation.lazy.LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.heightIn(max = 280.dp)
                     ) {
                         items(availableApps) { app ->
                             val isCurrent = app.name == selectedAppName
+                            val appIcon = remember(app.packageName) {
+                                try {
+                                    pm.getApplicationIcon(app.packageName)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1226,14 +1327,22 @@ fun GlobalVpnSheet(
                                         .background(Color.White.copy(0.05f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = if (app.name.contains("ChatGPT") || app.name.contains("Gemini") || app.name.contains("Copilot") || app.name.contains("Claude")) "🤖" 
-                                               else if (app.name.contains("Telegram")) "💬" 
-                                               else if (app.name.contains("Instagram")) "📸" 
-                                               else if (app.name.contains("YouTube")) "📺" 
-                                               else "📱",
-                                        fontSize = 18.sp
-                                    )
+                                    if (appIcon != null) {
+                                        androidx.compose.foundation.Image(
+                                            painter = coil.compose.rememberAsyncImagePainter(appIcon),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = if (app.name.contains("ChatGPT") || app.name.contains("Gemini") || app.name.contains("Copilot") || app.name.contains("Claude")) "🤖" 
+                                                   else if (app.name.contains("Telegram")) "💬" 
+                                                   else if (app.name.contains("Instagram")) "📸" 
+                                                   else if (app.name.contains("YouTube")) "📺" 
+                                                   else "📱",
+                                            fontSize = 18.sp
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {

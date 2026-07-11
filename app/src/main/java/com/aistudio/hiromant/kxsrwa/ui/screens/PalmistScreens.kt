@@ -5011,7 +5011,7 @@ fun YookassaPaymentForm(
             
             Text(
                 text = if (currentLang == AppLanguage.RUS) {
-                    "Активация ИИ-анализа ладони"
+                    "Активация AI-анализа ладони"
                 } else {
                     "AI Palm Analysis Activation"
                 },
@@ -5341,6 +5341,10 @@ fun VpnScreen(
     // AI Availability Status State
     val aiStatus by viewModel.aiAvailabilityStatus.collectAsState()
 
+    var showAppSelector by remember { mutableStateOf(false) }
+    val availableApps by viewModel.availableApps.collectAsState()
+    val selectedAppName by viewModel.selectedVpnAppName.collectAsState()
+
     // Sync global top status bar values with viewModel
     LaunchedEffect(selectedCountry, isConnected) {
         if (isConnected) {
@@ -5482,7 +5486,7 @@ fun VpnScreen(
             }
 
             Text(
-                text = if (isRussian) "Обход блокировок ИИ" else "Bypassing AI geoblocks",
+                text = if (isRussian) "Обход блокировок AI" else "Bypassing AI geoblocks",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center,
@@ -5735,7 +5739,7 @@ fun VpnScreen(
             Card(
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.5f)),
-                border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else MysticBronze.copy(0.2f)),
+                border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else Color(0xFFCF6679).copy(0.2f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -5751,7 +5755,7 @@ fun VpnScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isRussian) "Проверка доступности ИИ..." else "Checking AI availability...",
+                                text = if (isRussian) "Проверка доступности AI..." else "Checking AI availability...",
                                 color = Color.Gray,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
@@ -5774,7 +5778,7 @@ fun VpnScreen(
                         )
                     } else {
                         Text(
-                            text = if (isRussian) "ИИ недоступен в данной локации..." else "AI is unavailable in this location...",
+                            text = if (isRussian) "AI недоступен в данной локации..." else "AI is unavailable in this location...",
                             color = Color(0xFFCF6679),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -5786,15 +5790,35 @@ fun VpnScreen(
 
             Spacer(modifier = Modifier.weight(0.2f)) // Raised content: smaller weight
 
-            // CONTINUE BUTTON TO LAUNCH APP (Action button size matched perfectly)
-            MysticButton(
-                text = if (isRussian) "ДАЛЕЕ" else "CONTINUE",
-                onClick = {
-                    onNavigateNext()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                height = 64.dp
-            )
+            // Dual Row of Action Buttons (Select App & Continue)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // "Выбрать" button
+                MysticButton(
+                    text = if (isRussian) "ВЫБРАТЬ" else "SELECT",
+                    onClick = {
+                        showAppSelector = true
+                    },
+                    modifier = Modifier.weight(1f),
+                    isSecondary = true,
+                    height = 54.dp
+                )
+
+                // "Далее" button
+                MysticButton(
+                    text = if (isRussian) "ДАЛЕЕ" else "CONTINUE",
+                    onClick = {
+                        onNavigateNext()
+                    },
+                    modifier = Modifier.weight(1f),
+                    isSecondary = false,
+                    height = 54.dp
+                )
+            }
 
             if (isConnected) {
                 TextButton(
@@ -5810,6 +5834,133 @@ fun VpnScreen(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+
+    // App Selector Dialog inside VpnScreen
+    if (showAppSelector) {
+        Dialog(onDismissRequest = { showAppSelector = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.5.dp, MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = if (isRussian) "Приложение для VPN" else "App for VPN",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Text(
+                        text = if (isRussian) "Трафик выбранного приложения будет направлен через VPN." else "Traffic from the selected app will be routed through the secure VPN.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val pm = remember { context.packageManager }
+
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.heightIn(max = 280.dp)
+                    ) {
+                        items(availableApps) { app ->
+                            val isCurrent = app.name == selectedAppName
+                            val appIcon = remember(app.packageName) {
+                                try {
+                                    pm.getApplicationIcon(app.packageName)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isCurrent) MysticGold.copy(0.12f) else Color.Transparent,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isCurrent) MysticGold else Color.White.copy(0.05f),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        viewModel.selectedVpnAppName.value = app.name
+                                        viewModel.selectedVpnAppPackage.value = app.packageName
+                                        showAppSelector = false
+                                    }
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(Color.White.copy(0.05f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (appIcon != null) {
+                                        androidx.compose.foundation.Image(
+                                            painter = coil.compose.rememberAsyncImagePainter(appIcon),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = if (app.name.contains("ChatGPT") || app.name.contains("Gemini") || app.name.contains("Copilot") || app.name.contains("Claude")) "🤖" 
+                                                   else if (app.name.contains("Telegram")) "💬" 
+                                                   else if (app.name.contains("Instagram")) "📸" 
+                                                   else if (app.name.contains("YouTube")) "📺" 
+                                                   else "📱",
+                                            fontSize = 18.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = app.name,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = app.packageName,
+                                        color = Color.Gray,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                if (app.isInstalled) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFF2ECC71).copy(0.2f), RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isRussian) "Установлено" else "Installed",
+                                            color = Color(0xFF2ECC71),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
