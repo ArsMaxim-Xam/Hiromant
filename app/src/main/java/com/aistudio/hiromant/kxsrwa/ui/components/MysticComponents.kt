@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -34,16 +35,37 @@ fun MysticHeader(
     modifier: Modifier = Modifier,
     textAlign: TextAlign = TextAlign.Center
 ) {
+    var fontSize by remember(text) { mutableStateOf(34.sp) }
+    var readyToDraw by remember(text) { mutableStateOf(false) }
+
     Text(
         text = text,
         style = MaterialTheme.typography.displayLarge.copy(
             color = MysticGold,
-            fontSize = 34.sp
+            fontSize = fontSize
         ),
         textAlign = textAlign,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Clip,
+        onTextLayout = { textLayoutResult ->
+            if (textLayoutResult.hasVisualOverflow) {
+                val nextSize = fontSize.value - 1f
+                if (nextSize > 12f) {
+                    fontSize = nextSize.sp
+                } else {
+                    readyToDraw = true
+                }
+            } else {
+                readyToDraw = true
+            }
+        },
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp)
+            .drawWithContent {
+                if (readyToDraw) drawContent()
+            }
     )
 }
 

@@ -100,25 +100,27 @@ fun LanguageSelectionScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             
+            Spacer(modifier = Modifier.weight(0.5f))
+
             // Mystical Logo
             Icon(
                 imageVector = Icons.Default.Language,
                 contentDescription = null,
                 tint = MysticGold,
                 modifier = Modifier
-                    .size(80.dp)
-                    .padding(bottom = 16.dp)
+                    .size(64.dp)
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             MysticHeader(strings.langSelectTitle)
             MysticSubtitle(strings.langSelectSubtitle)
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.weight(0.8f))
 
             // Russia (RUS) flag selection card
             LanguageCard(
@@ -128,7 +130,7 @@ fun LanguageSelectionScreen(
                 onClick = { viewModel.changeLanguage(AppLanguage.RUS) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // United Kingdom (ENG) flag selection card
             LanguageCard(
@@ -138,15 +140,14 @@ fun LanguageSelectionScreen(
                 onClick = { viewModel.changeLanguage(AppLanguage.ENG) }
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.weight(1.2f))
 
             MysticButton(
                 text = strings.langContinue,
                 onClick = onNavigateToSplash,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -738,9 +739,58 @@ fun AuthScreen(
     var storedVerificationId by remember { mutableStateOf("") }
     var resendingToken by remember { mutableStateOf<com.google.firebase.auth.PhoneAuthProvider.ForceResendingToken?>(null) }
     var isLoading by remember { mutableStateOf(false) }
-    var showGoogleChooser by remember { mutableStateOf(false) }
+    var activeError by remember { mutableStateOf<String?>(null) }
 
     val isEmailMode = emailOrPhone.trim().contains("@")
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isLoading = false
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken != null) {
+                    isLoading = true
+                    val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null as String?)
+                    auth.signInWithCredential(credential)
+                        .addOnCompleteListener { authTask ->
+                            isLoading = false
+                            if (authTask.isSuccessful) {
+                                val user = auth.currentUser
+                                viewModel.saveProfile(
+                                    name = user?.displayName ?: "Google User",
+                                    gender = "Other",
+                                    age = 25,
+                                    height = 175,
+                                    dominantHand = "Right",
+                                    email = user?.email,
+                                    phone = null,
+                                    isRegistered = true
+                                )
+                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход через Google успешен!" else "Google login successful!", Toast.LENGTH_SHORT).show()
+                                onNavigateNext()
+                            } else {
+                                activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка авторизации Google в Firebase:" else "Firebase Google login failed:"} ${authTask.exception?.message}"
+                            }
+                        }
+                } else {
+                    activeError = "Google Sign-In failed: ID Token is null. Please configure SHA-1 and Web Client ID in Firebase Console."
+                }
+            } catch (e: com.google.android.gms.common.api.ApiException) {
+                val errorMsg = when (e.statusCode) {
+                    10 -> "Developer Error (API 10). This usually means your SHA-1 fingerprint or Web Client ID is mismatching in Firebase Console / Google Cloud Platform."
+                    12501 -> "Sign-In cancelled by user (12501)."
+                    else -> "Google Sign-In API error code: ${e.statusCode}. ${e.message}"
+                }
+                activeError = errorMsg
+            }
+        } else {
+            activeError = "Google Sign-In result code was: ${result.resultCode}. (Activity cancelled)"
+        }
+    }
 
     val callbacks = remember {
         object : com.google.firebase.auth.PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
@@ -763,14 +813,14 @@ fun AuthScreen(
                             Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен успешно!" else "Logged in successfully!", Toast.LENGTH_SHORT).show()
                             onNavigateNext()
                         } else {
-                            Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                            activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}"
                         }
                     }
             }
 
             override fun onVerificationFailed(e: com.google.firebase.FirebaseException) {
                 isLoading = false
-                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка верификации телефона:" else "Phone verification failed:"} ${e.message}", Toast.LENGTH_LONG).show()
+                activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка верификации телефона:" else "Phone verification failed:"} ${e.message}"
             }
 
             override fun onCodeSent(
@@ -914,18 +964,14 @@ fun AuthScreen(
                                                         Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Успешный вход!" else "Successfully logged in!", Toast.LENGTH_SHORT).show()
                                                         onNavigateNext()
                                                     } else {
-                                                        Toast.makeText(
-                                                            context,
-                                                            if (currentLang == AppLanguage.RUS) 
-                                                                "Пожалуйста, подтвердите ваш E-mail! Мы отправили вам ссылку на почту." 
-                                                            else 
-                                                                "Please verify your E-mail! We have sent you a link.",
-                                                            Toast.LENGTH_LONG
-                                                        ).show()
+                                                        activeError = if (currentLang == AppLanguage.RUS) 
+                                                            "Пожалуйста, подтвердите ваш E-mail! Мы отправили вам ссылку на почту." 
+                                                        else 
+                                                            "Please verify your E-mail! We have sent you a link."
                                                     }
                                                 }
                                             } else {
-                                                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                                activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка входа:" else "Login error:"} ${task.exception?.message}"
                                             }
                                         }
                                 }
@@ -956,15 +1002,11 @@ fun AuthScreen(
                                                                 Toast.LENGTH_LONG
                                                             ).show()
                                                         } else {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "${if (currentLang == AppLanguage.RUS) "Письмо не отправлено:" else "Failed to send email:"} ${emailTask.exception?.message}",
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
+                                                            activeError = "${if (currentLang == AppLanguage.RUS) "Письмо не отправлено:" else "Failed to send email:"} ${emailTask.exception?.message}"
                                                         }
                                                     }
                                             } else {
-                                                Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка регистрации:" else "Registration error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                                activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка регистрации:" else "Registration error:"} ${task.exception?.message}"
                                             }
                                         }
                                 }
@@ -1017,7 +1059,7 @@ fun AuthScreen(
                                                     Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Успешный вход!" else "Successfully logged in!", Toast.LENGTH_SHORT).show()
                                                     onNavigateNext()
                                                 } else {
-                                                    Toast.makeText(context, "${if (currentLang == AppLanguage.RUS) "Ошибка:" else "Error:"} ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                                    activeError = "${if (currentLang == AppLanguage.RUS) "Ошибка:" else "Error:"} ${task.exception?.message}"
                                                 }
                                             }
                                     }
@@ -1036,7 +1078,18 @@ fun AuthScreen(
             OutlinedButton(
                 onClick = {
                     isLoading = true
-                    showGoogleChooser = true
+                    val webClientId = context.getString(com.aistudio.hiromant.kxsrwa.R.string.default_web_client_id)
+                    val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                        com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+                    )
+                        .requestIdToken(webClientId)
+                        .requestEmail()
+                        .build()
+
+                    val googleSignInClient = com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
+                    googleSignInClient.signOut().addOnCompleteListener {
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -1091,109 +1144,94 @@ fun AuthScreen(
         }
     }
 
-    if (showGoogleChooser) {
-        isLoading = false
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showGoogleChooser = false }) {
+    if (activeError != null) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { activeError = null }) {
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.5.dp, MysticGold),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Google",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Error icon",
+                        tint = Color(0xFFCF6679),
+                        modifier = Modifier.size(48.dp)
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = if (currentLang == AppLanguage.RUS) "Выберите аккаунт для входа" else "Choose an account",
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        text = if (currentLang == AppLanguage.RUS) "Произошла ошибка" else "An error occurred",
+                        style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center
                     )
-
-                    // Account 1
-                    Row(
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                showGoogleChooser = false
-                                isLoading = true
-                                viewModel.saveProfile(
-                                    name = "Космический Паломник",
-                                    gender = "Other",
-                                    age = 27,
-                                    height = 180,
-                                    dominantHand = "Right",
-                                    email = "cosmic.user@gmail.com",
-                                    phone = null,
-                                    isRegistered = true
-                                )
-                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход через Google успешен!" else "Google login successful!", Toast.LENGTH_SHORT).show()
-                                onNavigateNext()
-                            }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .heightIn(max = 240.dp)
+                            .background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(Color(0xFF4285F4), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("К", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text("Космический Паломник", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("cosmic.user@gmail.com", color = Color.Gray, fontSize = 12.sp)
-                        }
+                        Text(
+                            text = activeError ?: "",
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = Color(0xFFE0E0E0)
+                            )
+                        )
                     }
-
-                    HorizontalDivider(color = Color(0xFFE0E0E0), modifier = Modifier.padding(vertical = 8.dp))
-
-                    // Account 2
+                    Spacer(modifier = Modifier.height(20.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                showGoogleChooser = false
-                                isLoading = true
-                                viewModel.saveProfile(
-                                    name = "Искатель Истины",
-                                    gender = "Other",
-                                    age = 30,
-                                    height = 175,
-                                    dominantHand = "Right",
-                                    email = "truth.seeker@gmail.com",
-                                    phone = null,
-                                    isRegistered = true
-                                )
-                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход через Google успешен!" else "Google login successful!", Toast.LENGTH_SHORT).show()
-                                onNavigateNext()
-                            }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(Color(0xFF34A853), CircleShape),
-                            contentAlignment = Alignment.Center
+                        OutlinedButton(
+                            onClick = { activeError = null },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White
+                            ),
+                            border = BorderStroke(1.dp, Color.Gray),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("И", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(if (currentLang == AppLanguage.RUS) "Закрыть" else "Close")
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text("Искатель Истины", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("truth.seeker@gmail.com", color = Color.Gray, fontSize = 12.sp)
+                        Button(
+                            onClick = {
+                                val emailIntent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                    data = android.net.Uri.parse("mailto:")
+                                    putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("arsmaxim@gmail.com"))
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Hiromant App Error Report")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Hi developer,\n\nI encountered the following error in the Hiromant app:\n\n${activeError}\n\nDevice: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (Android ${android.os.Build.VERSION.RELEASE})")
+                                }
+                                try {
+                                    context.startActivity(emailIntent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Почтовое приложение не найдено" else "No email app found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MysticGold,
+                                contentColor = Color.Black
+                            ),
+                            modifier = Modifier.weight(1.5f)
+                        ) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Отправить ошибку" else "Email Developer",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                maxLines = 1
+                            )
                         }
                     }
                 }
