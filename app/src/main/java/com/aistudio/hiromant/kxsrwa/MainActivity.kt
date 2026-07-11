@@ -260,7 +260,19 @@ class MainActivity : ComponentActivity() {
                         composable("splash") {
                             MysticSplashScreen(
                                 viewModel = viewModel,
-                                onNavigateNext = { navController.navigate("auth") }
+                                onNavigateNext = { navController.navigate("vpn") }
+                            )
+                        }
+
+                        // VPN Setup
+                        composable("vpn") {
+                            VpnScreen(
+                                viewModel = viewModel,
+                                onNavigateNext = {
+                                    navController.navigate("auth") {
+                                        popUpTo("vpn") { inclusive = true }
+                                    }
+                                }
                             )
                         }
 

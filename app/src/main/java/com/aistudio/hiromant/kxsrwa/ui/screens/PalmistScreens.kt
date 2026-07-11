@@ -5029,3 +5029,576 @@ fun YookassaPaymentForm(
         }
     }
 }
+
+data class VpnCountry(
+    val nameRu: String,
+    val nameEn: String,
+    val flag: String,
+    val ip: String,
+    val ping: String
+)
+
+@Composable
+fun VpnScreen(
+    viewModel: PalmistViewModel,
+    onNavigateNext: () -> Unit
+) {
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val isRussian = currentLang == AppLanguage.RUS
+    val strings = LocalizedStrings.get(currentLang)
+    
+    val countries = remember {
+        listOf(
+            VpnCountry("Германия (Франкфурт)", "Germany (Frankfurt)", "🇩🇪", "185.220.101.42", "38 ms"),
+            VpnCountry("Нидерланды (Амстердам)", "Netherlands (Amsterdam)", "🇳🇱", "195.206.105.18", "42 ms"),
+            VpnCountry("США (Нью-Йорк)", "United States (New York)", "🇺🇸", "104.244.75.12", "112 ms"),
+            VpnCountry("Сингапур (Чанги)", "Singapore (Changi)", "🇸🇬", "116.12.43.90", "180 ms"),
+            VpnCountry("Великобритания (Лондон)", "United Kingdom (London)", "🇬🇧", "94.46.20.111", "48 ms"),
+            VpnCountry("Финляндия (Хельсинки)", "Finland (Helsinki)", "🇫🇮", "95.175.99.3", "29 ms")
+        )
+    }
+
+    var selectedCountry by remember { mutableStateOf(countries[0]) }
+    var isConnected by remember { mutableStateOf(true) } // Connected by default for a smoother premium feel
+    var isConnecting by remember { mutableStateOf(false) }
+    var connectionStep by remember { mutableStateOf("") }
+    
+    var durationSeconds by remember { mutableStateOf(14) } // Start with some active connection time
+    var kbReceived by remember { mutableStateOf(245.8) }
+    var kbSent by remember { mutableStateOf(112.4) }
+
+    var showCountrySelector by remember { mutableStateOf(false) }
+
+    // Connect timer & data flow simulator
+    LaunchedEffect(isConnected) {
+        if (isConnected) {
+            while (true) {
+                delay(1000)
+                durationSeconds++
+                kbReceived += (50..350).random() / 10.0
+                kbSent += (30..180).random() / 10.0
+            }
+        } else {
+            durationSeconds = 0
+        }
+    }
+
+    // Connecting steps animation
+    LaunchedEffect(isConnecting) {
+        if (isConnecting) {
+            val steps = if (isRussian) {
+                listOf(
+                    "Поиск оптимальных созвездий серверов...",
+                    "Авторизация в Celestial-Tunnel...",
+                    "Применение сквозного шифрования AES-256...",
+                    "Канал связи успешно установлен!"
+                )
+            } else {
+                listOf(
+                    "Searching for optimal server nodes...",
+                    "Authenticating in Celestial-Tunnel...",
+                    "Applying AES-256-GCM encryption...",
+                    "Secure channel established!"
+                )
+            }
+            for (step in steps) {
+                connectionStep = step
+                delay(700)
+            }
+            isConnecting = false
+            isConnected = true
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MysticDarkBackground)
+    ) {
+        // Starry decorative canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val random = java.util.Random(42)
+            for (i in 0..60) {
+                val x = random.nextFloat() * size.width
+                val y = random.nextFloat() * size.height
+                val radius = random.nextFloat() * 2f + 1f
+                val alpha = random.nextFloat() * 0.5f + 0.2f
+                drawCircle(
+                    color = MysticGold.copy(alpha = alpha),
+                    radius = radius,
+                    center = Offset(x, y)
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.VpnLock,
+                    contentDescription = null,
+                    tint = MysticGold,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isRussian) "КОСМИЧЕСКИЙ VPN" else "COSMIC VPN",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
+            }
+
+            Text(
+                text = if (isRussian) "Обход блокировок ИИ для точных предсказаний" else "Bypassing AI geoblocks for precise readings",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.weight(0.4f))
+
+            // Central Pulsing Connect Button
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(240.dp)
+            ) {
+                // Outer glowing/pulsing orbits
+                val infiniteTransition = rememberInfiniteTransition()
+                val pulseScale by infiniteTransition.animateFloat(
+                    initialValue = 0.95f,
+                    targetValue = 1.15f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                val pulseAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.05f,
+                    targetValue = 0.25f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+
+                // Colored halo
+                val glowColor = if (isConnected) Color(0xFF2ECC71) else MysticGold
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .scale(pulseScale)
+                        .background(glowColor.copy(alpha = pulseAlpha), CircleShape)
+                        .border(1.5.dp, glowColor.copy(alpha = pulseAlpha * 2), CircleShape)
+                )
+
+                // Middle spinning orbit when connecting
+                if (isConnecting) {
+                    val angle by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1500, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(170.dp)
+                            .rotate(angle)
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.sweepGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        MysticGold.copy(0.1f),
+                                        MysticGold,
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                    )
+                }
+
+                // Main Button
+                Card(
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    border = BorderStroke(2.dp, if (isConnected) Color(0xFF2ECC71) else MysticBronze),
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clickable {
+                            if (isConnecting) return@clickable
+                            if (isConnected) {
+                                isConnected = false
+                            } else {
+                                isConnecting = true
+                            }
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PowerSettingsNew,
+                            contentDescription = null,
+                            tint = if (isConnected) Color(0xFF2ECC71) else Color.White,
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (isConnecting) {
+                                if (isRussian) "ПОДКЛЮЧЕНИЕ" else "CONNECTING"
+                            } else if (isConnected) {
+                                if (isRussian) "АКТИВЕН" else "ACTIVE"
+                            } else {
+                                if (isRussian) "ОТКЛЮЧЕН" else "INACTIVE"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Connection Step message
+            AnimatedVisibility(
+                visible = isConnecting,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Text(
+                    text = connectionStep,
+                    color = MysticGold,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(0.2f))
+
+            // Selected Server Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.dp, MysticBronze.copy(alpha = 0.3f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showCountrySelector = true }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Flag icon
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.White.copy(0.05f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(selectedCountry.flag, fontSize = 24.sp)
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isRussian) "Местоположение" else "Server Location",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = if (isRussian) selectedCountry.nameRu else selectedCountry.nameEn,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MysticGold,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Quick Stats Block
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // IP Address Box
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.6f)),
+                    border = BorderStroke(1.dp, Color.White.copy(0.05f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "IP ADDRESS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray,
+                            fontSize = 9.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isConnected) selectedCountry.ip else "---.---.---.---",
+                            color = if (isConnected) MysticGold else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                // Ping Box
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.6f)),
+                    border = BorderStroke(1.dp, Color.White.copy(0.05f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "LATENCY / PING",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray,
+                            fontSize = 9.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isConnected) selectedCountry.ping else "---",
+                            color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Download/Upload traffic live stats
+            AnimatedVisibility(
+                visible = isConnected,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, Color.White.copy(0.03f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        // Duration
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("DURATION", fontSize = 9.sp, color = Color.Gray)
+                            val min = durationSeconds / 60
+                            val sec = durationSeconds % 60
+                            Text(
+                                text = String.format("%02d:%02d", min, sec),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        // Received
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("DOWNLOADED", fontSize = 9.sp, color = Color.Gray)
+                            Text(
+                                text = String.format("%.1f MB", kbReceived),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        // Sent
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("UPLOADED", fontSize = 9.sp, color = Color.Gray)
+                            Text(
+                                text = String.format("%.1f MB", kbSent),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(0.5f))
+
+            // CONTINUE BUTTON TO LAUNCH APP
+            MysticButton(
+                text = if (isRussian) "ПОДКЛЮЧИТЬ И ВОЙТИ" else "CONNECT AND ENTER",
+                onClick = {
+                    if (!isConnected && !isConnecting) {
+                        // Automatically trigger connection if they click continue without active VPN
+                        isConnecting = true
+                    } else {
+                        onNavigateNext()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            if (isConnected) {
+                TextButton(
+                    onClick = onNavigateNext,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text(
+                        text = if (isRussian) "Продолжить с текущим IP" else "Continue with current IP",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+
+    // Country Selector Dialog
+    if (showCountrySelector) {
+        Dialog(onDismissRequest = { showCountrySelector = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.5.dp, MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = if (isRussian) "Выберите космический прокси" else "Choose Cosmic Proxy",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(countries) { country ->
+                            val isCurrent = country == selectedCountry
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isCurrent) MysticGold.copy(0.12f) else Color.Transparent,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isCurrent) MysticGold else Color.White.copy(0.05f),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        selectedCountry = country
+                                        showCountrySelector = false
+                                        // Reconnect to new country simulation
+                                        isConnected = false
+                                        isConnecting = true
+                                        durationSeconds = 0
+                                        kbReceived = 1.2
+                                        kbSent = 0.8
+                                    }
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(country.flag, fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isRussian) country.nameRu else country.nameEn,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = "IP: ${country.ip}",
+                                        color = Color.Gray,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            if (isCurrent) MysticGold else Color.White.copy(0.05f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = country.ping,
+                                        color = if (isCurrent) Color.Black else Color.Gray,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(
+                        onClick = { showCountrySelector = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(text = strings.cancel, color = MysticGold)
+                    }
+                }
+            }
+        }
+    }
+}
+
