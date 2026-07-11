@@ -72,6 +72,12 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val vpnIp = MutableStateFlow("185.220.101.42")
     val vpnFlag = MutableStateFlow("🇩🇪")
     val aiAvailabilityStatus = MutableStateFlow("available") // "available", "unavailable", "checking"
+    val vpnConnected = MutableStateFlow(true)
+    val vpnConnecting = MutableStateFlow(false)
+    val vpnCountryIndex = MutableStateFlow(0)
+    val vpnDurationSeconds = MutableStateFlow(14)
+    val vpnKbReceived = MutableStateFlow(245.8)
+    val vpnKbSent = MutableStateFlow(112.4)
 
     init {
         // Load initially selected language
@@ -81,6 +87,18 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
         // Load initially stored font scale
         _fontScale.value = repository.getFontScale()
+
+        // Centralized VPN simulation loop
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                if (vpnConnected.value && !vpnConnecting.value) {
+                    vpnDurationSeconds.value += 1
+                    vpnKbReceived.value += (50..350).random() / 10.0
+                    vpnKbSent.value += (30..180).random() / 10.0
+                }
+            }
+        }
     }
 
     fun changeFontScale(scale: Float) {

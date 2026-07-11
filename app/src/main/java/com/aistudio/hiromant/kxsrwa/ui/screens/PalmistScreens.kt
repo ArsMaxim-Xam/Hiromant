@@ -5326,19 +5326,20 @@ fun VpnScreen(
         )
     }
 
-    var selectedCountry by remember { mutableStateOf(countries[0]) }
-    var isConnected by remember { mutableStateOf(true) } // Connected by default for a smoother premium feel
-    var isConnecting by remember { mutableStateOf(false) }
+    val countryIndex by viewModel.vpnCountryIndex.collectAsState()
+    val selectedCountry = countries[countryIndex.coerceIn(0, countries.lastIndex)]
+    val isConnected by viewModel.vpnConnected.collectAsState()
+    val isConnecting by viewModel.vpnConnecting.collectAsState()
     var connectionStep by remember { mutableStateOf("") }
     
-    var durationSeconds by remember { mutableStateOf(14) } // Start with some active connection time
-    var kbReceived by remember { mutableStateOf(245.8) }
-    var kbSent by remember { mutableStateOf(112.4) }
+    val durationSeconds by viewModel.vpnDurationSeconds.collectAsState()
+    val kbReceived by viewModel.vpnKbReceived.collectAsState()
+    val kbSent by viewModel.vpnKbSent.collectAsState()
 
     var showCountrySelector by remember { mutableStateOf(false) }
 
     // AI Availability Status State
-    var aiStatus by remember { mutableStateOf("checking") } // "checking", "available", "unavailable"
+    val aiStatus by viewModel.aiAvailabilityStatus.collectAsState()
 
     // Sync global top status bar values with viewModel
     LaunchedEffect(selectedCountry, isConnected) {
@@ -5354,10 +5355,8 @@ fun VpnScreen(
     // AI availability check effect
     LaunchedEffect(selectedCountry, isConnected) {
         if (!isConnected) {
-            aiStatus = "unavailable"
             viewModel.aiAvailabilityStatus.value = "unavailable"
         } else {
-            aiStatus = "checking"
             viewModel.aiAvailabilityStatus.value = "checking"
             
             // Perform the real and simulated check
@@ -5370,7 +5369,6 @@ fun VpnScreen(
 
             if (isKeyPlaceholder) {
                 delay(1200)
-                aiStatus = "unavailable"
                 viewModel.aiAvailabilityStatus.value = "unavailable"
             } else {
                 delay(1200) // Beautiful suspense loader
@@ -5394,27 +5392,11 @@ fun VpnScreen(
                 }
                 
                 if (realReachable || isConnected) {
-                    aiStatus = "available"
                     viewModel.aiAvailabilityStatus.value = "available"
                 } else {
-                    aiStatus = "unavailable"
                     viewModel.aiAvailabilityStatus.value = "unavailable"
                 }
             }
-        }
-    }
-
-    // Connect timer & data flow simulator
-    LaunchedEffect(isConnected) {
-        if (isConnected) {
-            while (true) {
-                delay(1000)
-                durationSeconds++
-                kbReceived += (50..350).random() / 10.0
-                kbSent += (30..180).random() / 10.0
-            }
-        } else {
-            durationSeconds = 0
         }
     }
 
@@ -5440,8 +5422,8 @@ fun VpnScreen(
                 connectionStep = step
                 delay(700)
             }
-            isConnecting = false
-            isConnected = true
+            viewModel.vpnConnecting.value = false
+            viewModel.vpnConnected.value = true
         }
     }
 
@@ -5583,9 +5565,9 @@ fun VpnScreen(
                         .clickable {
                             if (isConnecting) return@clickable
                             if (isConnected) {
-                                isConnected = false
+                                viewModel.vpnConnected.value = false
                             } else {
-                                isConnecting = true
+                                viewModel.vpnConnecting.value = true
                             }
                         }
                 ) {
@@ -5872,14 +5854,17 @@ fun VpnScreen(
                                         RoundedCornerShape(12.dp)
                                     )
                                     .clickable {
-                                        selectedCountry = country
+                                        val idx = countries.indexOf(country)
+                                        if (idx >= 0) {
+                                            viewModel.vpnCountryIndex.value = idx
+                                        }
                                         showCountrySelector = false
                                         // Reconnect to new country simulation
-                                        isConnected = false
-                                        isConnecting = true
-                                        durationSeconds = 0
-                                        kbReceived = 1.2
-                                        kbSent = 0.8
+                                        viewModel.vpnConnected.value = false
+                                        viewModel.vpnConnecting.value = true
+                                        viewModel.vpnDurationSeconds.value = 0
+                                        viewModel.vpnKbReceived.value = 1.2
+                                        viewModel.vpnKbSent.value = 0.8
                                     }
                                     .padding(14.dp),
                                 verticalAlignment = Alignment.CenterVertically
