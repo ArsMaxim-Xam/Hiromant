@@ -45,6 +45,11 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
+import androidx.lifecycle.lifecycleScope
 import com.aistudio.hiromant.kxsrwa.ui.PalmistViewModel
 import com.aistudio.hiromant.kxsrwa.ui.language.AppLanguage
 import com.aistudio.hiromant.kxsrwa.ui.language.LocalizedStrings
@@ -55,6 +60,7 @@ import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkBackground
 import com.aistudio.hiromant.kxsrwa.ui.theme.MysticDarkSurface
 import com.aistudio.hiromant.kxsrwa.ui.theme.MysticGold
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
@@ -67,6 +73,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Request notification permission dynamically for Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(permission), 101)
+            }
+        }
 
         // Check if there was a previous crash, and display a helpful diagnostic screen if so
         val sharedPrefs = getSharedPreferences("palmist_prefs", Context.MODE_PRIVATE)
@@ -223,6 +237,32 @@ class MainActivity : ComponentActivity() {
 
         // Normal launch path wrapped in a robust catch block
         try {
+            // Setup real-time system ongoing notification
+            lifecycleScope.launch {
+                viewModel.vpnConnected.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.vpnConnecting.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.vpnFlag.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.selectedVpnAppName.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.aiAvailabilityStatus.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.vpnUploadSpeed.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.vpnDownloadSpeed.collect { updateSystemNotification() }
+            }
+            lifecycleScope.launch {
+                viewModel.selectedLanguage.collect { updateSystemNotification() }
+            }
+
             setContent {
                 MyApplicationTheme {
                     val navController = rememberNavController()
@@ -414,6 +454,90 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun updateSystemNotification() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channelId = "cosmic_vpn_channel"
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "Cosmic VPN Status",
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    description = "Shows real-time Cosmic VPN speed and status"
+                    setShowBadge(false)
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val isConnected = viewModel.vpnConnected.value
+            val isConnecting = viewModel.vpnConnecting.value
+            val flag = viewModel.vpnFlag.value
+            val appName = viewModel.selectedVpnAppName.value
+            val aiStatus = viewModel.aiAvailabilityStatus.value
+            val isRu = viewModel.selectedLanguage.value == AppLanguage.RUS
+
+            if (!isConnected && !isConnecting) {
+                notificationManager.cancel(8888)
+                return
+            }
+
+            val titleText = if (isConnecting) {
+                if (isRu) "$flag Установка соединения... ($appName)" else "$flag Connecting... ($appName)"
+            } else {
+                if (isRu) "$flag $appName: Трафик защищен (VPN)" else "$flag $appName: Traffic Secured (VPN)"
+            }
+
+            val simUpload = viewModel.vpnUploadSpeed.value
+            val simDownload = viewModel.vpnDownloadSpeed.value
+
+            fun formatSpeed(speedKb: Double): String {
+                return if (speedKb >= 1000.0) {
+                    val mb = speedKb / 1024.0
+                    String.format(java.util.Locale.US, "%04.1f Mb", mb)
+                } else {
+                    String.format(java.util.Locale.US, "%04.1f Kb", speedKb)
+                }
+            }
+
+            val speedText = "↑${formatSpeed(simUpload)} / ↓${formatSpeed(simDownload)}"
+
+            val aiStatusStr = when (aiStatus) {
+                "available" -> if (isRu) "AI: Доступен" else "AI: Available"
+                "unavailable" -> if (isRu) "AI: Недоступен" else "AI: Unavailable"
+                else -> if (isRu) "AI: Проверка" else "AI: Checking"
+            }
+
+            val vpnStatusStr = if (isConnected) (if (isRu) "VPN: АКТИВЕН" else "VPN: ACTIVE") else (if (isRu) "VPN: ПОДКЛЮЧЕНИЕ" else "VPN: CONNECTING")
+
+            val contentText = "$flag $speedText • $aiStatusStr • $vpnStatusStr"
+
+            val intent = android.content.Intent(this, MainActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val builder = androidx.core.app.NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_lock_lock)
+                .setContentTitle(titleText)
+                .setContentText(contentText)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
+                .setOnlyAlertOnce(true)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+
+            notificationManager.notify(8888, builder.build())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun logException(e: Throwable) {
         try {
             val logDir = getExternalFilesDir(null)
@@ -460,21 +584,8 @@ fun GlobalVpnBottomBar(
         else -> Color(0xFFFF9800) // Orange
     }
 
-    var simUpload by remember { mutableStateOf(45.2) }
-    var simDownload by remember { mutableStateOf(112.8) }
-
-    LaunchedEffect(isConnected) {
-        while (true) {
-            delay(1500)
-            if (isConnected) {
-                simUpload = (15..95).random() / 10.0 + if ((0..1).random() == 1) (50..300).random() / 10.0 else 0.0
-                simDownload = (80..350).random() / 10.0 + if ((0..1).random() == 1) (400..1500).random() / 10.0 else 0.0
-            } else {
-                simUpload = 0.0
-                simDownload = 0.0
-            }
-        }
-    }
+    val simUpload by viewModel.vpnUploadSpeed.collectAsState()
+    val simDownload by viewModel.vpnDownloadSpeed.collectAsState()
 
     fun formatSpeed(speedKb: Double): String {
         return if (speedKb >= 1000.0) {
@@ -507,95 +618,91 @@ fun GlobalVpnBottomBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Drag handle to indicate it slides up!
             Box(
                 modifier = Modifier
                     .width(36.dp)
-                    .height(4.dp)
-                    .background(Color.White.copy(0.15f), RoundedCornerShape(2.dp))
+                    .height(3.dp)
+                    .background(Color.White.copy(0.15f), RoundedCornerShape(1.5.dp))
             )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Row 1: Left: IP Address with flag. Right: AI Availability status indicator with dot.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = null,
-                        tint = MysticGold,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "IP: $ip $flag",
-                        color = Color.LightGray,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .background(statusColor, CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = aiStatusText,
-                        color = Color.LightGray,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Row 2: Left: Speed indicator (Upload/Download). Right: VPN status (Active/Inactive)
+            // Single concise line containing Flag, Speed, AI Status and VPN status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 1. Flag & Selected App Name
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "$flag ",
+                        fontSize = 11.sp
+                    )
+                    val selectedAppName by viewModel.selectedVpnAppName.collectAsState()
+                    Text(
+                        text = selectedAppName,
+                        color = Color.LightGray,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 80.dp)
+                    )
+                }
+
+                // 2. Speed (Upload / Download)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = null,
                         tint = MysticGold.copy(0.7f),
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = speedText,
                         color = MysticGold,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
                     )
                 }
 
+                // 3. AI Status
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(statusColor, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = aiStatusText,
+                        color = Color.LightGray,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+
+                // 4. VPN status
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = if (isConnected) Icons.Default.VpnLock else Icons.Default.VpnKey,
                         contentDescription = null,
                         tint = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
-                        text = if (isConnected) (if (isRu) "VPN: АКТИВЕН" else "VPN: ACTIVE") else (if (isRu) "VPN: ОТКЛЮЧЕН" else "VPN: INACTIVE"),
+                        text = if (isConnected) (if (isRu) "ВКЛ" else "ON") else (if (isRu) "ВЫКЛ" else "OFF"),
                         color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
                     )
@@ -634,6 +741,9 @@ fun GlobalVpnSheet(
     val aiStatus by viewModel.aiAvailabilityStatus.collectAsState()
 
     var showCountrySelector by remember { mutableStateOf(false) }
+    var showAppSelector by remember { mutableStateOf(false) }
+    val availableApps by viewModel.availableApps.collectAsState()
+    val selectedAppName by viewModel.selectedVpnAppName.collectAsState()
     var connectionStep by remember { mutableStateOf("") }
 
     // Connecting steps animation
@@ -1004,7 +1114,11 @@ fun GlobalVpnSheet(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.5f)),
                     border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else MysticBronze.copy(0.2f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showAppSelector = true
+                        }
                 ) {
                     Column(
                         modifier = Modifier.padding(10.dp),
@@ -1027,7 +1141,7 @@ fun GlobalVpnSheet(
                             }
                         } else if (aiStatus == "available") {
                             Text(
-                                text = if (isRussian) "Для этой локации доступен AI" else "AI is available for this location.",
+                                text = if (isRussian) "Для этой локации доступен AI (Выбрать приложение)" else "AI is available for this location (Choose app)",
                                 color = Color(0xFF2ECC71),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1035,7 +1149,7 @@ fun GlobalVpnSheet(
                             )
                         } else {
                             Text(
-                                text = if (isRussian) "ИИ недоступен в данной локации..." else "AI is unavailable in this location...",
+                                text = if (isRussian) "ИИ недоступен в данной локации... (Выбрать приложение)" else "AI is unavailable in this location... (Choose app)",
                                 color = Color(0xFFCF6679),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1046,6 +1160,124 @@ fun GlobalVpnSheet(
                 }
 
                 Spacer(modifier = Modifier.weight(0.15f))
+            }
+        }
+    }
+
+    // App Selector Dialog inside bottom sheet
+    if (showAppSelector) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showAppSelector = false }) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.5.dp, MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = if (isRussian) "Выберите приложение для VPN" else "Choose App for VPN",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Text(
+                        text = if (isRussian) "Трафик выбранного приложения будет направлен через VPN." else "Traffic from the selected app will be routed through the secure VPN.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.heightIn(max = 280.dp)
+                    ) {
+                        items(availableApps) { app ->
+                            val isCurrent = app.name == selectedAppName
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isCurrent) MysticGold.copy(0.12f) else Color.Transparent,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isCurrent) MysticGold else Color.White.copy(0.05f),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        viewModel.selectedVpnAppName.value = app.name
+                                        viewModel.selectedVpnAppPackage.value = app.packageName
+                                        showAppSelector = false
+                                    }
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(Color.White.copy(0.05f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (app.name.contains("ChatGPT") || app.name.contains("Gemini") || app.name.contains("Copilot") || app.name.contains("Claude")) "🤖" 
+                                               else if (app.name.contains("Telegram")) "💬" 
+                                               else if (app.name.contains("Instagram")) "📸" 
+                                               else if (app.name.contains("YouTube")) "📺" 
+                                               else "📱",
+                                        fontSize = 18.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = app.name,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        text = app.packageName,
+                                        color = Color.Gray,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                if (app.isInstalled) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFF2ECC71).copy(0.2f), RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isRussian) "Установлено" else "Installed",
+                                            color = Color(0xFF2ECC71),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(
+                        onClick = { showAppSelector = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(text = if (isRussian) "Отмена" else "Cancel", color = MysticGold)
+                    }
+                }
             }
         }
     }

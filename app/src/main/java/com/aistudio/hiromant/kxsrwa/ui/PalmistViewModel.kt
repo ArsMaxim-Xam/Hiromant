@@ -78,6 +78,50 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val vpnDurationSeconds = MutableStateFlow(14)
     val vpnKbReceived = MutableStateFlow(245.8)
     val vpnKbSent = MutableStateFlow(112.4)
+    val vpnUploadSpeed = MutableStateFlow(45.2)
+    val vpnDownloadSpeed = MutableStateFlow(112.8)
+
+    val selectedVpnAppName = MutableStateFlow("ChatGPT")
+    val selectedVpnAppPackage = MutableStateFlow("com.openai.chatgpt")
+
+    data class AppItem(val name: String, val packageName: String, val isInstalled: Boolean)
+    val availableApps = MutableStateFlow<List<AppItem>>(emptyList())
+
+    fun loadInstalledApps() {
+        viewModelScope.launch {
+            try {
+                val context = getApplication<Application>()
+                val pm = context.packageManager
+                val intent = android.content.Intent(android.content.Intent.ACTION_MAIN, null).apply {
+                    addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+                }
+                val launchables = pm.queryIntentActivities(intent, 0)
+
+                val installed = launchables.mapNotNull { resolveInfo ->
+                    val name = resolveInfo.loadLabel(pm).toString()
+                    val pkg = resolveInfo.activityInfo.packageName
+                    if (pkg != context.packageName) {
+                        AppItem(name, pkg, true)
+                    } else null
+                }.distinctBy { it.packageName }.sortedBy { it.name.lowercase() }
+
+                val popular = listOf(
+                    AppItem("ChatGPT (OpenAI)", "com.openai.chatgpt", false),
+                    AppItem("Gemini (Google)", "com.google.android.apps.bard", false),
+                    AppItem("Copilot (Microsoft)", "com.microsoft.copilot", false),
+                    AppItem("Telegram", "org.telegram.messenger", false),
+                    AppItem("Instagram", "com.instagram.android", false),
+                    AppItem("YouTube", "com.google.android.youtube", false),
+                    AppItem("Claude AI", "com.anthropic.claude", false)
+                )
+
+                val merged = (installed + popular.filter { p -> installed.none { i -> i.packageName == p.packageName } })
+                availableApps.value = merged
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     init {
         // Load initially selected language
@@ -88,14 +132,26 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         // Load initially stored font scale
         _fontScale.value = repository.getFontScale()
 
+        // Load available launcher apps
+        loadInstalledApps()
+
         // Centralized VPN simulation loop
         viewModelScope.launch {
             while (true) {
                 delay(1000)
                 if (vpnConnected.value && !vpnConnecting.value) {
                     vpnDurationSeconds.value += 1
-                    vpnKbReceived.value += (50..350).random() / 10.0
-                    vpnKbSent.value += (30..180).random() / 10.0
+                    
+                    val up = (15..95).random() / 10.0 + if ((0..1).random() == 1) (50..300).random() / 10.0 else 0.0
+                    val down = (80..350).random() / 10.0 + if ((0..1).random() == 1) (400..1500).random() / 10.0 else 0.0
+                    vpnUploadSpeed.value = up
+                    vpnDownloadSpeed.value = down
+
+                    vpnKbReceived.value += down
+                    vpnKbSent.value += up
+                } else {
+                    vpnUploadSpeed.value = 0.0
+                    vpnDownloadSpeed.value = 0.0
                 }
             }
         }
