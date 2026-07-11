@@ -12,6 +12,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -231,129 +233,136 @@ class MainActivity : ComponentActivity() {
                             if (viewModel.isLanguageSelected()) "splash" else "language"
                         }
 
-                        NavHost(
-                            navController = navController,
-                            startDestination = startDest,
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(MysticDarkBackground)
                         ) {
-                        // 1. Language selector
-                        composable("language") {
-                            LanguageSelectionScreen(
-                                viewModel = viewModel,
-                                onNavigateToSplash = {
-                                    val isAlreadySelected = viewModel.isLanguageSelected()
-                                    viewModel.markLanguageSelected()
-                                    if (isAlreadySelected) {
-                                        navController.popBackStack()
-                                    } else {
-                                        navController.navigate("splash") {
-                                            popUpTo("language") { inclusive = true }
+                            GlobalStatusBar(viewModel)
+                            NavHost(
+                                navController = navController,
+                                startDestination = startDest,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                // 1. Language selector
+                                composable("language") {
+                                    LanguageSelectionScreen(
+                                        viewModel = viewModel,
+                                        onNavigateToSplash = {
+                                            val isAlreadySelected = viewModel.isLanguageSelected()
+                                            viewModel.markLanguageSelected()
+                                            if (isAlreadySelected) {
+                                                navController.popBackStack()
+                                            } else {
+                                                navController.navigate("splash") {
+                                                    popUpTo("language") { inclusive = true }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // 2. Parchment splash animation
+                                composable("splash") {
+                                    MysticSplashScreen(
+                                        viewModel = viewModel,
+                                        onNavigateNext = { navController.navigate("vpn") }
+                                    )
+                                }
+
+                                // VPN Setup
+                                composable("vpn") {
+                                    VpnScreen(
+                                        viewModel = viewModel,
+                                        onNavigateNext = {
+                                            navController.navigate("auth") {
+                                                popUpTo("vpn") { inclusive = true }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // 3. Optional authorization
+                                composable("auth") {
+                                    AuthScreen(
+                                        viewModel = viewModel,
+                                        onNavigateNext = { navController.navigate("profile") }
+                                    )
+                                }
+
+                                // 4. Profile Details Form
+                                composable("profile") {
+                                    ProfileScreen(
+                                        viewModel = viewModel,
+                                        onNavigateNext = {
+                                            navController.navigate("main_container") {
+                                                popUpTo("profile") { inclusive = true }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // 5. Main dashboard with bottom navigation bar tabs
+                                composable("main_container") {
+                                    MainContainerScreen(
+                                        viewModel = viewModel,
+                                        onNavigateToLoading = { navController.navigate("loading") },
+                                        onNavigateToBilling = { navController.navigate("billing") },
+                                        onNavigateToSettings = { navController.navigate("settings") }
+                                    )
+                                }
+
+                                // 6. Progressive loader screen
+                                composable("loading") {
+                                    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+                                    
+                                    LaunchedEffect(isAnalyzing) {
+                                        if (!isAnalyzing) {
+                                            navController.navigate("result") {
+                                                popUpTo("loading") { inclusive = true }
+                                            }
                                         }
                                     }
+
+                                    MysticLoadingScreen(viewModel = viewModel)
                                 }
-                            )
-                        }
 
-                        // 2. Parchment splash animation
-                        composable("splash") {
-                            MysticSplashScreen(
-                                viewModel = viewModel,
-                                onNavigateNext = { navController.navigate("vpn") }
-                            )
-                        }
-
-                        // VPN Setup
-                        composable("vpn") {
-                            VpnScreen(
-                                viewModel = viewModel,
-                                onNavigateNext = {
-                                    navController.navigate("auth") {
-                                        popUpTo("vpn") { inclusive = true }
-                                    }
+                                // 7. Analysis Report Display + interactive palm map
+                                composable("result") {
+                                    ResultsScreen(
+                                        viewModel = viewModel,
+                                        onNavigateToCompatibility = {
+                                            navController.navigate("main_container")
+                                        },
+                                        onNavigateToBilling = { navController.navigate("billing") },
+                                        onClose = {
+                                            navController.navigate("main_container") {
+                                                popUpTo("main_container") { inclusive = true }
+                                            }
+                                        }
+                                    )
                                 }
-                            )
-                        }
 
-                        // 3. Optional authorization
-                        composable("auth") {
-                            AuthScreen(
-                                viewModel = viewModel,
-                                onNavigateNext = { navController.navigate("profile") }
-                            )
-                        }
-
-                        // 4. Profile Details Form
-                        composable("profile") {
-                            ProfileScreen(
-                                viewModel = viewModel,
-                                onNavigateNext = {
-                                    navController.navigate("main_container") {
-                                        popUpTo("profile") { inclusive = true }
-                                    }
+                                // 8. Payment panel (Yandex Pay / YooKassa / Play billing)
+                                composable("billing") {
+                                    BillingScreen(
+                                        viewModel = viewModel,
+                                        onNavigateBack = { navController.popBackStack() }
+                                    )
                                 }
-                            )
-                        }
 
-                        // 5. Main dashboard with bottom navigation bar tabs
-                        composable("main_container") {
-                            MainContainerScreen(
-                                viewModel = viewModel,
-                                onNavigateToLoading = { navController.navigate("loading") },
-                                onNavigateToBilling = { navController.navigate("billing") },
-                                onNavigateToSettings = { navController.navigate("settings") }
-                            )
-                        }
-
-                        // 6. Progressive loader screen
-                        composable("loading") {
-                            val isAnalyzing by viewModel.isAnalyzing.collectAsState()
-                            
-                            LaunchedEffect(isAnalyzing) {
-                                if (!isAnalyzing) {
-                                    navController.navigate("result") {
-                                        popUpTo("loading") { inclusive = true }
-                                    }
+                                // 9. Settings screen
+                                composable("settings") {
+                                    SettingsScreen(
+                                        viewModel = viewModel,
+                                        onNavigateToLanguage = { navController.navigate("language") },
+                                        onNavigateBack = { navController.popBackStack() }
+                                    )
                                 }
                             }
-
-                            MysticLoadingScreen(viewModel = viewModel)
                         }
-
-                        // 7. Analysis Report Display + interactive palm map
-                        composable("result") {
-                            ResultsScreen(
-                                viewModel = viewModel,
-                                onNavigateToCompatibility = {
-                                    navController.navigate("main_container")
-                                },
-                                onNavigateToBilling = { navController.navigate("billing") },
-                                onClose = {
-                                    navController.navigate("main_container") {
-                                        popUpTo("main_container") { inclusive = true }
-                                    }
-                                }
-                            )
-                        }
-
-                        // 8. Payment panel (Yandex Pay / YooKassa / Play billing)
-                        composable("billing") {
-                            BillingScreen(
-                                viewModel = viewModel,
-                                onNavigateBack = { navController.popBackStack() }
-                            )
-                        }
-
-                        // 9. Settings screen
-                        composable("settings") {
-                            SettingsScreen(
-                                viewModel = viewModel,
-                                onNavigateToLanguage = { navController.navigate("language") },
-                                onNavigateBack = { navController.popBackStack() }
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -387,6 +396,75 @@ class MainActivity : ComponentActivity() {
             }
         } catch (ex: Exception) {
             Log.e("MainActivity", "Не удалось записать лог", ex)
+        }
+    }
+}
+
+@Composable
+fun GlobalStatusBar(viewModel: PalmistViewModel) {
+    val ip by viewModel.vpnIp.collectAsState()
+    val flag by viewModel.vpnFlag.collectAsState()
+    val aiStatus by viewModel.aiAvailabilityStatus.collectAsState()
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+
+    val isRu = currentLang == AppLanguage.RUS
+
+    val aiStatusText = when (aiStatus) {
+        "available" -> if (isRu) "AI: Доступен" else "AI: Available"
+        "unavailable" -> if (isRu) "AI: Недоступен" else "AI: Unavailable"
+        else -> if (isRu) "AI: Проверка..." else "AI: Checking..."
+    }
+
+    val statusColor = when (aiStatus) {
+        "available" -> Color(0xFF4CAF50) // Green
+        "unavailable" -> Color(0xFFF44336) // Red
+        else -> Color(0xFFFF9800) // Orange
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding(),
+        color = Color(0xFF07070C),
+        border = BorderStroke(0.5.dp, MysticGold.copy(0.15f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Language,
+                    contentDescription = null,
+                    tint = MysticGold,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "IP: $ip  $flag",
+                    color = Color.LightGray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(statusColor, CircleShape)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = aiStatusText,
+                    color = Color.LightGray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

@@ -319,7 +319,7 @@ object LocalizedStrings {
         appVersionLabel = "Версия приложения",
 
         settTitle = "Настройки",
-        settLanguage = "Язык интерфейса",
+        settLanguage = "Язык",
         settSubStatus = "Статус подписки",
         settSubActive = "Премиум активен (10 сеансов)",
         settSubInactive = "Бесплатная базовая версия",
@@ -478,7 +478,7 @@ object LocalizedStrings {
         appVersionLabel = "App Version",
 
         settTitle = "Settings",
-        settLanguage = "Interface Language",
+        settLanguage = "Language",
         settSubStatus = "Subscription Tier",
         settSubActive = "Premium active (10 readings)",
         settSubInactive = "Free limited edition",

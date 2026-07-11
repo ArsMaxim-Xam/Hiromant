@@ -68,6 +68,11 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
     val videoUri = MutableStateFlow<android.net.Uri?>(null)
 
+    // Global VPN Status Flows for Top Status Bar
+    val vpnIp = MutableStateFlow("185.220.101.42")
+    val vpnFlag = MutableStateFlow("🇩🇪")
+    val aiAvailabilityStatus = MutableStateFlow("available") // "available", "unavailable", "checking"
+
     init {
         // Load initially selected language
         val code = repository.getSelectedLanguage()
@@ -147,6 +152,18 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     fun clearHistory() {
         viewModelScope.launch {
             repository.clearHistory()
+        }
+    }
+
+    fun resetApplicationData() {
+        viewModelScope.launch {
+            repository.clearHistory()
+            repository.setLanguageSelected(false)
+            try {
+                repository.saveUserProfile("", "", 25, 175, "Right", null, null, false)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

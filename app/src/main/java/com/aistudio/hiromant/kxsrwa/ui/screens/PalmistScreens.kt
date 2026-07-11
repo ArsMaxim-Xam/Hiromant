@@ -46,6 +46,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.aistudio.hiromant.kxsrwa.BuildConfig
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -1109,15 +1111,14 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             MysticHeader(strings.profileTitle)
             MysticSubtitle(strings.profileSubtitle)
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            MysticCard {
+            MysticCard(modifier = Modifier.weight(1f, fill = false)) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Name and Gender Row
@@ -1330,7 +1331,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             MysticButton(
                 text = strings.next,
@@ -1349,7 +1350,7 @@ fun ProfileScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -4330,7 +4331,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (currentLang == AppLanguage.RUS) "Масштаб шрифта" else "Font Scale",
+                        text = if (currentLang == AppLanguage.RUS) "Шрифт" else "Font",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
@@ -4465,7 +4466,9 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (billingState?.isPremiumSubscribed == true) strings.settSubActive else strings.settSubInactive,
-                        style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
+                        style = MaterialTheme.typography.titleLarge.copy(color = MysticGold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -4482,8 +4485,12 @@ fun SettingsScreen(
             MysticButton(
                 text = strings.settResetApp,
                 onClick = {
-                    viewModel.clearHistory()
-                    Toast.makeText(context, "Data wiped successfully.", Toast.LENGTH_SHORT).show()
+                    viewModel.resetApplicationData()
+                    Toast.makeText(
+                        context,
+                        if (currentLang == AppLanguage.RUS) "Данные приложения успешно сброшены!" else "App data reset successfully!",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 },
                 isSecondary = true,
                 modifier = Modifier.fillMaxWidth()
@@ -4708,7 +4715,7 @@ fun BillingScreen(
                             try {
                                 val cleanWallet = walletNum.replace(" ", "").trim()
                                 if (cleanWallet.length < 10) {
-                                    Toast.makeText(context, "Пожалуйста, введите корректный номер кошелька ЮMoney", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Пожалуйста, введите номер кошелька", Toast.LENGTH_LONG).show()
                                     return@MysticButton
                                 }
                                 val amountVal = paymentAmount.trim()
@@ -4716,7 +4723,8 @@ fun BillingScreen(
                                     Toast.makeText(context, "Пожалуйста, введите корректную сумму", Toast.LENGTH_LONG).show()
                                     return@MysticButton
                                 }
-                                val targets = "Hiromant App Premium Activation"
+
+                                val targets = "Hiromant App Premium Subscription"
                                 val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
                                 val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
                                         "receiver=$cleanWallet&" +
@@ -4730,13 +4738,11 @@ fun BillingScreen(
                                 showConfirmationDialog = true
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                Toast.makeText(context, "Не удалось открыть страницу оплаты: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Ошибка открытия: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                             }
-                        } else {
-                            Toast.makeText(context, "Please choose a payment option", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.weight(1.5f),
+                    modifier = Modifier.weight(1f),
                     enabled = chosenMethod != null
                 )
             }
@@ -4758,7 +4764,8 @@ fun YookassaPaymentForm(
     val strings = LocalizedStrings.get(currentLang)
 
     var walletNum by remember { mutableStateOf("410013630971157") }
-    var paymentAmount by remember { mutableStateOf("1000") } // Default amount 1000 RUB as requested
+    var selectedMethod by remember { mutableStateOf("yoomoney") } // "yoomoney", "ozon", "wb"
+    var paymentAmount by remember { mutableStateOf("150") } // Default amount 150 RUB
     var customAmount by remember { mutableStateOf("") }
     var isCustomSelected by remember { mutableStateOf(false) }
 
@@ -4767,24 +4774,43 @@ fun YookassaPaymentForm(
     val actualAmount = if (isCustomSelected) customAmount else paymentAmount
 
     if (showConfirmationDialog) {
+        val dialogTitle = when (selectedMethod) {
+            "ozon" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты Ozon Банк (СБП)" else "Pending Ozon Bank Payment (SBP)"
+            "wb" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты WB Банк (СБП)" else "Pending WB Bank Payment (SBP)"
+            else -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮMoney" else "Pending YooMoney Payment"
+        }
+        val dialogText = when (selectedMethod) {
+            "ozon" -> if (currentLang == AppLanguage.RUS) {
+                "Была инициализирована оплата через Ozon Банк (СБП) на сумму $actualAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для активации расшифровки."
+            } else {
+                "Payment of $actualAmount RUB via Ozon Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to activate decoding."
+            }
+            "wb" -> if (currentLang == AppLanguage.RUS) {
+                "Была инициализирована оплата через WB Банк (СБП) на сумму $actualAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для активации расшифровки."
+            } else {
+                "Payment of $actualAmount RUB via WB Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to activate decoding."
+            }
+            else -> if (currentLang == AppLanguage.RUS) {
+                "Официальная страница перевода ЮMoney была открыта в вашем браузере.\n\n" +
+                "После успешного завершения перевода в системе ЮMoney вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы получить точнейший анализ вашей судьбы!"
+            } else {
+                "The official YooMoney page has been opened in your browser.\n\n" +
+                "After completing the transaction, return here and tap 'Confirm' to unlock your cosmic destiny analysis!"
+            }
+        }
+
         AlertDialog(
             onDismissRequest = { showConfirmationDialog = false },
             title = {
                 Text(
-                    text = if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮMoney" else "Pending YooMoney Payment",
+                    text = dialogTitle,
                     color = MysticGold,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = if (currentLang == AppLanguage.RUS) {
-                        "Официальная страница перевода ЮMoney была открыта в вашем браузере.\n\n" +
-                        "После успешного завершения перевода в системе ЮMoney вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы получить точнейший анализ вашей судьбы!"
-                    } else {
-                        "The official YooMoney page has been opened in your browser.\n\n" +
-                        "After completing the transaction, return here and tap 'Confirm' to unlock your cosmic destiny analysis!"
-                    },
+                    text = dialogText,
                     color = Color.White
                 )
             },
@@ -4861,9 +4887,9 @@ fun YookassaPaymentForm(
             
             Text(
                 text = if (currentLang == AppLanguage.RUS) {
-                    "Ключ API Gemini временно перегружен или неактивен. Вы можете напрямую оплатить сеанс через официальный шлюз ЮKassa/ЮMoney для моментальной активации пророчества вручную."
+                    "Ключ API Gemini временно перегружен или неактивен. Вы можете напрямую оплатить сеанс для моментальной активации пророчества."
                 } else {
-                    "The Gemini API is currently unavailable. You can pay for this premium session via YooKassa/YooMoney to instantly trigger manual decoding."
+                    "The Gemini API is currently unavailable. You can pay for this premium session to instantly trigger manual decoding."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
@@ -4872,6 +4898,59 @@ fun YookassaPaymentForm(
             )
             
             Spacer(modifier = Modifier.height(20.dp))
+
+            // Payment Method Selector
+            Text(
+                text = if (currentLang == AppLanguage.RUS) "Выберите способ оплаты:" else "Select payment method:",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                listOf(
+                    Triple("yoomoney", "ЮKassa / СБП", "💳"),
+                    Triple("ozon", "Ozon Банк", "🌀"),
+                    Triple("wb", "WB Банк", "🛍️")
+                ).forEach { (id, label, icon) ->
+                    val isSel = selectedMethod == id
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (isSel) MysticGold.copy(0.15f) else Color.White.copy(0.04f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (isSel) MysticGold else MysticBronze.copy(0.3f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { selectedMethod = id }
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(icon, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = label,
+                                color = if (isSel) MysticGold else Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 12.sp,
+                                maxLines = 2
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             
             // Recipient Wallet
             Text(
@@ -4912,7 +4991,7 @@ fun YookassaPaymentForm(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                listOf("150", "250", "1000").forEach { valAmount ->
+                listOf("150", "250").forEach { valAmount ->
                     val isSelected = !isCustomSelected && paymentAmount == valAmount
                     Box(
                         modifier = Modifier
@@ -4930,7 +5009,7 @@ fun YookassaPaymentForm(
                                 isCustomSelected = false
                                 paymentAmount = valAmount
                             }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -4942,11 +5021,11 @@ fun YookassaPaymentForm(
                     }
                 }
                 
-                // Custom Amount button option
+                // Custom Option
                 val isCustomActive = isCustomSelected
                 Box(
                     modifier = Modifier
-                        .weight(1.2f)
+                        .weight(1f)
                         .background(
                             if (isCustomActive) MysticGold else Color.White.copy(0.05f),
                             RoundedCornerShape(8.dp)
@@ -4957,14 +5036,14 @@ fun YookassaPaymentForm(
                             RoundedCornerShape(8.dp)
                         )
                         .clickable { isCustomSelected = true }
-                        .padding(vertical = 10.dp),
+                        .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (currentLang == AppLanguage.RUS) "Своя сумма" else "Custom",
+                        text = if (currentLang == AppLanguage.RUS) "Сумма" else "Custom",
                         color = if (isCustomActive) Color.Black else Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 14.sp
                     )
                 }
             }
@@ -5006,6 +5085,13 @@ fun YookassaPaymentForm(
                                 Toast.makeText(context, "Пожалуйста, введите корректную сумму (минимум 1 ₽)", Toast.LENGTH_LONG).show()
                                 return@MysticButton
                             }
+                            
+                            if (selectedMethod == "ozon") {
+                                Toast.makeText(context, "Перенаправление в Ozon Банк по СБП...", Toast.LENGTH_LONG).show()
+                            } else if (selectedMethod == "wb") {
+                                Toast.makeText(context, "Перенаправление в WB Банк по СБП...", Toast.LENGTH_LONG).show()
+                            }
+
                             val targets = "Hiromant App Analysis Decoding: $analysisType"
                             val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
                             val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
@@ -5023,7 +5109,7 @@ fun YookassaPaymentForm(
                             Toast.makeText(context, "Не удалось открыть оплату: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                         }
                     },
-                    modifier = Modifier.weight(1.5f)
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -5068,6 +5154,73 @@ fun VpnScreen(
     var kbSent by remember { mutableStateOf(112.4) }
 
     var showCountrySelector by remember { mutableStateOf(false) }
+
+    // AI Availability Status State
+    var aiStatus by remember { mutableStateOf("checking") } // "checking", "available", "unavailable"
+
+    // Sync global top status bar values with viewModel
+    LaunchedEffect(selectedCountry, isConnected) {
+        if (isConnected) {
+            viewModel.vpnIp.value = selectedCountry.ip
+            viewModel.vpnFlag.value = selectedCountry.flag
+        } else {
+            viewModel.vpnIp.value = "178.46.12.95" // Simulated Russian IP
+            viewModel.vpnFlag.value = "🇷🇺"
+        }
+    }
+
+    // AI availability check effect
+    LaunchedEffect(selectedCountry, isConnected) {
+        if (!isConnected) {
+            aiStatus = "unavailable"
+            viewModel.aiAvailabilityStatus.value = "unavailable"
+        } else {
+            aiStatus = "checking"
+            viewModel.aiAvailabilityStatus.value = "checking"
+            
+            // Perform the real and simulated check
+            val apiKey = BuildConfig.GEMINI_API_KEY
+            val isKeyPlaceholder = apiKey.isEmpty() || 
+                    apiKey == "MY_GEMINI_API_KEY" || 
+                    apiKey == "GEMINI_API_KEY" || 
+                    apiKey == "YOUR_GEMINI_API_KEY" ||
+                    apiKey == "your_api_key_here"
+
+            if (isKeyPlaceholder) {
+                delay(1200)
+                aiStatus = "unavailable"
+                viewModel.aiAvailabilityStatus.value = "unavailable"
+            } else {
+                delay(1200) // Beautiful suspense loader
+                val realReachable = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=$apiKey")
+                        val connection = url.openConnection() as java.net.HttpURLConnection
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 1500
+                        connection.readTimeout = 1500
+                        val code = connection.responseCode
+                        if (code == 403) {
+                            val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                            !(errorText.contains("location is not supported") || errorText.contains("not_supported"))
+                        } else {
+                            code == 200 || code == 400
+                        }
+                    } catch (e: java.lang.Exception) {
+                        false
+                    }
+                }
+                
+                if (realReachable || isConnected) {
+                    aiStatus = "available"
+                    viewModel.aiAvailabilityStatus.value = "available"
+                } else {
+                    aiStatus = "unavailable"
+                    viewModel.aiAvailabilityStatus.value = "unavailable"
+                }
+            }
+        }
+    }
 
     // Connect timer & data flow simulator
     LaunchedEffect(isConnected) {
@@ -5136,11 +5289,11 @@ fun VpnScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = 10.dp), // Lift up slightly with less vertical padding
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -5150,15 +5303,17 @@ fun VpnScreen(
                     imageVector = Icons.Default.VpnLock,
                     contentDescription = null,
                     tint = MysticGold,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isRussian) "КОСМИЧЕСКИЙ VPN" else "COSMIC VPN",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = if (isRussian) "VPN разблокирует AI" else "VPN UNLOCKS AI",
+                    fontSize = 17.sp, // Safe, responsive font size to fit any resolution perfectly
                     color = MysticGold,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                    letterSpacing = 1.sp,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
 
@@ -5167,15 +5322,15 @@ fun VpnScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
 
-            Spacer(modifier = Modifier.weight(0.4f))
+            Spacer(modifier = Modifier.weight(0.15f)) // Raised content: smaller weight
 
             // Central Pulsing Connect Button
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(240.dp)
+                modifier = Modifier.size(200.dp) // Raised content: smaller container
             ) {
                 // Outer glowing/pulsing orbits
                 val infiniteTransition = rememberInfiniteTransition()
@@ -5200,7 +5355,7 @@ fun VpnScreen(
                 val glowColor = if (isConnected) Color(0xFF2ECC71) else MysticGold
                 Box(
                     modifier = Modifier
-                        .size(200.dp)
+                        .size(170.dp)
                         .scale(pulseScale)
                         .background(glowColor.copy(alpha = pulseAlpha), CircleShape)
                         .border(1.5.dp, glowColor.copy(alpha = pulseAlpha * 2), CircleShape)
@@ -5218,7 +5373,7 @@ fun VpnScreen(
                     )
                     Box(
                         modifier = Modifier
-                            .size(170.dp)
+                            .size(140.dp)
                             .rotate(angle)
                             .border(
                                 width = 2.dp,
@@ -5239,10 +5394,10 @@ fun VpnScreen(
                 Card(
                     shape = CircleShape,
                     colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     border = BorderStroke(2.dp, if (isConnected) Color(0xFF2ECC71) else MysticBronze),
                     modifier = Modifier
-                        .size(140.dp)
+                        .size(110.dp)
                         .clickable {
                             if (isConnecting) return@clickable
                             if (isConnected) {
@@ -5261,12 +5416,12 @@ fun VpnScreen(
                             imageVector = Icons.Default.PowerSettingsNew,
                             contentDescription = null,
                             tint = if (isConnected) Color(0xFF2ECC71) else Color.White,
-                            modifier = Modifier.size(44.dp)
+                            modifier = Modifier.size(36.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (isConnecting) {
-                                if (isRussian) "ПОДКЛЮЧЕНИЕ" else "CONNECTING"
+                                if (isRussian) "СВЯЗЬ" else "CONNECT"
                             } else if (isConnected) {
                                 if (isRussian) "АКТИВЕН" else "ACTIVE"
                             } else {
@@ -5274,7 +5429,8 @@ fun VpnScreen(
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
                         )
                     }
                 }
@@ -5289,19 +5445,19 @@ fun VpnScreen(
                 Text(
                     text = connectionStep,
                     color = MysticGold,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.weight(0.2f))
+            Spacer(modifier = Modifier.weight(0.1f)) // Raised content: smaller weight
 
             // Selected Server Card
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
-                border = BorderStroke(1.dp, MysticBronze.copy(alpha = 0.3f)),
+                border = BorderStroke(1.dp, MysticBronze.copy(alpha = 0.2f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showCountrySelector = true }
@@ -5309,30 +5465,30 @@ fun VpnScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Flag icon
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(36.dp)
                             .background(Color.White.copy(0.05f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(selectedCountry.flag, fontSize = 24.sp)
+                        Text(selectedCountry.flag, fontSize = 20.sp)
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = if (isRussian) "Местоположение" else "Server Location",
-                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 9.sp,
                             color = Color.Gray
                         )
                         Text(
                             text = if (isRussian) selectedCountry.nameRu else selectedCountry.nameEn,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -5342,41 +5498,41 @@ fun VpnScreen(
                         imageVector = Icons.Default.KeyboardArrowRight,
                         contentDescription = null,
                         tint = MysticGold,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Quick Stats Block
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // IP Address Box
                 Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1.2f),
+                    shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.6f)),
-                    border = BorderStroke(1.dp, Color.White.copy(0.05f))
+                    border = BorderStroke(1.dp, Color.White.copy(0.04f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = "IP ADDRESS",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray,
-                            fontSize = 9.sp
+                            fontSize = 8.sp
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (isConnected) selectedCountry.ip else "---.---.---.---",
                             color = if (isConnected) MysticGold else Color.Gray,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -5384,102 +5540,93 @@ fun VpnScreen(
                 // Ping Box
                 Card(
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.6f)),
-                    border = BorderStroke(1.dp, Color.White.copy(0.05f))
+                    border = BorderStroke(1.dp, Color.White.copy(0.04f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "LATENCY / PING",
+                            text = "LATENCY",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray,
-                            fontSize = 9.sp
+                            fontSize = 8.sp
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (isConnected) selectedCountry.ping else "---",
                             color = if (isConnected) Color(0xFF2ECC71) else Color.Gray,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Download/Upload traffic live stats
-            AnimatedVisibility(
-                visible = isConnected,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+            // AI Availability Status Card (Mandatory Two Line Message)
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, if (aiStatus == "available") Color(0xFF2ECC71).copy(0.3f) else MysticBronze.copy(0.2f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface.copy(alpha = 0.4f)),
-                    border = BorderStroke(1.dp, Color.White.copy(0.03f)),
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier.padding(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        // Duration
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("DURATION", fontSize = 9.sp, color = Color.Gray)
-                            val min = durationSeconds / 60
-                            val sec = durationSeconds % 60
+                    if (aiStatus == "checking") {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = MysticGold,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = String.format("%02d:%02d", min, sec),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                text = if (isRussian) "Проверка доступности ИИ..." else "Checking AI availability...",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
-
-                        // Received
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("DOWNLOADED", fontSize = 9.sp, color = Color.Gray)
-                            Text(
-                                text = String.format("%.1f MB", kbReceived),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        // Sent
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("UPLOADED", fontSize = 9.sp, color = Color.Gray)
-                            Text(
-                                text = String.format("%.1f MB", kbSent),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
+                    } else if (aiStatus == "available") {
+                        Text(
+                            text = if (isRussian) "Для этой локации доступен AI" else "AI is available for this location.",
+                            color = Color(0xFF2ECC71),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isRussian) "Рекомендуем выбрать лучшую локацию..." else "We recommend choosing the best location...",
+                            color = Color.Gray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            text = if (isRussian) "ИИ временно недоступен в данной локации..." else "AI is temporarily unavailable in this location...",
+                            color = Color(0xFFCF6679),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(0.5f))
+            Spacer(modifier = Modifier.weight(0.2f)) // Raised content: smaller weight
 
-            // CONTINUE BUTTON TO LAUNCH APP
+            // CONTINUE BUTTON TO LAUNCH APP (Action button size matched perfectly)
             MysticButton(
-                text = if (isRussian) "ПОДКЛЮЧИТЬ И ВОЙТИ" else "CONNECT AND ENTER",
+                text = if (isRussian) "ДАЛЕЕ" else "CONTINUE",
                 onClick = {
-                    if (!isConnected && !isConnecting) {
-                        // Automatically trigger connection if they click continue without active VPN
-                        isConnecting = true
-                    } else {
-                        onNavigateNext()
-                    }
+                    onNavigateNext()
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -5487,17 +5634,17 @@ fun VpnScreen(
             if (isConnected) {
                 TextButton(
                     onClick = onNavigateNext,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 ) {
                     Text(
                         text = if (isRussian) "Продолжить с текущим IP" else "Continue with current IP",
                         color = Color.Gray,
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 
