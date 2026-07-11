@@ -286,4 +286,19 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
+
+    fun unlockPaidReading(readingId: Long, onUnlocked: () -> Unit) {
+        viewModelScope.launch {
+            repository.unlockPaidReading(readingId)
+            val updated = repository.getReadingById(readingId)
+            if (updated != null) {
+                if (updated.analysisType == "compatibility") {
+                    currentCompatibilityReading.value = updated
+                } else {
+                    currentReading.value = updated
+                }
+            }
+            onUnlocked()
+        }
+    }
 }

@@ -422,7 +422,7 @@ class PalmistRepository(
 
         // Generate high quality mock fallback if network fails or API is missing
         if (resultJsonStr.isEmpty()) {
-            resultJsonStr = generateLocalMockReport(profile, isRussian, isFull, isCharacter)
+            resultJsonStr = "{\"error\": \"payment_required\"}"
         }
 
         val reading = ReadingEntity(
@@ -524,7 +524,7 @@ class PalmistRepository(
         }
 
         if (resultJsonStr.isEmpty()) {
-            resultJsonStr = generateLocalMockCompatibility(profile.name, partnerName, isRussian)
+            resultJsonStr = "{\"error\": \"payment_required\"}"
         }
 
         val reading = ReadingEntity(
@@ -543,6 +543,28 @@ class PalmistRepository(
     }
 
     // --- Helpers ---
+
+    suspend fun getReadingById(id: Long): ReadingEntity? = withContext(Dispatchers.IO) {
+        dao.getReadingById(id)
+    }
+
+    suspend fun unlockPaidReading(readingId: Long) = withContext(Dispatchers.IO) {
+        val reading = dao.getReadingById(readingId) ?: return@withContext
+        val profile = dao.getUserProfileSync() ?: UserProfileEntity(name = "Искатель", age = 25)
+        
+        val isRussian = getSelectedLanguage() == "RU"
+        val isFull = reading.analysisType.contains("full")
+        val isCharacter = reading.analysisType.contains("char")
+        
+        val newJson = if (reading.analysisType == "compatibility") {
+            generateLocalMockCompatibility(profile.name, reading.partnerName ?: "Партнёр", isRussian)
+        } else {
+            generateLocalMockReport(profile, isRussian, isFull, isCharacter)
+        }
+        
+        val updatedReading = reading.copy(resultJson = newJson)
+        dao.insertReading(updatedReading)
+    }
 
     private fun extractJsonFromMarkdown(raw: String): String {
         var clean = raw.trim()

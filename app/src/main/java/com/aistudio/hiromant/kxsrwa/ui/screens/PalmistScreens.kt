@@ -3064,7 +3064,30 @@ fun ResultsScreen(
                 )
             }
 
-            if (palmistReport != null) {
+            val currentReadingVal = reading
+            val isPaymentRequired = remember(currentReadingVal) {
+                currentReadingVal?.resultJson?.contains("payment_required") == true
+            }
+
+            if (isPaymentRequired && currentReadingVal != null) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    YookassaPaymentForm(
+                        readingId = currentReadingVal.id,
+                        analysisType = currentReadingVal.analysisType,
+                        viewModel = viewModel,
+                        onSuccess = {
+                            // Automatically reloaded by state flow
+                        },
+                        onClose = onClose
+                    )
+                }
+            } else if (palmistReport != null) {
                 if (activeTab == "report") {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         SelectableInterpretationText(
@@ -3620,7 +3643,24 @@ fun CompatibilityScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (compatReport == null) {
+            val currentCompatibilityReadingVal = compatibilityReading
+            val isPaymentRequired = remember(currentCompatibilityReadingVal) {
+                currentCompatibilityReadingVal?.resultJson?.contains("payment_required") == true
+            }
+
+            if (isPaymentRequired && currentCompatibilityReadingVal != null) {
+                YookassaPaymentForm(
+                    readingId = currentCompatibilityReadingVal.id,
+                    analysisType = "compatibility",
+                    viewModel = viewModel,
+                    onSuccess = {
+                        // Automatically reloaded by state flow
+                    },
+                    onClose = {
+                        viewModel.currentCompatibilityReading.value = null
+                    }
+                )
+            } else if (compatReport == null) {
                 // --- ENTRY AND UPLOADS FORM ---
                 MysticCard {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -4701,6 +4741,291 @@ fun BillingScreen(
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+fun YookassaPaymentForm(
+    readingId: Long,
+    analysisType: String,
+    viewModel: PalmistViewModel,
+    onSuccess: () -> Unit,
+    onClose: () -> Unit
+) {
+    val context = LocalContext.current
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val strings = LocalizedStrings.get(currentLang)
+
+    var walletNum by remember { mutableStateOf("410013630971157") }
+    var paymentAmount by remember { mutableStateOf("1000") } // Default amount 1000 RUB as requested
+    var customAmount by remember { mutableStateOf("") }
+    var isCustomSelected by remember { mutableStateOf(false) }
+
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+
+    val actualAmount = if (isCustomSelected) customAmount else paymentAmount
+
+    if (showConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            title = {
+                Text(
+                    text = if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮMoney" else "Pending YooMoney Payment",
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = if (currentLang == AppLanguage.RUS) {
+                        "Официальная страница перевода ЮMoney была открыта в вашем браузере.\n\n" +
+                        "После успешного завершения перевода в системе ЮMoney вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы получить точнейший анализ вашей судьбы!"
+                    } else {
+                        "The official YooMoney page has been opened in your browser.\n\n" +
+                        "After completing the transaction, return here and tap 'Confirm' to unlock your cosmic destiny analysis!"
+                    },
+                    color = Color.White
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmationDialog = false
+                        viewModel.unlockPaidReading(readingId) {
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Оплата успешно подтверждена! Анализ разблокирован." else "Payment confirmed! Reading unlocked.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            onSuccess()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                ) {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showConfirmationDialog = false }
+                ) {
+                    Text(text = strings.cancel, color = Color.Gray)
+                }
+            },
+            containerColor = MysticDarkSurface,
+            textContentColor = Color.White
+        )
+    }
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+        border = BorderStroke(1.5.dp, MysticGold),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                tint = MysticGold,
+                modifier = Modifier.size(48.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "Активация ИИ-анализа ладони"
+                } else {
+                    "AI Palm Analysis Activation"
+                },
+                style = MaterialTheme.typography.titleLarge,
+                color = MysticGold,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "Ключ API Gemini временно перегружен или неактивен. Вы можете напрямую оплатить сеанс через официальный шлюз ЮKassa/ЮMoney для моментальной активации пророчества вручную."
+                } else {
+                    "The Gemini API is currently unavailable. You can pay for this premium session via YooKassa/YooMoney to instantly trigger manual decoding."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // Recipient Wallet
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "Введите номер кошелька ЮMoney получателя:"
+                } else {
+                    "Recipient's YooMoney Wallet ID:"
+                },
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            MysticTextField(
+                value = walletNum,
+                onValueChange = { walletNum = it },
+                label = if (currentLang == AppLanguage.RUS) "Кошелёк получателя" else "Receiver Wallet",
+                placeholder = "41001xxxxxxxxxx"
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Amount selector
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "Выберите сумму перевода (рубли):"
+                } else {
+                    "Select payment amount (RUB):"
+                },
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                listOf("150", "250", "1000").forEach { valAmount ->
+                    val isSelected = !isCustomSelected && paymentAmount == valAmount
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (isSelected) MysticGold else Color.White.copy(0.05f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (isSelected) MysticGold else MysticBronze.copy(0.3f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                isCustomSelected = false
+                                paymentAmount = valAmount
+                            }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$valAmount ₽",
+                            color = if (isSelected) Color.Black else Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                
+                // Custom Amount button option
+                val isCustomActive = isCustomSelected
+                Box(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .background(
+                            if (isCustomActive) MysticGold else Color.White.copy(0.05f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .border(
+                            1.dp,
+                            if (isCustomActive) MysticGold else MysticBronze.copy(0.3f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .clickable { isCustomSelected = true }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Своя сумма" else "Custom",
+                        color = if (isCustomActive) Color.Black else Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+            
+            if (isCustomSelected) {
+                Spacer(modifier = Modifier.height(12.dp))
+                MysticTextField(
+                    value = customAmount,
+                    onValueChange = { customAmount = it },
+                    label = if (currentLang == AppLanguage.RUS) "Сумма в рублях" else "Amount in RUB",
+                    placeholder = "Например: 1000"
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MysticButton(
+                    text = if (currentLang == AppLanguage.RUS) "ОТМЕНА" else "CANCEL",
+                    onClick = onClose,
+                    isSecondary = true,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                MysticButton(
+                    text = if (currentLang == AppLanguage.RUS) "ОПЛАТИТЬ" else "PAY NOW",
+                    onClick = {
+                        try {
+                            val cleanWallet = walletNum.replace(" ", "").trim()
+                            if (cleanWallet.length < 10) {
+                                Toast.makeText(context, "Пожалуйста, введите корректный номер кошелька ЮMoney", Toast.LENGTH_LONG).show()
+                                return@MysticButton
+                            }
+                            val amountVal = actualAmount.trim()
+                            if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) {
+                                Toast.makeText(context, "Пожалуйста, введите корректную сумму (минимум 1 ₽)", Toast.LENGTH_LONG).show()
+                                return@MysticButton
+                            }
+                            val targets = "Hiromant App Analysis Decoding: $analysisType"
+                            val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
+                            val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
+                                    "receiver=$cleanWallet&" +
+                                    "quickpay-form=button&" +
+                                    "targets=$encodedTargets&" +
+                                    "paymentType=AC&" +
+                                    "sum=$amountVal"
+                            
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                            context.startActivity(intent)
+                            showConfirmationDialog = true
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            Toast.makeText(context, "Не удалось открыть оплату: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    modifier = Modifier.weight(1.5f)
+                )
+            }
         }
     }
 }
