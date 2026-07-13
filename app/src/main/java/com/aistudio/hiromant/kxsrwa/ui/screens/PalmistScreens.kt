@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.aistudio.hiromant.kxsrwa.BuildConfig
+import com.aistudio.hiromant.kxsrwa.utils.AppLogger
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -5602,6 +5603,218 @@ fun SettingsScreen(
                             color = Color(0xFFC0C0D0),
                             lineHeight = 20.sp
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Expandable card: "Лог операций"
+            var operationsLogExpanded by remember { mutableStateOf(false) }
+            val logsList by AppLogger.logs.collectAsState()
+            
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { operationsLogExpanded = !operationsLogExpanded },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.BugReport, contentDescription = null, tint = MysticGold)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Лог операций" else "Operations Log",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
+                        Icon(
+                            imageVector = if (operationsLogExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MysticGold
+                        )
+                    }
+                    if (operationsLogExpanded) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Scrollable console-like logs container
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .background(Color(0xFF0F0F18), RoundedCornerShape(8.dp))
+                                .border(1.dp, MysticBronze.copy(0.2f), RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
+                            val scrollState = rememberScrollState()
+                            
+                            // Automatically scroll to the bottom when new logs are added
+                            LaunchedEffect(logsList.size) {
+                                scrollState.animateScrollTo(scrollState.maxValue)
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                            ) {
+                                if (logsList.isEmpty()) {
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS) "Лог пуст..." else "Log is empty...",
+                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                } else {
+                                    logsList.forEach { entry ->
+                                        val color = when (entry.level) {
+                                            "E" -> Color(0xFFCF6679) // Soft red for errors
+                                            "W" -> Color(0xFFFFB300) // Soft orange/amber for warnings
+                                            "D" -> Color(0xFF4CAF50) // Green for debug
+                                            else -> Color(0xFFD4AF37) // Mystic Gold for info
+                                        }
+                                        Text(
+                                            text = "[${entry.timeStr}] [${entry.level}/${entry.tag}] ${entry.message}",
+                                            color = color,
+                                            fontSize = 11.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            lineHeight = 14.sp
+                                        )
+                                        entry.throwable?.let { th ->
+                                            val sw = java.io.StringWriter()
+                                            th.printStackTrace(java.io.PrintWriter(sw))
+                                            Text(
+                                                text = sw.toString(),
+                                                color = Color(0xFFCF6679).copy(alpha = 0.8f),
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                lineHeight = 13.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // "Send to Developer" button
+                            Button(
+                                onClick = {
+                                    val logText = AppLogger.getLogText()
+                                    val emailIntent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                        data = android.net.Uri.parse("mailto:")
+                                        putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("arsmaxim@gmail.com"))
+                                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Palmist App Operations Log")
+                                        putExtra(android.content.Intent.EXTRA_TEXT, logText)
+                                    }
+                                    try {
+                                        context.startActivity(android.content.Intent.createChooser(emailIntent, "Send Log via Email"))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "No email client found!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.weight(1.5f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Отправить" else "Send Email",
+                                    color = Color.Black,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // "Copy Log" button
+                            Button(
+                                onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("Palmist Logs", AppLogger.getLogText())
+                                    clipboard.setPrimaryClip(clip)
+                                    Toast.makeText(
+                                        context,
+                                        if (currentLang == AppLanguage.RUS) "Лог скопирован в буфер!" else "Log copied to clipboard!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x33C0C0D0)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Копировать" else "Copy",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // "Clear" button
+                            Button(
+                                onClick = {
+                                    AppLogger.clear()
+                                    Toast.makeText(
+                                        context,
+                                        if (currentLang == AppLanguage.RUS) "Лог очищен!" else "Log cleared!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x33CF6679)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = Color(0xFFCF6679),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Очистить" else "Clear",
+                                    color = Color(0xFFCF6679),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }

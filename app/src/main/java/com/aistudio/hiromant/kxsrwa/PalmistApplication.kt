@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.room.Room
 import com.aistudio.hiromant.kxsrwa.data.local.PalmistDatabase
 import com.aistudio.hiromant.kxsrwa.data.repository.PalmistRepository
+import com.aistudio.hiromant.kxsrwa.utils.AppLogger
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
@@ -23,6 +24,10 @@ class PalmistApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
+        // Initialize AppLogger first
+        AppLogger.init(this)
+        AppLogger.i("PalmistApplication", "Application onCreate triggered. Version code/name from gradle compiled.")
+        
         // Setup robust global uncaught exception handler
         val oldHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -31,6 +36,9 @@ class PalmistApplication : Application() {
                 val pw = PrintWriter(sw)
                 throwable.printStackTrace(pw)
                 val stackTrace = sw.toString()
+                
+                // Write to AppLogger
+                AppLogger.e("UncaughtCrash", "Crash in thread ${thread.name}: ${throwable.message}", throwable)
                 
                 // Use commit() to write to shared preferences synchronously before the app terminates
                 val sharedPrefs = getSharedPreferences("palmist_prefs", Context.MODE_PRIVATE)
@@ -56,6 +64,7 @@ class PalmistApplication : Application() {
         }
 
         try {
+            AppLogger.i("PalmistApplication", "Building PalmistDatabase instance...")
             database = Room.databaseBuilder(
                 applicationContext,
                 PalmistDatabase::class.java,
@@ -63,9 +72,13 @@ class PalmistApplication : Application() {
             )
             .fallbackToDestructiveMigration()
             .build()
+            AppLogger.i("PalmistApplication", "PalmistDatabase successfully built.")
 
+            AppLogger.i("PalmistApplication", "Building PalmistRepository instance...")
             repository = PalmistRepository(applicationContext, database.palmistDao())
+            AppLogger.i("PalmistApplication", "PalmistRepository successfully built.")
         } catch (e: Exception) {
+            AppLogger.e("PalmistApplication", "Failed to build DB or Repository", e)
             e.printStackTrace()
         }
 
@@ -74,9 +87,12 @@ class PalmistApplication : Application() {
         GlobalScope.launch {
             try {
                 if (::repository.isInitialized) {
+                    AppLogger.i("PalmistApplication", "Initializing billing state if empty...")
                     repository.initializeBillingStateIfEmpty()
+                    AppLogger.i("PalmistApplication", "Billing state checked/initialized.")
                 }
             } catch (e: Throwable) {
+                AppLogger.e("PalmistApplication", "Billing state initialization failed", e)
                 e.printStackTrace()
             }
         }

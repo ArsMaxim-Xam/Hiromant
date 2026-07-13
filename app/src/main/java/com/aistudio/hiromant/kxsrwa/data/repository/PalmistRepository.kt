@@ -7,6 +7,7 @@ import com.aistudio.hiromant.kxsrwa.BuildConfig
 import com.aistudio.hiromant.kxsrwa.data.local.*
 import com.aistudio.hiromant.kxsrwa.data.remote.*
 import com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.toBase64
+import com.aistudio.hiromant.kxsrwa.utils.AppLogger
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
@@ -153,6 +154,7 @@ class PalmistRepository(
         rightBackPath: String? = null
     ): ReadingEntity = withContext(Dispatchers.IO) {
         val profile = dao.getUserProfileSync() ?: UserProfileEntity(name = "Искатель", age = 25)
+        AppLogger.i("PalmistRepository", "analyzePalm triggered. bitmaps count: ${bitmaps.size}, analysisType: $analysisType, langCode: $langCode. profile: name=${profile.name}, gender=${profile.gender}, age=${profile.age}")
 
         val isRussian = langCode == "RU"
         val isFull = analysisType.startsWith("full")
@@ -383,21 +385,26 @@ class PalmistRepository(
         }
 
         val apiKey = BuildConfig.GEMINI_API_KEY
-        val hasValidKey = apiKey.isNotEmpty() && 
-                apiKey != "MY_GEMINI_API_KEY" && 
-                apiKey != "GEMINI_API_KEY" && 
-                apiKey != "YOUR_GEMINI_API_KEY"
+        val maskedKey = if (apiKey.isEmpty()) "[EMPTY]" else {
+            val len = apiKey.length
+            if (len > 8) "${apiKey.take(4)}...${apiKey.takeLast(4)} (len=$len)" else "*** (len=$len)"
+        }
+        val isKeyPlaceholder = apiKey == "MY_GEMINI_API_KEY" || apiKey == "GEMINI_API_KEY" || apiKey == "YOUR_GEMINI_API_KEY"
+        AppLogger.i("PalmistRepository", "API Key check: key=$maskedKey, isPlaceholder=$isKeyPlaceholder")
+        val hasValidKey = apiKey.isNotEmpty() && !isKeyPlaceholder
 
         var resultJsonStr = ""
 
         if (hasValidKey) {
             try {
+                AppLogger.i("PalmistRepository", "Initiating Gemini request. Preparing parts. Prompt text length: ${promptText.length}")
                 val parts = mutableListOf<Part>()
                 parts.add(Part(text = promptText))
 
                 // Attach up to 4 images to limit token usage and remain highly stable
-                bitmaps.take(4).forEach { bitmap ->
+                bitmaps.take(4).forEachIndexed { index, bitmap ->
                     val base64 = bitmap.toBase64( quality = 60 )
+                    AppLogger.i("PalmistRepository", "Adding image part $index. Width=${bitmap.width}, Height=${bitmap.height}, Base64 length=${base64.length}")
                     parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
 
@@ -409,19 +416,29 @@ class PalmistRepository(
                     systemInstruction = Content(parts = listOf(Part(text = systemInstructionText)))
                 )
 
+                AppLogger.i("PalmistRepository", "Sending Retrofit request to RetrofitClient.service...")
                 val response = RetrofitClient.service.generateContent(apiKey, request)
+                AppLogger.i("PalmistRepository", "Received response from Gemini. Processing candidates...")
                 val rawText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                AppLogger.i("PalmistRepository", "Raw response candidate text: ${rawText?.take(150)}... [length=${rawText?.length ?: 0}]")
                 if (!rawText.isNullOrEmpty()) {
                     // Extract JSON in case Gemini wrapped it in markdown tags
                     resultJsonStr = extractJsonFromMarkdown(rawText)
+                    AppLogger.i("PalmistRepository", "Extracted JSON text successfully. Length: ${resultJsonStr.length}")
+                } else {
+                    AppLogger.w("PalmistRepository", "Received empty response or candidates list is empty.")
                 }
             } catch (e: Exception) {
+                AppLogger.e("PalmistRepository", "Exception during Gemini API request: ${e.message}", e)
                 Log.e("PalmistRepository", "Gemini API error", e)
             }
+        } else {
+            AppLogger.w("PalmistRepository", "Valid API Key not found. Skipping Gemini request.")
         }
 
         // Generate high quality mock fallback if network fails or API is missing
         if (resultJsonStr.isEmpty()) {
+            AppLogger.i("PalmistRepository", "Result JSON is empty, generating local mock fallback report.")
             resultJsonStr = generateLocalMockReport(profile, isRussian, isFull, isCharacter)
         }
 
@@ -486,23 +503,31 @@ class PalmistRepository(
         val systemInstructionText = "You are a compatibility palmist. Generate a structured JSON relationship audit. No markdown tags, no wrapper conversations."
 
         val apiKey = BuildConfig.GEMINI_API_KEY
-        val hasValidKey = apiKey.isNotEmpty() && 
-                apiKey != "MY_GEMINI_API_KEY" && 
-                apiKey != "GEMINI_API_KEY" && 
-                apiKey != "YOUR_GEMINI_API_KEY"
+        val maskedKey = if (apiKey.isEmpty()) "[EMPTY]" else {
+            val len = apiKey.length
+            if (len > 8) "${apiKey.take(4)}...${apiKey.takeLast(4)} (len=$len)" else "*** (len=$len)"
+        }
+        val isKeyPlaceholder = apiKey == "MY_GEMINI_API_KEY" || apiKey == "GEMINI_API_KEY" || apiKey == "YOUR_GEMINI_API_KEY"
+        AppLogger.i("PalmistRepository", "Compatibility API Key check: key=$maskedKey, isPlaceholder=$isKeyPlaceholder")
+        val hasValidKey = apiKey.isNotEmpty() && !isKeyPlaceholder
 
         var resultJsonStr = ""
 
         if (hasValidKey) {
             try {
+                AppLogger.i("PalmistRepository", "Initiating Gemini compatibility request. Prompt text length: ${promptText.length}")
                 val parts = mutableListOf<Part>()
                 parts.add(Part(text = promptText))
 
                 if (selfBitmap != null) {
-                    parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = selfBitmap.toBase64(50))))
+                    val base64 = selfBitmap.toBase64(50)
+                    AppLogger.i("PalmistRepository", "Adding self image part. Width=${selfBitmap.width}, Height=${selfBitmap.height}, Base64 length=${base64.length}")
+                    parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
                 if (partnerBitmap != null) {
-                    parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = partnerBitmap.toBase64(50))))
+                    val base64 = partnerBitmap.toBase64(50)
+                    AppLogger.i("PalmistRepository", "Adding partner image part. Width=${partnerBitmap.width}, Height=${partnerBitmap.height}, Base64 length=${base64.length}")
+                    parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
 
                 val request = GenerateContentRequest(
@@ -513,17 +538,27 @@ class PalmistRepository(
                     systemInstruction = Content(parts = listOf(Part(text = systemInstructionText)))
                 )
 
+                AppLogger.i("PalmistRepository", "Sending Retrofit request to RetrofitClient.service for compatibility...")
                 val response = RetrofitClient.service.generateContent(apiKey, request)
+                AppLogger.i("PalmistRepository", "Received response from Gemini compatibility. Processing candidates...")
                 val rawText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                AppLogger.i("PalmistRepository", "Raw response compatibility candidate text: ${rawText?.take(150)}... [length=${rawText?.length ?: 0}]")
                 if (!rawText.isNullOrEmpty()) {
                     resultJsonStr = extractJsonFromMarkdown(rawText)
+                    AppLogger.i("PalmistRepository", "Extracted compatibility JSON successfully. Length: ${resultJsonStr.length}")
+                } else {
+                    AppLogger.w("PalmistRepository", "Received empty response or candidates list is empty for compatibility.")
                 }
             } catch (e: Exception) {
+                AppLogger.e("PalmistRepository", "Exception during Gemini compatibility request: ${e.message}", e)
                 Log.e("PalmistRepository", "Gemini compatibility error", e)
             }
+        } else {
+            AppLogger.w("PalmistRepository", "Valid API Key not found. Skipping Gemini compatibility request.")
         }
 
         if (resultJsonStr.isEmpty()) {
+            AppLogger.i("PalmistRepository", "Result compatibility JSON is empty, generating local mock fallback compatibility report.")
             resultJsonStr = generateLocalMockCompatibility(profile.name, partnerName, isRussian)
         }
 
