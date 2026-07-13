@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeJoin
@@ -717,6 +718,35 @@ fun MysticSplashScreen(
 // --- SCREEN 2: OPTIONAL AUTHENTICATION / REGISTRATION ---
 
 @Composable
+fun ShrinkableText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = null
+) {
+    val initialSize = if (style.fontSize.isSp) style.fontSize.value else 14f
+    var fontSizeValue by remember(text) { mutableStateOf(initialSize) }
+    Text(
+        text = text,
+        color = color,
+        fontWeight = fontWeight,
+        style = style.copy(fontSize = fontSizeValue.sp),
+        maxLines = 1,
+        softWrap = false,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        onTextLayout = { textLayoutResult ->
+            if (textLayoutResult.didOverflowWidth || textLayoutResult.didOverflowHeight) {
+                if (fontSizeValue > 8f) {
+                    fontSizeValue -= 0.5f
+                }
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
 fun AuthScreen(
     viewModel: PalmistViewModel,
     onNavigateNext: () -> Unit
@@ -836,6 +866,19 @@ fun AuthScreen(
         }
     }
 
+    fun formatPhoneNumber(input: String): String {
+        val digits = input.filter { it.isDigit() }
+        return if (digits.startsWith("8") && digits.length == 11) {
+            "+7" + digits.substring(1)
+        } else if (digits.startsWith("7") && digits.length == 11) {
+            "+" + digits
+        } else if (!input.startsWith("+") && digits.length >= 10) {
+            "+" + digits
+        } else {
+            input
+        }
+    }
+
     val isValidInput = {
         var valid = true
         val trimmedInput = emailOrPhone.trim()
@@ -843,7 +886,7 @@ fun AuthScreen(
             emailOrPhoneError = if (currentLang == AppLanguage.RUS) "Введите E-mail или телефон" else "Enter E-mail or phone"
             valid = false
         }
-        if (password.length < 6) {
+        if (isEmailMode && password.length < 6) {
             passwordError = strings.authPasswordError
             valid = false
         }
@@ -1020,8 +1063,9 @@ fun AuthScreen(
                                 onClick = {
                                     if (isValidInput() && activity != null) {
                                         isLoading = true
+                                        val formattedPhone = formatPhoneNumber(emailOrPhone.trim())
                                         val options = com.google.firebase.auth.PhoneAuthOptions.newBuilder(auth)
-                                            .setPhoneNumber(emailOrPhone.trim())
+                                            .setPhoneNumber(formattedPhone)
                                             .setTimeout(60L, java.util.concurrent.TimeUnit.SECONDS)
                                             .setActivity(activity)
                                             .setCallbacks(callbacks)
@@ -1121,6 +1165,54 @@ fun AuthScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Demo Bypass Button
+            OutlinedButton(
+                onClick = {
+                    viewModel.saveProfile(
+                        name = "Mystic Seeker",
+                        gender = "Other",
+                        age = 28,
+                        height = 175,
+                        dominantHand = "Right",
+                        email = "demo@hiromant.app",
+                        phone = "+79991112233",
+                        isRegistered = true
+                    )
+                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен в тестовом режиме!" else "Logged in as Test Profile!", Toast.LENGTH_SHORT).show()
+                    onNavigateNext()
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = MysticGold
+                ),
+                border = BorderStroke(1.dp, MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MysticGold,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Войти в Демо-режиме (Тест)" else "Enter in Demo Mode (Test)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MysticGold
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(
@@ -1203,7 +1295,10 @@ fun AuthScreen(
                             border = BorderStroke(1.dp, Color.Gray),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(if (currentLang == AppLanguage.RUS) "Закрыть" else "Close")
+                            ShrinkableText(
+                                text = if (currentLang == AppLanguage.RUS) "Закрыть" else "Close",
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
+                            )
                         }
                         Button(
                             onClick = {
@@ -1224,15 +1319,44 @@ fun AuthScreen(
                                 containerColor = MysticGold,
                                 contentColor = Color.Black
                             ),
-                            modifier = Modifier.weight(1.5f)
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS) "Отправить ошибку" else "Email Developer",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                maxLines = 1
+                            ShrinkableText(
+                                text = if (currentLang == AppLanguage.RUS) "Отправить" else "Send",
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             )
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = {
+                            activeError = null
+                            viewModel.saveProfile(
+                                name = "Mystic Seeker",
+                                gender = "Other",
+                                age = 28,
+                                height = 175,
+                                dominantHand = "Right",
+                                email = "demo@hiromant.app",
+                                phone = "+79991112233",
+                                isRegistered = true
+                            )
+                            Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен в тестовом режиме!" else "Logged in as Test Profile!", Toast.LENGTH_SHORT).show()
+                            onNavigateNext()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MysticGold),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Пропустить и войти в Демо-режиме" else "Bypass and enter in Demo mode",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                                color = MysticGold
+                            ),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -1718,6 +1842,252 @@ fun getVideoThumbnail(context: Context, uri: Uri?): Bitmap? {
     }
 }
 
+@Composable
+fun InAppCameraDialog(
+    slotName: String,
+    currentLang: AppLanguage,
+    onPhotoCaptured: (Bitmap) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val isRussian = currentLang == AppLanguage.RUS
+    
+    var hasCameraHardware by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    val imageCapture = remember { androidx.camera.core.ImageCapture.Builder().build() }
+    val cameraProviderFuture = remember { androidx.camera.lifecycle.ProcessCameraProvider.getInstance(context) }
+    
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
+    
+    Dialog(
+        onDismissRequest = onDismiss
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+            border = BorderStroke(2.dp, MysticGold),
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .padding(8.dp)
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (hasCameraHardware) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            val previewView = androidx.camera.view.PreviewView(ctx).apply {
+                                scaleType = androidx.camera.view.PreviewView.ScaleType.FILL_CENTER
+                            }
+                            
+                            cameraProviderFuture.addListener({
+                                try {
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    val preview = androidx.camera.core.Preview.Builder().build().also {
+                                        it.setSurfaceProvider(previewView.surfaceProvider)
+                                    }
+                                    
+                                    val cameraSelector = androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
+                                    
+                                    cameraProvider.unbindAll()
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        cameraSelector,
+                                        preview,
+                                        imageCapture
+                                    )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    hasCameraHardware = false
+                                    errorMessage = e.message
+                                }
+                            }, androidx.core.content.ContextCompat.getMainExecutor(ctx))
+                            
+                            previewView
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Fallback visual simulation placeholder
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF0D0B18)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MysticGold,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (isRussian) "Режим эмуляции камеры" else "Camera Emulation Active",
+                                style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (isRussian) 
+                                    "В эмуляторе физическая камера недоступна. Будет автоматически сгенерировано высококачественное мистическое изображение ладони для анализа."
+                                else 
+                                    "No hardware camera detected in this emulator. A high-quality mystical palm print will be procedurally generated for your analysis.",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                
+                // Beautiful Hand Guide Overlay (for alignment)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .size(280.dp)
+                            .border(1.dp, MysticGold.copy(0.4f), RoundedCornerShape(140.dp))
+                            .padding(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Camera,
+                            contentDescription = null,
+                            tint = MysticGold.copy(0.25f),
+                            modifier = Modifier.size(100.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (isRussian) "Поместите ладонь сюда" else "Place palm inside the frame",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = MysticGold.copy(0.6f),
+                                fontWeight = FontWeight.Bold
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                
+                // Top control: Close button
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(0.5f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.White
+                    )
+                }
+                
+                // Top control: Title indicating which hand to position
+                val titleString = when (slotName) {
+                    "left_palm" -> if (isRussian) "Левая ладонь" else "Left Palm"
+                    "left_back" -> if (isRussian) "Тыльная сторона левой руки" else "Left Hand Back"
+                    "right_palm" -> if (isRussian) "Правая ладонь" else "Right Palm"
+                    "right_back" -> if (isRussian) "Тыльная сторона правой руки" else "Right Hand Back"
+                    else -> if (isRussian) "Фото ладони" else "Palm Photo"
+                }
+                Text(
+                    text = titleString,
+                    style = MaterialTheme.typography.titleMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 22.dp)
+                        .background(Color.Black.copy(0.5f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+                
+                // Bottom control: Capture Button
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(0.4f))
+                        .padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = {
+                            if (hasCameraHardware) {
+                                // Take actual photo
+                                val photoFile = java.io.File(
+                                    context.cacheDir,
+                                    "captured_palm_${System.currentTimeMillis()}.jpg"
+                                )
+                                val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
+                                
+                                imageCapture.takePicture(
+                                    outputOptions,
+                                    androidx.core.content.ContextCompat.getMainExecutor(context),
+                                    object : androidx.camera.core.ImageCapture.OnImageSavedCallback {
+                                        override fun onImageSaved(outputFileResults: androidx.camera.core.ImageCapture.OutputFileResults) {
+                                            val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
+                                            if (bitmap != null) {
+                                                onPhotoCaptured(bitmap)
+                                            } else {
+                                                // Fallback to procedural generator if decoding fails
+                                                val mockBitmap = BitmapUtils.generateMysticHandBitmap(context, slotName, isRussian)
+                                                onPhotoCaptured(mockBitmap)
+                                            }
+                                        }
+                                        
+                                        override fun onError(exception: androidx.camera.core.ImageCaptureException) {
+                                            exception.printStackTrace()
+                                            // Fallback to procedural generator on error
+                                            val mockBitmap = BitmapUtils.generateMysticHandBitmap(context, slotName, isRussian)
+                                            onPhotoCaptured(mockBitmap)
+                                        }
+                                    }
+                                )
+                            } else {
+                                // Camera emulation capture -> procedural golden palm print image
+                                val mockBitmap = BitmapUtils.generateMysticHandBitmap(context, slotName, isRussian)
+                                onPhotoCaptured(mockBitmap)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .size(72.dp)
+                            .border(4.dp, Color.White, CircleShape),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Capture",
+                            tint = Color.Black,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 // --- SCREEN 4: MEDIA UPLOAD & RUN ANALYSES ---
 
 @Composable
@@ -1757,6 +2127,7 @@ fun UploadScreen(
     // Media Store URI values for system-native cameras
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
     var tempVideoUri by remember { mutableStateOf<Uri?>(null) }
+    var showInAppCamera by remember { mutableStateOf(false) }
 
     // Launchers for media
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -1846,11 +2217,7 @@ fun UploadScreen(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (isGranted) {
-                val uri = createGalleryImageUri(context, "hand_photo")
-                if (uri != null) {
-                    tempImageUri = uri
-                    takePictureLauncher.launch(uri)
-                }
+                showInAppCamera = true
             } else {
                 Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
             }
@@ -1934,11 +2301,7 @@ fun UploadScreen(
                                     android.Manifest.permission.CAMERA
                                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (hasCameraPermission) {
-                                    val uri = createGalleryImageUri(context, "left_palm")
-                                    if (uri != null) {
-                                        tempImageUri = uri
-                                        takePictureLauncher.launch(uri)
-                                    }
+                                    showInAppCamera = true
                                 } else {
                                     cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
                                 }
@@ -1968,11 +2331,7 @@ fun UploadScreen(
                                     android.Manifest.permission.CAMERA
                                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (hasCameraPermission) {
-                                    val uri = createGalleryImageUri(context, "left_back")
-                                    if (uri != null) {
-                                        tempImageUri = uri
-                                        takePictureLauncher.launch(uri)
-                                    }
+                                    showInAppCamera = true
                                 } else {
                                     cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
                                 }
@@ -2002,11 +2361,7 @@ fun UploadScreen(
                                     android.Manifest.permission.CAMERA
                                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (hasCameraPermission) {
-                                    val uri = createGalleryImageUri(context, "right_palm")
-                                    if (uri != null) {
-                                        tempImageUri = uri
-                                        takePictureLauncher.launch(uri)
-                                    }
+                                    showInAppCamera = true
                                 } else {
                                     cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
                                 }
@@ -2036,11 +2391,7 @@ fun UploadScreen(
                                     android.Manifest.permission.CAMERA
                                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (hasCameraPermission) {
-                                    val uri = createGalleryImageUri(context, "right_back")
-                                    if (uri != null) {
-                                        tempImageUri = uri
-                                        takePictureLauncher.launch(uri)
-                                    }
+                                    showInAppCamera = true
                                 } else {
                                     cameraPermissionLauncherForPhoto.launch(android.Manifest.permission.CAMERA)
                                 }
@@ -2351,6 +2702,37 @@ fun UploadScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    if (showInAppCamera) {
+        InAppCameraDialog(
+            slotName = activeSlot ?: "palm_photo",
+            currentLang = currentLang,
+            onPhotoCaptured = { bitmap ->
+                when (activeSlot) {
+                    "left_palm" -> {
+                        viewModel.bitmapLeftPalm.value = bitmap
+                        viewModel.leftPalmPath.value = "in_app_camera"
+                    }
+                    "left_back" -> {
+                        viewModel.bitmapLeftBack.value = bitmap
+                        viewModel.leftBackPath.value = "in_app_camera"
+                    }
+                    "right_palm" -> {
+                        viewModel.bitmapRightPalm.value = bitmap
+                        viewModel.rightPalmPath.value = "in_app_camera"
+                    }
+                    "right_back" -> {
+                        viewModel.bitmapRightBack.value = bitmap
+                        viewModel.rightBackPath.value = "in_app_camera"
+                    }
+                }
+                showInAppCamera = false
+            },
+            onDismiss = {
+                showInAppCamera = false
+            }
+        )
     }
 }
 
@@ -2985,6 +3367,13 @@ fun ResultsScreen(
 
     var activeTab by remember { mutableStateOf("report") } // "report" or "map"
 
+    var linesOffsetX by remember { mutableStateOf(0f) }
+    var linesOffsetY by remember { mutableStateOf(0f) }
+    var linesScale by remember { mutableStateOf(1f) }
+    var linesRotation by remember { mutableStateOf(0f) }
+    var imageRotation by remember { mutableStateOf(0f) }
+    var isAdjustmentPanelOpen by remember { mutableStateOf(false) }
+
     // Parse JSON
     val palmistReport = remember(reading) {
         reading?.let {
@@ -3392,7 +3781,9 @@ fun ResultsScreen(
                             Image(
                                 painter = painter,
                                 contentDescription = "Hand Photo",
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .rotate(imageRotation),
                                 contentScale = ContentScale.Fit
                             )
                             
@@ -3400,61 +3791,244 @@ fun ResultsScreen(
                                 val w = size.width
                                 val h = size.height
                                 
-                                val isHeartActive = activeLineName?.let { it.contains("Серд") || it.contains("Heart") } ?: false
-                                val heartPath = Path().apply {
-                                    moveTo(w * 0.3f, h * 0.48f)
-                                    quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
-                                }
-                                drawPath(
-                                    path = heartPath,
-                                    color = if (isHeartActive) LineHeartColor else LineHeartColor.copy(alpha = 0.2f),
-                                    style = Stroke(
-                                        width = (if (isHeartActive) 14.dp else 6.dp).toPx(),
-                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                withTransform({
+                                    this.translate(linesOffsetX, linesOffsetY)
+                                    this.scale(linesScale, linesScale, center)
+                                    this.rotate(linesRotation, center)
+                                }) {
+                                    val isHeartActive = activeLineName?.let { it.contains("Серд") || it.contains("Heart") } ?: false
+                                    val heartPath = Path().apply {
+                                        moveTo(w * 0.3f, h * 0.48f)
+                                        quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
+                                    }
+                                    drawPath(
+                                        path = heartPath,
+                                        color = if (isHeartActive) LineHeartColor else LineHeartColor.copy(alpha = 0.2f),
+                                        style = Stroke(
+                                            width = (if (isHeartActive) 14.dp else 6.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
                                     )
-                                )
-                                
-                                val isHeadActive = activeLineName?.let { it.contains("Голо") || it.contains("Ум") || it.contains("Head") } ?: false
-                                val headPath = Path().apply {
-                                    moveTo(w * 0.28f, h * 0.52f)
-                                    quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
-                                }
-                                drawPath(
-                                    path = headPath,
-                                    color = if (isHeadActive) LineHeadColor else LineHeadColor.copy(alpha = 0.2f),
-                                    style = Stroke(
-                                        width = (if (isHeadActive) 14.dp else 6.dp).toPx(),
-                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    
+                                    val isHeadActive = activeLineName?.let { it.contains("Голо") || it.contains("Ум") || it.contains("Head") } ?: false
+                                    val headPath = Path().apply {
+                                        moveTo(w * 0.28f, h * 0.52f)
+                                        quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
+                                    }
+                                    drawPath(
+                                        path = headPath,
+                                        color = if (isHeadActive) LineHeadColor else LineHeadColor.copy(alpha = 0.2f),
+                                        style = Stroke(
+                                            width = (if (isHeadActive) 14.dp else 6.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
                                     )
-                                )
-                                
-                                val isLifeActive = activeLineName?.let { it.contains("Жизн") || it.contains("Life") } ?: false
-                                val lifePath = Path().apply {
-                                    moveTo(w * 0.28f, h * 0.52f)
-                                    quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
-                                }
-                                drawPath(
-                                    path = lifePath,
-                                    color = if (isLifeActive) LineLifeColor else LineLifeColor.copy(alpha = 0.2f),
-                                    style = Stroke(
-                                        width = (if (isLifeActive) 14.dp else 6.dp).toPx(),
-                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    
+                                    val isLifeActive = activeLineName?.let { it.contains("Жизн") || it.contains("Life") } ?: false
+                                    val lifePath = Path().apply {
+                                        moveTo(w * 0.28f, h * 0.52f)
+                                        quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
+                                    }
+                                    drawPath(
+                                        path = lifePath,
+                                        color = if (isLifeActive) LineLifeColor else LineLifeColor.copy(alpha = 0.2f),
+                                        style = Stroke(
+                                            width = (if (isLifeActive) 14.dp else 6.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
                                     )
-                                )
-                                
-                                val isDestinyActive = activeLineName?.let { it.contains("Суд") || it.contains("Dest") } ?: false
-                                val destinyPath = Path().apply {
-                                    moveTo(w * 0.52f, h * 0.8f)
-                                    quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
-                                }
-                                drawPath(
-                                    path = destinyPath,
-                                    color = if (isDestinyActive) LineDestinyColor else LineDestinyColor.copy(alpha = 0.2f),
-                                    style = Stroke(
-                                        width = (if (isDestinyActive) 12.dp else 4.dp).toPx(),
-                                        cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                    
+                                    val isDestinyActive = activeLineName?.let { it.contains("Суд") || it.contains("Dest") } ?: false
+                                    val destinyPath = Path().apply {
+                                        moveTo(w * 0.52f, h * 0.8f)
+                                        quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
+                                    }
+                                    drawPath(
+                                        path = destinyPath,
+                                        color = if (isDestinyActive) LineDestinyColor else LineDestinyColor.copy(alpha = 0.2f),
+                                        style = Stroke(
+                                            width = (if (isDestinyActive) 12.dp else 4.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
                                     )
-                                )
+                                }
+                            }
+
+                            // Interactive Alignment panel
+                            if (isAdjustmentPanelOpen) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .background(Color.Black.copy(alpha = 0.85f))
+                                        .padding(12.dp)
+                                ) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = if (currentLang == AppLanguage.RUS) "Настройка линий и фото" else "Adjust Lines & Photo",
+                                            style = MaterialTheme.typography.titleSmall.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                                        )
+                                        
+                                        // Photo rotation button
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Повернуть фото на 90°" else "Rotate Photo by 90°",
+                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
+                                            )
+                                            IconButton(
+                                                onClick = { imageRotation = (imageRotation + 90f) % 360f }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Cached,
+                                                    contentDescription = "Rotate Photo",
+                                                    tint = MysticGold
+                                                )
+                                            }
+                                        }
+                                        
+                                        // Slider 1: Scale Lines
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Размер: " else "Scale: ",
+                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
+                                                modifier = Modifier.width(60.dp)
+                                            )
+                                            Slider(
+                                                value = linesScale,
+                                                onValueChange = { linesScale = it },
+                                                valueRange = 0.5f..2.0f,
+                                                colors = SliderDefaults.colors(
+                                                    thumbColor = MysticGold,
+                                                    activeTrackColor = MysticGold,
+                                                    inactiveTrackColor = Color.DarkGray
+                                                ),
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        
+                                        // Slider 2: Rotate Lines
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Наклон: " else "Rotate: ",
+                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
+                                                modifier = Modifier.width(60.dp)
+                                            )
+                                            Slider(
+                                                value = linesRotation,
+                                                onValueChange = { linesRotation = it },
+                                                valueRange = -90f..90f,
+                                                colors = SliderDefaults.colors(
+                                                    thumbColor = MysticGold,
+                                                    activeTrackColor = MysticGold,
+                                                    inactiveTrackColor = Color.DarkGray
+                                                ),
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        
+                                        // Slider 3: Move Horizontal (Offset X)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Сдвиг X: " else "Shift X: ",
+                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
+                                                modifier = Modifier.width(60.dp)
+                                            )
+                                            Slider(
+                                                value = linesOffsetX,
+                                                onValueChange = { linesOffsetX = it },
+                                                valueRange = -300f..300f,
+                                                colors = SliderDefaults.colors(
+                                                    thumbColor = MysticGold,
+                                                    activeTrackColor = MysticGold,
+                                                    inactiveTrackColor = Color.DarkGray
+                                                ),
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        
+                                        // Slider 4: Move Vertical (Offset Y)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentLang == AppLanguage.RUS) "Сдвиг Y: " else "Shift Y: ",
+                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
+                                                modifier = Modifier.width(60.dp)
+                                            )
+                                            Slider(
+                                                value = linesOffsetY,
+                                                onValueChange = { linesOffsetY = it },
+                                                valueRange = -300f..300f,
+                                                colors = SliderDefaults.colors(
+                                                    thumbColor = MysticGold,
+                                                    activeTrackColor = MysticGold,
+                                                    inactiveTrackColor = Color.DarkGray
+                                                ),
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        
+                                        // Row for Reset and Close Buttons
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    linesOffsetX = 0f
+                                                    linesOffsetY = 0f
+                                                    linesScale = 1f
+                                                    linesRotation = 0f
+                                                    imageRotation = 0f
+                                                },
+                                                border = BorderStroke(1.dp, Color.Gray),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(if (currentLang == AppLanguage.RUS) "Сбросить" else "Reset")
+                                            }
+                                            
+                                            Button(
+                                                onClick = { isAdjustmentPanelOpen = false },
+                                                colors = ButtonDefaults.buttonColors(containerColor = MysticGold, contentColor = Color.Black),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(if (currentLang == AppLanguage.RUS) "Готово" else "Done")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Settings adjustment trigger icon
+                                IconButton(
+                                    onClick = { isAdjustmentPanelOpen = true },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(12.dp)
+                                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = "Adjust Lines",
+                                        tint = MysticGold
+                                    )
+                                }
                             }
                         }
                         
@@ -5075,15 +5649,7 @@ fun YookassaPaymentForm(
             
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Payment Method Selector
-            Text(
-                text = if (currentLang == AppLanguage.RUS) "Выберите способ оплаты:" else "Select payment method:",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            // Main unified payment method
+            // Main unified payment method label
             Card(
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MysticGold.copy(0.12f)),
@@ -5098,7 +5664,7 @@ fun YookassaPaymentForm(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = if (currentLang == AppLanguage.RUS) "ЮKassa / СБП" else "YooKassa / SBP",
+                            text = if (currentLang == AppLanguage.RUS) "ЮKassa/СПБ" else "YooKassa/SBP",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -5107,64 +5673,6 @@ fun YookassaPaymentForm(
                             text = if (currentLang == AppLanguage.RUS) "Прямая безопасная оплата услуг" else "Direct secure gateway payment",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Sub options inside SBP
-            Text(
-                text = if (currentLang == AppLanguage.RUS) "Опции маршрутизации СБП:" else "SBP routing options:",
-                fontSize = 11.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                listOf(
-                    Triple("yoomoney", if (currentLang == AppLanguage.RUS) "Стандартный платеж (ЮKassa)" else "Standard YooKassa gateway", "🌐"),
-                    Triple("ozon", if (currentLang == AppLanguage.RUS) "Оплата по СБП (Ozon Банк)" else "Pay via SBP (Ozon Bank)", "🌀"),
-                    Triple("wb", if (currentLang == AppLanguage.RUS) "Оплата по СБП (WB Банк)" else "Pay via SBP (WB Bank)", "🛍️")
-                ).forEach { (id, label, icon) ->
-                    val isSel = selectedMethod == id
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                if (isSel) Color(0x1AD4AF37) else Color(0x33141420),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .border(
-                                1.dp,
-                                if (isSel) MysticGold else Color.White.copy(0.04f),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable { selectedMethod = id }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(icon, fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = label,
-                            color = if (isSel) MysticGold else Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier.weight(1f)
-                        )
-                        RadioButton(
-                            selected = isSel,
-                            onClick = { selectedMethod = id },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MysticGold,
-                                unselectedColor = Color.Gray
-                            )
                         )
                     }
                 }
