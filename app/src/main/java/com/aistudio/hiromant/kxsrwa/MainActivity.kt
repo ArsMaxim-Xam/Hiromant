@@ -290,15 +290,18 @@ class MainActivity : ComponentActivity() {
                                     composable("splash") {
                                         MysticSplashScreen(
                                             viewModel = viewModel,
-                                            onNavigateNext = { navController.navigate("auth") }
-                                        )
-                                    }
-
-                                    // 3. Optional authorization
-                                    composable("auth") {
-                                        AuthScreen(
-                                            viewModel = viewModel,
-                                            onNavigateNext = { navController.navigate("profile") }
+                                            onNavigateNext = {
+                                                val profile = viewModel.userProfile.value
+                                                if (profile != null && profile.name.isNotBlank()) {
+                                                    navController.navigate("main_container") {
+                                                        popUpTo("splash") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    navController.navigate("profile") {
+                                                        popUpTo("splash") { inclusive = true }
+                                                    }
+                                                }
+                                            }
                                         )
                                     }
 
