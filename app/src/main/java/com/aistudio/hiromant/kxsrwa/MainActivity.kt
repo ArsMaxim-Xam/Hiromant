@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -70,9 +73,31 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: PalmistViewModel by viewModels()
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            try {
+                val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to apply immersive mode on focus change: ${e.message}")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Configure immersive sticky full-screen mode to hide status bar and navigation buttons
+        try {
+            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+            windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to setup immersive mode: ${e.message}")
+        }
 
         // Request notification permission dynamically for Android 13+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -433,7 +458,6 @@ fun MainContainerScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(58.dp)
                     .background(MysticDarkSurface)
                     .border(
                         width = 1.dp,
@@ -441,6 +465,8 @@ fun MainContainerScreen(
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                     )
                     .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .navigationBarsPadding()
+                    .height(58.dp)
                     .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround
