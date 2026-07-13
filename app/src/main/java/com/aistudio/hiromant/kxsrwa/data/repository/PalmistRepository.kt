@@ -422,7 +422,7 @@ class PalmistRepository(
 
         // Generate high quality mock fallback if network fails or API is missing
         if (resultJsonStr.isEmpty()) {
-            resultJsonStr = "{\"error\": \"payment_required\"}"
+            resultJsonStr = generateLocalMockReport(profile, isRussian, isFull, isCharacter)
         }
 
         val reading = ReadingEntity(
@@ -524,7 +524,7 @@ class PalmistRepository(
         }
 
         if (resultJsonStr.isEmpty()) {
-            resultJsonStr = "{\"error\": \"payment_required\"}"
+            resultJsonStr = generateLocalMockCompatibility(profile.name, partnerName, isRussian)
         }
 
         val reading = ReadingEntity(
