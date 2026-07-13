@@ -4333,31 +4333,37 @@ fun CompatibilityScreen(
     val compatibilityReading by viewModel.currentCompatibilityReading.collectAsState()
 
     var partnerName by remember { mutableStateOf("") }
-    var selfPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var partnerPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    
+    var selectedPartner1 by remember { mutableStateOf<ReadingEntity?>(null) }
+    var selectedPartner2 by remember { mutableStateOf<ReadingEntity?>(null) }
+    var activeSelectionSlot by remember { mutableStateOf(1) } // 1 or 2
 
-    var selfBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var partnerBitmap by remember { mutableStateOf<Bitmap?>(null) }
-
-    val selfPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            uri?.let {
-                selfPhotoUri = it
-                selfBitmap = BitmapUtils.uriToBitmap(context, it)
-            }
+    val readings by viewModel.allReadings.collectAsState()
+    
+    val interpretations = remember(readings) {
+        readings.filter { it.analysisType != "compatibility" }
+    }
+    
+    val filteredInterpretations = remember(interpretations, searchQuery) {
+        interpretations.filter {
+            it.name.contains(searchQuery, ignoreCase = true)
         }
-    )
-
-    val partnerPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            uri?.let {
-                partnerPhotoUri = it
-                partnerBitmap = BitmapUtils.uriToBitmap(context, it)
+    }
+    
+    val availableChoices = remember(filteredInterpretations, selectedPartner1, activeSelectionSlot) {
+        if (activeSelectionSlot == 2 && selectedPartner1 != null) {
+            filteredInterpretations.filter { record ->
+                val norm1 = selectedPartner1!!.gender.lowercase().trim()
+                val norm2 = record.gender.lowercase().trim()
+                val isMale1 = norm1.startsWith("м") || norm1.startsWith("m")
+                val isMale2 = norm2.startsWith("м") || norm2.startsWith("m")
+                isMale1 != isMale2
             }
+        } else {
+            filteredInterpretations
         }
-    )
+    }
 
     // Parse output JSON
     val compatReport = remember(compatibilityReading) {
@@ -4384,7 +4390,33 @@ fun CompatibilityScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            MysticHeader(strings.compatTitle)
+            // Custom 2-line title for "Совместимость с партнером" to prevent ugly wordwrap
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+            ) {
+                Text(
+                    text = if (currentLang == AppLanguage.RUS) "Совместимость" else "Compatibility",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        color = MysticGold,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = if (currentLang == AppLanguage.RUS) "с партнёром" else "with partner",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        color = MysticGold,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif
+                    ),
+                    textAlign = TextAlign.Center
+                )
+            }
+            
             MysticSubtitle(strings.compatSubtitle)
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -4407,93 +4439,367 @@ fun CompatibilityScreen(
                     }
                 )
             } else if (compatReport == null) {
-                // --- ENTRY AND UPLOADS FORM ---
-                MysticCard {
-                    Spacer(modifier = Modifier.height(16.dp))
+                // --- ENTRY AND SELECTION FROM HISTORY ---
+                
+                // Search Field
+                MysticTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = if (currentLang == AppLanguage.RUS) "Поиск по имени" else "Search by name",
+                    placeholder = if (currentLang == AppLanguage.RUS) "Введите имя..." else "Enter name...",
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear search", tint = Color.Gray)
+                            }
+                        } else {
+                            Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Gray)
+                        }
+                    }
+                )
 
-                    MysticTextField(
-                        value = partnerName,
-                        onValueChange = { partnerName = it },
-                        label = "Имя партнёра / Partner Name",
-                        placeholder = "Мария / Julian"
-                    )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
+                // Active Slots
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Slot 1 card
+                    val slot1Selected = selectedPartner1 != null
+                    val isSlot1Active = activeSelectionSlot == 1
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSlot1Active) MysticGold.copy(0.1f) else Color.White.copy(0.1f)
+                        ),
+                        border = BorderStroke(
+                            width = 2.dp,
+                            color = if (isSlot1Active) MysticGold else if (slot1Selected) MysticGold.copy(0.4f) else Color.White.copy(0.1f)
+                        ),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            .weight(1f)
+                            .clickable { activeSelectionSlot = 1 }
                     ) {
-                        // Self photo
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(strings.compatUploadSelf, fontSize = 11.sp, color = MysticBronze)
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Партнёр 1" else "Partner 1",
+                                style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
-                            GlowingBorderCircle(size = 90.dp) {
-                                if (selfBitmap != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(selfBitmap),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    IconButton(onClick = { selfPicker.launch("image/*") }) {
-                                        Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null, tint = MysticGold)
-                                    }
+                            if (selectedPartner1 != null) {
+                                val p1 = selectedPartner1!!
+                                val genderLetter = when(p1.gender.lowercase()) {
+                                    "male", "мужской", "м" -> if (currentLang == AppLanguage.RUS) "М" else "M"
+                                    "female", "женский", "ж" -> if (currentLang == AppLanguage.RUS) "Ж" else "F"
+                                    else -> if (currentLang == AppLanguage.RUS) "Д" else "O"
                                 }
+                                val birthYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - p1.age
+                                Text(
+                                    text = p1.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "$birthYear г.р. • ${p1.height}см • $genderLetter",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.LightGray),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { selectedPartner1 = null },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCF6679))
+                                ) {
+                                    Text(if (currentLang == AppLanguage.RUS) "Удалить" else "Remove", fontSize = 11.sp)
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color.Gray,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Выбрать" else "Select",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                                )
                             }
                         }
+                    }
 
-                        // Partner photo
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(strings.compatUploadPartner, fontSize = 11.sp, color = MysticBronze)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            GlowingBorderCircle(size = 90.dp) {
-                                if (partnerBitmap != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(partnerBitmap),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
+                    // Slot 2 card
+                    val slot2Selected = selectedPartner2 != null
+                    val isSlot2Active = activeSelectionSlot == 2
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSlot2Active) MysticGold.copy(0.1f) else Color.White.copy(0.1f)
+                        ),
+                        border = BorderStroke(
+                            width = 2.dp,
+                            color = if (isSlot2Active) MysticGold else if (slot2Selected) MysticGold.copy(0.4f) else Color.White.copy(0.1f)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { 
+                                if (selectedPartner1 == null) {
+                                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Сначала выберите Партнёра 1" else "Select Partner 1 first", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    IconButton(onClick = { partnerPicker.launch("image/*") }) {
-                                        Icon(imageVector = Icons.Default.AddAPhoto, contentDescription = null, tint = MysticGold)
+                                    activeSelectionSlot = 2 
+                                }
+                            }
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Партнёр 2" else "Partner 2",
+                                style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (selectedPartner2 != null) {
+                                val p2 = selectedPartner2!!
+                                val genderLetter = when(p2.gender.lowercase()) {
+                                    "male", "мужской", "м" -> if (currentLang == AppLanguage.RUS) "М" else "M"
+                                    "female", "женский", "ж" -> if (currentLang == AppLanguage.RUS) "Ж" else "F"
+                                    else -> if (currentLang == AppLanguage.RUS) "Д" else "O"
+                                }
+                                val birthYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - p2.age
+                                Text(
+                                    text = p2.name,
+                                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "$birthYear г.р. • ${p2.height}см • $genderLetter",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Color.LightGray),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { selectedPartner2 = null },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCF6679))
+                                ) {
+                                    Text(if (currentLang == AppLanguage.RUS) "Удалить" else "Remove", fontSize = 11.sp)
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = if (selectedPartner1 == null) Color.DarkGray else Color.Gray,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Выбрать" else "Select",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = if (selectedPartner1 == null) Color.DarkGray else Color.Gray)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // List of profiles from history
+                Text(
+                    text = if (activeSelectionSlot == 1) {
+                        if (currentLang == AppLanguage.RUS) "Выберите профиль для Партнёра 1:" else "Choose profile for Partner 1:"
+                    } else {
+                        if (currentLang == AppLanguage.RUS) "Выберите профиль другого пола для Партнёра 2:" else "Choose opposite gender profile for Partner 2:"
+                    },
+                    style = MaterialTheme.typography.titleSmall.copy(color = MysticBronze, fontWeight = FontWeight.Bold),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (availableChoices.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .background(Color.White.copy(0.1f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) {
+                                if (activeSelectionSlot == 2 && selectedPartner1 != null) "Нет профилей противоположного пола" else "История интерпретации пуста"
+                            } else {
+                                if (activeSelectionSlot == 2 && selectedPartner1 != null) "No opposite gender profiles available" else "No profiles in interpretation history"
+                            },
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        availableChoices.forEach { record ->
+                            val isSelected = (record == selectedPartner1 || record == selectedPartner2)
+                            val birthYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - record.age
+                            val genderLetter = when(record.gender.lowercase()) {
+                                "male", "мужской", "м" -> if (currentLang == AppLanguage.RUS) "М" else "M"
+                                "female", "женский", "ж" -> if (currentLang == AppLanguage.RUS) "Ж" else "F"
+                                else -> if (currentLang == AppLanguage.RUS) "Д" else "O"
+                            }
+                            val yrUnit = if (currentLang == AppLanguage.RUS) "г.р." else "y.o.b."
+                            val heightUnit = if (currentLang == AppLanguage.RUS) "см" else "cm"
+                            val infoText = "${record.name}, $birthYear $yrUnit, ${record.height} $heightUnit, $genderLetter"
+
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MysticGold.copy(0.15f) else Color(0x22141420)
+                                ),
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (isSelected) MysticGold else Color.White.copy(0.08f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (activeSelectionSlot == 1) {
+                                            selectedPartner1 = record
+                                            // If same gender as selectedPartner2, clear selectedPartner2
+                                            if (selectedPartner2 != null) {
+                                                val norm1 = record.gender.lowercase().trim()
+                                                val norm2 = selectedPartner2!!.gender.lowercase().trim()
+                                                val isMale1 = norm1.startsWith("м") || norm1.startsWith("m")
+                                                val isMale2 = norm2.startsWith("м") || norm2.startsWith("m")
+                                                if (isMale1 == isMale2) {
+                                                    selectedPartner2 = null
+                                                }
+                                            }
+                                            // Auto-advance slot if slot 2 is empty
+                                            if (selectedPartner2 == null) {
+                                                activeSelectionSlot = 2
+                                            }
+                                        } else {
+                                            if (selectedPartner1 == null) {
+                                                Toast.makeText(context, "Select Partner 1 first", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                val norm1 = selectedPartner1!!.gender.lowercase().trim()
+                                                val norm2 = record.gender.lowercase().trim()
+                                                val isMale1 = norm1.startsWith("м") || norm1.startsWith("m")
+                                                val isMale2 = norm2.startsWith("м") || norm2.startsWith("m")
+                                                if (isMale1 == isMale2) {
+                                                    Toast.makeText(context, "Partners must be of opposite genders!", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    selectedPartner2 = record
+                                                }
+                                            }
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val imagePath = record.leftPalmPath ?: record.rightPalmPath ?: record.leftBackPath ?: record.rightBackPath
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(Color.Black.copy(0.4f), CircleShape)
+                                            .border(1.dp, MysticGold.copy(0.3f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (!imagePath.isNullOrEmpty()) {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(imagePath),
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.PanTool,
+                                                contentDescription = null,
+                                                tint = MysticGold,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = infoText,
+                                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
+                                        )
+                                        Text(
+                                            text = if (record.analysisType.contains("char")) {
+                                                if (currentLang == AppLanguage.RUS) "Анализ характера" else "Character reading"
+                                            } else {
+                                                if (currentLang == AppLanguage.RUS) "Анализ судьбы" else "Destiny reading"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
+                                        )
+                                    }
+                                    
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Selected",
+                                            tint = MysticGold,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 MysticButton(
                     text = strings.compatAnalyzeBtn,
                     onClick = {
-                        if (partnerName.isNotEmpty()) {
+                        val p1 = selectedPartner1
+                        val p2 = selectedPartner2
+                        if (p1 != null && p2 != null) {
+                            val norm1 = p1.gender.lowercase().trim()
+                            val norm2 = p2.gender.lowercase().trim()
+                            val isMale1 = norm1.startsWith("м") || norm1.startsWith("m")
+                            val isMale2 = norm2.startsWith("м") || norm2.startsWith("m")
+                            if (isMale1 == isMale2) {
+                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Партнёры должны быть разнополыми!" else "Partners must be of opposite genders!", Toast.LENGTH_SHORT).show()
+                                return@MysticButton
+                            }
+                            
                             // Check compatibility price (250 rubles item)
                             viewModel.checkFeatureUnlocked("compatibility") { unlocked ->
                                 if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                                    viewModel.runCompatibilityAnalysis(selfBitmap, partnerBitmap, partnerName, onNavigateToLoading)
+                                    val b1 = if (!p1.leftPalmPath.isNullOrEmpty()) BitmapUtils.uriToBitmap(context, Uri.parse(p1.leftPalmPath)) else null
+                                    val b2 = if (!p2.leftPalmPath.isNullOrEmpty()) BitmapUtils.uriToBitmap(context, Uri.parse(p2.leftPalmPath)) else null
+                                    partnerName = p2.name
+                                    viewModel.runCompatibilityAnalysis(b1, b2, p2.name, onNavigateToLoading)
                                 } else {
                                     onNavigateToBilling()
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Please enter Partner's Name", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Пожалуйста, выберите обоих партнёров" else "Please select both partners", Toast.LENGTH_SHORT).show()
                         }
                     },
+                    enabled = (selectedPartner1 != null && selectedPartner2 != null),
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
@@ -4694,6 +5000,7 @@ fun HistoryScreen(
                     items(readings) { record ->
                         ReadingHistoryItem(
                             record = record,
+                            currentLang = currentLang,
                             onOpen = {
                                 viewModel.currentReading.value = record
                                 onNavigateToResult()
@@ -4721,6 +5028,7 @@ fun HistoryScreen(
 @Composable
 fun ReadingHistoryItem(
     record: ReadingEntity,
+    currentLang: AppLanguage,
     onOpen: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -4747,8 +5055,21 @@ fun ReadingHistoryItem(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
+                val birthYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - record.age
+                val genderLetter = when(record.gender.lowercase()) {
+                    "male", "мужской", "м" -> if (currentLang == AppLanguage.RUS) "М" else "M"
+                    "female", "женский", "ж" -> if (currentLang == AppLanguage.RUS) "Ж" else "F"
+                    else -> if (currentLang == AppLanguage.RUS) "Д" else "O"
+                }
+                val infoText = if (record.analysisType == "compatibility") {
+                    if (currentLang == AppLanguage.RUS) "Совместимость c ${record.partnerName}" else "Compatibility with ${record.partnerName}"
+                } else {
+                    val yrUnit = if (currentLang == AppLanguage.RUS) "г.р." else "y.o.b."
+                    val heightUnit = if (currentLang == AppLanguage.RUS) "см" else "cm"
+                    "${record.name}, $birthYear $yrUnit, ${record.height} $heightUnit, $genderLetter"
+                }
                 Text(
-                    text = if (record.analysisType == "compatibility") "Совместимость c ${record.partnerName}" else record.name,
+                    text = infoText,
                     style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
                 )
                 Text(
@@ -5389,11 +5710,28 @@ fun BillingScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         
+                        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
                         MysticTextField(
                             value = walletNum,
-                            onValueChange = { walletNum = it },
+                            onValueChange = { },
                             label = "Номер кошелька ЮMoney",
-                            placeholder = "41001xxxxxxxxxx"
+                            placeholder = "41001xxxxxxxxxx",
+                            readOnly = true,
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        val annotatedString = androidx.compose.ui.text.buildAnnotatedString { append(walletNum) }
+                                        clipboardManager.setText(annotatedString)
+                                        Toast.makeText(context, "Номер кошелька скопирован!", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy Wallet ID",
+                                        tint = MysticGold
+                                    )
+                                }
+                            }
                         )
                         
                         Spacer(modifier = Modifier.height(12.dp))
@@ -5693,11 +6031,32 @@ fun YookassaPaymentForm(
             )
             Spacer(modifier = Modifier.height(4.dp))
             
+            val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
             MysticTextField(
                 value = walletNum,
-                onValueChange = { walletNum = it },
+                onValueChange = { },
                 label = if (currentLang == AppLanguage.RUS) "Кошелёк получателя" else "Receiver Wallet",
-                placeholder = "41001xxxxxxxxxx"
+                placeholder = "41001xxxxxxxxxx",
+                readOnly = true,
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            val annotatedString = androidx.compose.ui.text.buildAnnotatedString { append(walletNum) }
+                            clipboardManager.setText(annotatedString)
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Номер кошелька скопирован!" else "Wallet number copied!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy Wallet ID",
+                            tint = MysticGold
+                        )
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(16.dp))

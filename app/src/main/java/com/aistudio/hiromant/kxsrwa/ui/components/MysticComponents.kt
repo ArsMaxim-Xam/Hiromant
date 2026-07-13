@@ -183,7 +183,9 @@ fun MysticTextField(
     label: String,
     modifier: Modifier = Modifier,
     error: String? = null,
-    placeholder: String = ""
+    placeholder: String = "",
+    readOnly: Boolean = false,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
     Column(modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(
@@ -197,6 +199,8 @@ fun MysticTextField(
             placeholder = { Text(placeholder, color = Color.Gray, style = MaterialTheme.typography.bodyMedium) },
             singleLine = true,
             isError = error != null,
+            readOnly = readOnly,
+            trailingIcon = trailingIcon,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,

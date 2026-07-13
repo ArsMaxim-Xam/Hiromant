@@ -427,97 +427,60 @@ fun MainContainerScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = MysticDarkSurface,
-                contentColor = MysticGold,
-                tonalElevation = 8.dp,
+            Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .background(MysticDarkSurface)
                     .border(
                         width = 1.dp,
                         color = MysticBronze.copy(0.2f),
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                     )
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
             ) {
-                // Upload / Scan
-                NavigationBarItem(
-                    selected = activeTab == "upload",
-                    onClick = { activeTab = "upload" },
-                    icon = {
-                        Icon(
-                            imageVector = if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome,
-                            contentDescription = null
-                        )
-                    },
-                    label = { Text(strings.navScan, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MysticGold,
-                        selectedTextColor = MysticGold,
-                        indicatorColor = Color(0x22D4AF37),
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray
-                    )
+                // Helper composable inside bottomBar
+                val tabs = listOf(
+                    Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
+                    Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
+                    Triple("history", strings.navHistory, if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History),
+                    Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
                 )
 
-                // Partner Compatibility
-                NavigationBarItem(
-                    selected = activeTab == "compatibility",
-                    onClick = { activeTab = "compatibility" },
-                    icon = {
+                tabs.forEach { (tabId, label, icon) ->
+                    val isSelected = activeTab == tabId
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null,
+                                onClick = { activeTab = tabId }
+                            )
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Icon(
-                            imageVector = if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = null
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MysticGold else Color.Gray,
+                            modifier = Modifier.size(20.dp)
                         )
-                    },
-                    label = { Text(strings.navCompat, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MysticGold,
-                        selectedTextColor = MysticGold,
-                        indicatorColor = Color(0x22D4AF37),
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray
-                    )
-                )
-
-                // History Records
-                NavigationBarItem(
-                    selected = activeTab == "history",
-                    onClick = { activeTab = "history" },
-                    icon = {
-                        Icon(
-                            imageVector = if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History,
-                            contentDescription = null
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = label,
+                            fontSize = 9.sp,
+                            color = if (isSelected) MysticGold else Color.Gray,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    },
-                    label = { Text(strings.navHistory, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MysticGold,
-                        selectedTextColor = MysticGold,
-                        indicatorColor = Color(0x22D4AF37),
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray
-                    )
-                )
-
-                // About / FAQ Theory
-                NavigationBarItem(
-                    selected = activeTab == "about",
-                    onClick = { activeTab = "about" },
-                    icon = {
-                        Icon(
-                            imageVector = if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info,
-                            contentDescription = null
-                        )
-                    },
-                    label = { Text(strings.navAbout, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MysticGold,
-                        selectedTextColor = MysticGold,
-                        indicatorColor = Color(0x22D4AF37),
-                        unselectedIconColor = Color.Gray,
-                        unselectedTextColor = Color.Gray
-                    )
-                )
+                    }
+                }
             }
         },
         contentWindowInsets = WindowInsets.navigationBars,
