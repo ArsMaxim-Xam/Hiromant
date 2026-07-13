@@ -963,13 +963,66 @@ fun AuthScreen(
                 }
 
                 if (isLoading) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        contentAlignment = Alignment.Center
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CircularProgressIndicator(color = MysticGold)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) 
+                                "Инициализация... Если процесс завис (не приходит SMS или нет ответа), это может быть связано с блокировкой или ограничениями сервисов Google в вашем регионе. Вы можете войти без регистрации в полнофункциональном Демо-режиме!"
+                            else 
+                                "Initializing... If this process hangs (no SMS arrives or no response), it may be due to restrictions on Google services in your region. You can log in without registration using the fully-featured Demo Mode!",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.LightGray,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = {
+                                isLoading = false
+                                viewModel.saveProfile(
+                                    name = "Mystic Seeker",
+                                    gender = "Other",
+                                    age = 28,
+                                    height = 175,
+                                    dominantHand = "Right",
+                                    email = "demo@hiromant.app",
+                                    phone = "+79991112233",
+                                    isRegistered = true
+                                )
+                                Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен в тестовом режиме!" else "Logged in as Test Profile!", Toast.LENGTH_SHORT).show()
+                                onNavigateNext()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, MysticGold),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MysticGold)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MysticGold,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Войти в Демо-режиме" else "Enter in Demo Mode",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -1281,54 +1334,25 @@ fun AuthScreen(
                             )
                         )
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { activeError = null },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.White
-                            ),
-                            border = BorderStroke(1.dp, Color.Gray),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            ShrinkableText(
-                                text = if (currentLang == AppLanguage.RUS) "Закрыть" else "Close",
-                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                val emailIntent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-                                    data = android.net.Uri.parse("mailto:")
-                                    putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("arsmaxim@gmail.com"))
-                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Hiromant App Error Report")
-                                    putExtra(android.content.Intent.EXTRA_TEXT, "Hi developer,\n\nI encountered the following error in the Hiromant app:\n\n${activeError}\n\nDevice: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (Android ${android.os.Build.VERSION.RELEASE})")
-                                }
-                                try {
-                                    context.startActivity(emailIntent)
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Почтовое приложение не найдено" else "No email app found", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MysticGold,
-                                contentColor = Color.Black
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            ShrinkableText(
-                                text = if (currentLang == AppLanguage.RUS) "Отправить" else "Send",
-                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            )
-                        }
-                    }
                     Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(
+                    
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) 
+                            "Для пользователей из РФ и регионов с ограничениями Google рекомендуется использовать полнофункциональный Демо-режим без регистрации."
+                        else 
+                            "For users in regions with Google limitations, we recommend using the fully-featured Demo Mode without registration.",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.LightGray,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
                         onClick = {
                             activeError = null
                             viewModel.saveProfile(
@@ -1344,19 +1368,78 @@ fun AuthScreen(
                             Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Вход выполнен в тестовом режиме!" else "Logged in as Test Profile!", Toast.LENGTH_SHORT).show()
                             onNavigateNext()
                         },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MysticGold),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MysticGold,
+                            contentColor = Color.Black
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) "Пропустить и войти в Демо-режиме" else "Bypass and enter in Demo mode",
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                                color = MysticGold
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Войти в Демо-режиме" else "Enter in Demo Mode",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { activeError = null },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White
                             ),
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
+                            border = BorderStroke(1.dp, Color.Gray),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            ShrinkableText(
+                                text = if (currentLang == AppLanguage.RUS) "Закрыть" else "Close",
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp)
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val emailIntent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                    data = android.net.Uri.parse("mailto:")
+                                    putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("arsmaxim@gmail.com"))
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Hiromant App Error Report")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Hi developer,\n\nI encountered the following error in the Hiromant app:\n\n${activeError}\n\nDevice: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (Android ${android.os.Build.VERSION.RELEASE})")
+                                }
+                                try {
+                                    context.startActivity(emailIntent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, if (currentLang == AppLanguage.RUS) "Почтовое приложение не найдено" else "No email app found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White
+                            ),
+                            border = BorderStroke(1.dp, Color.Gray),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            ShrinkableText(
+                                text = if (currentLang == AppLanguage.RUS) "Отчёт" else "Report",
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp)
+                            )
+                        }
                     }
                 }
             }
