@@ -403,8 +403,9 @@ class PalmistRepository(
 
                 // Attach up to 4 images to limit token usage and remain highly stable
                 bitmaps.take(4).forEachIndexed { index, bitmap ->
-                    val base64 = bitmap.toBase64( quality = 60 )
-                    AppLogger.i("PalmistRepository", "Adding image part $index. Width=${bitmap.width}, Height=${bitmap.height}, Base64 length=${base64.length}")
+                    val resized = resizeBitmap(bitmap, 1200)
+                    val base64 = resized.toBase64(quality = 60)
+                    AppLogger.i("PalmistRepository", "Adding image part $index. Width=${resized.width}, Height=${resized.height}, Base64 length=${base64.length}")
                     parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
 
@@ -520,13 +521,15 @@ class PalmistRepository(
                 parts.add(Part(text = promptText))
 
                 if (selfBitmap != null) {
-                    val base64 = selfBitmap.toBase64(50)
-                    AppLogger.i("PalmistRepository", "Adding self image part. Width=${selfBitmap.width}, Height=${selfBitmap.height}, Base64 length=${base64.length}")
+                    val resized = resizeBitmap(selfBitmap, 1200)
+                    val base64 = resized.toBase64(50)
+                    AppLogger.i("PalmistRepository", "Adding self image part. Width=${resized.width}, Height=${resized.height}, Base64 length=${base64.length}")
                     parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
                 if (partnerBitmap != null) {
-                    val base64 = partnerBitmap.toBase64(50)
-                    AppLogger.i("PalmistRepository", "Adding partner image part. Width=${partnerBitmap.width}, Height=${partnerBitmap.height}, Base64 length=${base64.length}")
+                    val resized = resizeBitmap(partnerBitmap, 1200)
+                    val base64 = resized.toBase64(50)
+                    AppLogger.i("PalmistRepository", "Adding partner image part. Width=${resized.width}, Height=${resized.height}, Base64 length=${base64.length}")
                     parts.add(Part(inlineData = InlineData(mimeType = "image/jpeg", data = base64)))
                 }
 
@@ -859,5 +862,16 @@ class PalmistRepository(
         }
 
         return moshi.adapter(CompatibilityReport::class.java).toJson(report)
+    }
+
+    private fun resizeBitmap(bitmap: Bitmap, maxSize: Int = 1200): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        if (width <= maxSize && height <= maxSize) return bitmap
+        val max = maxOf(width, height)
+        val scale = maxSize.toFloat() / max
+        val newWidth = (width * scale).toInt()
+        val newHeight = (height * scale).toInt()
+        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
     }
 }

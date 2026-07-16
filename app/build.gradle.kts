@@ -25,6 +25,9 @@ android {
     ndk {
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
     }
+
+    // Поле для API-ключа, который будет подставлен из .env или переменной окружения
+    buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY") ?: ""}\"")
   }
 
   splits {
