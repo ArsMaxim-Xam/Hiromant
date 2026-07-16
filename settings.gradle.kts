@@ -22,6 +22,8 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Хиромант"
+val versionFile = file("version.txt")
+val currentVersion = if (versionFile.exists()) versionFile.readText().trim() else "1.001"
+rootProject.name = "Хиромант_${currentVersion.replace('.', '_')}"
 
 include(":app")

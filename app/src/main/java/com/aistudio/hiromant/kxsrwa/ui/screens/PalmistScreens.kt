@@ -1461,21 +1461,23 @@ fun ProfileScreen(
 
     val existingProfile by viewModel.userProfile.collectAsState()
 
-    var name by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("") }
-    var birthYearText by remember { mutableStateOf("1995") }
-    var heightText by remember { mutableStateOf("172") }
+    var name by remember { mutableStateOf("Максим") }
+    var gender by remember { mutableStateOf("Male") }
+    var birthYearText by remember { mutableStateOf("1982") }
+    var heightText by remember { mutableStateOf("175") }
     var dominantHand by remember { mutableStateOf("Right") }
 
     var nameError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(existingProfile) {
         existingProfile?.let {
-            if (it.name.isNotEmpty()) name = it.name
-            if (it.gender.isNotEmpty()) gender = it.gender
-            birthYearText = (2026 - it.age).toString()
-            heightText = it.height.toString()
-            dominantHand = it.dominantHand
+            if (it.name.isNotEmpty()) {
+                name = it.name
+                gender = it.gender
+                birthYearText = (2026 - it.age).toString()
+                heightText = it.height.toString()
+                dominantHand = it.dominantHand
+            }
         }
     }
 
@@ -1528,6 +1530,7 @@ fun ProfileScreen(
                             placeholder = { Text("Максим", color = Color.Gray) },
                             singleLine = true,
                             isError = nameError != null,
+                            keyboardOptions = KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
@@ -1774,7 +1777,8 @@ fun HandSlotCard(
     onClear: () -> Unit,
     btnCameraText: String,
     btnGalleryText: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSaveToGallery: (() -> Unit)? = null
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1798,7 +1802,9 @@ fun HandSlotCard(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(180.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+                .aspectRatio(1.2f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0x1F1E1E2C))
                 .border(2.dp, if (bitmap != null) MysticGold else MysticBronze.copy(0.3f), RoundedCornerShape(16.dp))
@@ -1828,6 +1834,25 @@ fun HandSlotCard(
                         modifier = Modifier.size(14.dp)
                     )
                 }
+
+                // Кнопка сохранения в галерею в левом углу
+                if (onSaveToGallery != null) {
+                    IconButton(
+                        onClick = { onSaveToGallery() },
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                            .size(28.dp)
+                            .background(Color.Black.copy(0.6f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Сохранить в галерею",
+                            tint = MysticGold,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             } else {
                 // Large placeholder in the middle
                 Column(
@@ -1846,6 +1871,83 @@ fun HandSlotCard(
                         style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, fontSize = 11.sp)
                     )
                 }
+            }
+
+            // Наложение полупрозрачного контура руки с линиями
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height
+                
+                // Рисуем пунктирный контур руки
+                val handPath = androidx.compose.ui.graphics.Path().apply {
+                    // Начинаем от запястья слева
+                    moveTo(width * 0.35f, height * 0.95f)
+                    // Линия к большому пальцу
+                    quadraticTo(width * 0.22f, height * 0.75f, width * 0.16f, height * 0.65f)
+                    // Кончик большого пальца
+                    quadraticTo(width * 0.10f, height * 0.58f, width * 0.22f, height * 0.52f)
+                    // Основание большого пальца
+                    quadraticTo(width * 0.35f, height * 0.55f, width * 0.38f, height * 0.58f)
+                    // К указательному пальцу
+                    lineTo(width * 0.38f, height * 0.25f)
+                    quadraticTo(width * 0.42f, height * 0.15f, width * 0.46f, height * 0.25f)
+                    // К среднему пальцу
+                    lineTo(width * 0.50f, height * 0.15f)
+                    quadraticTo(width * 0.54f, height * 0.08f, width * 0.58f, height * 0.15f)
+                    // К безымянному пальцу
+                    lineTo(width * 0.62f, height * 0.20f)
+                    quadraticTo(width * 0.66f, height * 0.12f, width * 0.70f, height * 0.20f)
+                    // К мизинцу
+                    lineTo(width * 0.74f, height * 0.35f)
+                    quadraticTo(width * 0.78f, height * 0.28f, width * 0.82f, height * 0.35f)
+                    // Внешний край ладони к запястью справа
+                    quadraticTo(width * 0.88f, height * 0.65f, width * 0.75f, height * 0.82f)
+                    lineTo(width * 0.65f, height * 0.95f)
+                    close()
+                }
+                
+                // Рисуем контур пунктиром
+                drawPath(
+                    path = handPath,
+                    color = MysticGold.copy(0.3f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = 1.5.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 5f), 0f)
+                    )
+                )
+                
+                // Линия Жизни (вокруг большого пальца)
+                val lifeLine = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(width * 0.38f, height * 0.58f)
+                    quadraticTo(width * 0.45f, height * 0.70f, width * 0.45f, height * 0.85f)
+                }
+                drawPath(
+                    path = lifeLine,
+                    color = MysticGold.copy(0.35f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+                )
+                
+                // Линия Головы (поперечная средняя)
+                val headLine = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(width * 0.38f, height * 0.58f)
+                    quadraticTo(width * 0.55f, height * 0.62f, width * 0.75f, height * 0.65f)
+                }
+                drawPath(
+                    path = headLine,
+                    color = MysticGold.copy(0.35f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+                )
+                
+                // Линия Сердца (поперечная верхняя)
+                val heartLine = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(width * 0.42f, height * 0.48f)
+                    quadraticTo(width * 0.60f, height * 0.50f, width * 0.80f, height * 0.54f)
+                }
+                drawPath(
+                    path = heartLine,
+                    color = MysticGold.copy(0.35f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+                )
             }
         }
 
@@ -2208,6 +2310,72 @@ fun UploadScreen(
     }
     var showInterpretationScreen by remember { mutableStateOf(false) }
 
+    // Текстовое озвучивание (TTS) для инструкции
+    var isGuideExpanded by remember { mutableStateOf(false) }
+    var isPlayingTts by remember { mutableStateOf(false) }
+    var ttsVolume by remember { mutableStateOf(1f) }
+    var isMuted by remember { mutableStateOf(false) }
+    var currentWordRange by remember { mutableStateOf<IntRange?>(null) }
+    var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
+
+    val instructionText = "Для точного анализа важно, чтобы снимок был сделан при хорошем освещении.\n" +
+            "1. Расположите ладонь ровно перед камерой, без наклона.\n" +
+            "2. Пальцы должны быть слегка разведены.\n" +
+            "3. Избегайте размытия и теней, падающих на линии руки.\n" +
+            "4. Сфотографируйте поочерёдно ладонь и тыльную сторону обеих рук."
+
+    val annotatedInstructionText = remember(currentWordRange) {
+        buildAnnotatedString {
+            val range = currentWordRange
+            if (range != null && range.first in instructionText.indices && range.last <= instructionText.length) {
+                append(instructionText.substring(0, range.first))
+                withStyle(style = SpanStyle(background = MysticGold.copy(0.4f), color = Color.White, fontWeight = FontWeight.Bold)) {
+                    append(instructionText.substring(range.first, range.last))
+                }
+                append(instructionText.substring(range.last))
+            } else {
+                append(instructionText)
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        var tts: TextToSpeech? = null
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val locale = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+                tts?.language = locale
+            }
+        }
+        
+        tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                isPlayingTts = true
+            }
+
+            override fun onDone(utteranceId: String?) {
+                isPlayingTts = false
+                currentWordRange = null
+            }
+
+            override fun onError(utteranceId: String?) {
+                isPlayingTts = false
+                currentWordRange = null
+            }
+
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                currentWordRange = start..end
+            }
+        })
+        
+        ttsInstance = tts
+        
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
+
     // Media Store URI values for system-native cameras
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
     var tempVideoUri by remember { mutableStateOf<Uri?>(null) }
@@ -2340,7 +2508,7 @@ fun UploadScreen(
                 // STEP 1: Upload media screen
                 MysticHeader(strings.uploadTitle)
 
-                // Warning Guidelines Box
+                // Инструкция «Как правильно фотографировать ладонь» с TTS
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0x1A000000)),
@@ -2350,15 +2518,141 @@ fun UploadScreen(
                         .padding(bottom = 20.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = strings.uploadGuideHeader,
-                            style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = strings.uploadGuideText,
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFC0C0D0), lineHeight = 18.sp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isGuideExpanded = !isGuideExpanded }
+                        ) {
+                            Icon(
+                                imageVector = if (isGuideExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null,
+                                tint = MysticGold,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Как правильно фотографировать ладонь",
+                                style = MaterialTheme.typography.labelLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        if (isGuideExpanded) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Панель управления TTS
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0x1F1E1E2C), RoundedCornerShape(8.dp))
+                                    .padding(8.dp)
+                            ) {
+                                // Кнопка Воспроизведения / Остановки
+                                IconButton(
+                                    onClick = {
+                                        if (isPlayingTts) {
+                                            ttsInstance?.stop()
+                                            isPlayingTts = false
+                                            currentWordRange = null
+                                        } else {
+                                            val speakParams = android.os.Bundle().apply {
+                                                val volume = if (isMuted) 0f else ttsVolume
+                                                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
+                                                putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "guideline_tts")
+                                            }
+                                            val result = ttsInstance?.speak(instructionText, TextToSpeech.QUEUE_FLUSH, speakParams, "guideline_tts")
+                                            if (result == TextToSpeech.SUCCESS) {
+                                                isPlayingTts = true
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isPlayingTts) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                        contentDescription = "Озвучить текст",
+                                        tint = MysticGold,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                // Кнопка Mute
+                                IconButton(
+                                    onClick = {
+                                        isMuted = !isMuted
+                                        if (isPlayingTts) {
+                                            // Обновляем громкость на лету, если играет
+                                            val speakParams = android.os.Bundle().apply {
+                                                val volume = if (isMuted) 0f else ttsVolume
+                                                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
+                                                putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "guideline_tts")
+                                            }
+                                            ttsInstance?.speak(instructionText, TextToSpeech.QUEUE_FLUSH, speakParams, "guideline_tts")
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                                        contentDescription = "Mute",
+                                        tint = if (isMuted) Color.Red else MysticGold,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                // Слайдер громкости
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Громкость",
+                                            style = MaterialTheme.typography.bodySmall.copy(color = MysticBronze, fontSize = 10.sp)
+                                        )
+                                        Text(
+                                            text = "${(ttsVolume * 100).toInt()}%",
+                                            style = MaterialTheme.typography.bodySmall.copy(color = MysticGold, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        )
+                                    }
+                                    Slider(
+                                        value = ttsVolume,
+                                        onValueChange = {
+                                            ttsVolume = it
+                                            if (isPlayingTts && !isMuted) {
+                                                val speakParams = android.os.Bundle().apply {
+                                                    putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, it)
+                                                    putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "guideline_tts")
+                                                }
+                                                ttsInstance?.speak(instructionText, TextToSpeech.QUEUE_FLUSH, speakParams, "guideline_tts")
+                                            }
+                                        },
+                                        valueRange = 0f..1f,
+                                        colors = SliderDefaults.colors(
+                                            thumbColor = MysticGold,
+                                            activeTrackColor = MysticGold,
+                                            inactiveTrackColor = MysticBronze.copy(0.3f)
+                                        ),
+                                        modifier = Modifier.height(20.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Текст инструкции с подсветкой слов
+                            Text(
+                                text = annotatedInstructionText,
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFC0C0D0), lineHeight = 20.sp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0x0AFFFFFF), RoundedCornerShape(8.dp))
+                                    .padding(12.dp)
+                            )
+                        }
                     }
                 }
 
@@ -2399,7 +2693,14 @@ fun UploadScreen(
                                 viewModel.leftPalmPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery",
+                            onSaveToGallery = {
+                                bitmapLeftPalm?.let { bmp ->
+                                    val saved = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGallery(context, bmp, "LeftPalm")
+                                    val msg = if (saved) "Изображение левой ладони сохранено в галерею" else "Не удалось сохранить изображение"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -2429,7 +2730,14 @@ fun UploadScreen(
                                 viewModel.leftBackPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery",
+                            onSaveToGallery = {
+                                bitmapLeftBack?.let { bmp ->
+                                    val saved = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGallery(context, bmp, "LeftBack")
+                                    val msg = if (saved) "Изображение тыла левой руки сохранено в галерею" else "Не удалось сохранить изображение"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -2459,7 +2767,14 @@ fun UploadScreen(
                                 viewModel.rightPalmPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery",
+                            onSaveToGallery = {
+                                bitmapRightPalm?.let { bmp ->
+                                    val saved = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGallery(context, bmp, "RightPalm")
+                                    val msg = if (saved) "Изображение правой ладони сохранено в галерею" else "Не удалось сохранить изображение"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -2489,7 +2804,14 @@ fun UploadScreen(
                                 viewModel.rightBackPath.value = null
                             },
                             btnCameraText = if (currentLang == AppLanguage.RUS) "Камера" else "Camera",
-                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery"
+                            btnGalleryText = if (currentLang == AppLanguage.RUS) "Галерея" else "Gallery",
+                            onSaveToGallery = {
+                                bitmapRightBack?.let { bmp ->
+                                    val saved = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGallery(context, bmp, "RightBack")
+                                    val msg = if (saved) "Изображение тыла правой руки сохранено в галерею" else "Не удалось сохранить изображение"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         )
                     }
                 }
@@ -5335,8 +5657,13 @@ fun AboutScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
+                val appFullDisplayName = if (currentLang == AppLanguage.RUS) {
+                    "Хиромант $appVersionName"
+                } else {
+                    "Hiromant $appVersionName"
+                }
                 Text(
-                    text = "${strings.appVersionLabel}: $appVersionName",
+                    text = appFullDisplayName,
                     style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray.copy(alpha = 0.6f)),
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -6495,6 +6822,254 @@ fun YookassaPaymentForm(
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+    }
+}
+
+
+@Composable
+fun ReadingConfigScreen(
+    viewModel: PalmistViewModel
+) {
+    val context = LocalContext.current
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val strings = LocalizedStrings.get(currentLang)
+
+    var ttsEnabled by remember { mutableStateOf(true) }
+    var voiceGender by remember { mutableStateOf("Female") }
+    var speechRate by remember { mutableStateOf(1.0f) }
+    var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isSpeakingTest by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        val tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                ttsInstance?.language = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+            }
+        }
+        tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                isSpeakingTest = true
+            }
+            override fun onDone(utteranceId: String?) {
+                isSpeakingTest = false
+            }
+            override fun onError(utteranceId: String?) {
+                isSpeakingTest = false
+            }
+        })
+        ttsInstance = tts
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MysticDarkBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
+        ) {
+            Text(
+                text = if (currentLang == AppLanguage.RUS) "Чтение текста" else "Reading Settings",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    color = MysticGold,
+                    fontSize = 32.sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Global toggle Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Автоматическое чтение" else "Auto-reading",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Озвучивать результаты анализа при открытии" else "Read analysis results aloud on open",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(
+                        checked = ttsEnabled,
+                        onCheckedChange = { ttsEnabled = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MysticGold,
+                            checkedTrackColor = MysticGold.copy(0.4f),
+                            uncheckedThumbColor = Color.Gray,
+                            uncheckedTrackColor = Color.DarkGray
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Voice selection Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Тип голоса" else "Voice Gender",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Female Voice Button
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(
+                                    if (voiceGender == "Female") MysticGold else Color.White.copy(0.05f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (voiceGender == "Female") MysticGold else MysticBronze.copy(0.3f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable { voiceGender = "Female" }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Женский голос" else "Female Voice",
+                                color = if (voiceGender == "Female") Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        // Male Voice Button
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(
+                                    if (voiceGender == "Male") MysticGold else Color.White.copy(0.05f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (voiceGender == "Male") MysticGold else MysticBronze.copy(0.3f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable { voiceGender = "Male" }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Мужской голос" else "Male Voice",
+                                color = if (voiceGender == "Male") Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Speech Rate Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Скорость речи" else "Speech Rate",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = String.format("%.1fx", speechRate),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MysticGold,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Slider(
+                        value = speechRate,
+                        onValueChange = { speechRate = it },
+                        valueRange = 0.5f..2.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MysticGold,
+                            activeTrackColor = MysticGold,
+                            inactiveTrackColor = MysticBronze.copy(0.3f)
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Voice Test Button
+            MysticButton(
+                text = if (isSpeakingTest) {
+                    if (currentLang == AppLanguage.RUS) "ОСТАНОВИТЬ ТЕСТ" else "STOP TEST"
+                } else {
+                    if (currentLang == AppLanguage.RUS) "ПРОВЕРИТЬ ОЗВУЧИВАНИЕ" else "TEST VOICE SYNTHESIS"
+                },
+                onClick = {
+                    if (isSpeakingTest) {
+                        ttsInstance?.stop()
+                        isSpeakingTest = false
+                    } else {
+                        ttsInstance?.stop()
+                        ttsInstance?.setSpeechRate(speechRate)
+                        ttsInstance?.setPitch(if (voiceGender == "Female") 1.35f else 0.75f)
+                        val phrase = if (currentLang == AppLanguage.RUS) {
+                            "Здравствуйте! Я ваш персональный хиромант. Озвучивание настроено и готово к работе."
+                        } else {
+                            "Hello! I am your personal palmist. Voice synthesis is configured and ready to go."
+                        }
+                        val params = android.os.Bundle().apply {
+                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "voice_test_utt")
+                        }
+                        ttsInstance?.speak(phrase, TextToSpeech.QUEUE_FLUSH, params, "voice_test_utt")
+                        isSpeakingTest = true
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

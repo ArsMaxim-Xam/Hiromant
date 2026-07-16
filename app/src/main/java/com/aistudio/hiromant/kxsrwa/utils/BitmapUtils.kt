@@ -230,4 +230,48 @@ object BitmapUtils {
         
         return bitmap
     }
+
+    /**
+     * Сохраняет изображение (Bitmap) в галерею устройства с использованием MediaStore API.
+     * Работает на Android 10+ (API 29+) и более ранних версиях.
+     */
+    fun saveBitmapToGallery(context: Context, bitmap: Bitmap, title: String): Boolean {
+        val resolver = context.contentResolver
+        val imageCollection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            android.provider.MediaStore.Images.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+
+        val contentValues = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "$title-${System.currentTimeMillis()}.jpg")
+            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
+                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/Palmist")
+            }
+        }
+
+        val imageUri = resolver.insert(imageCollection, contentValues) ?: return false
+
+        return try {
+            resolver.openOutputStream(imageUri)?.use { outStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outStream)
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(imageUri, contentValues, null, null)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            try {
+                resolver.delete(imageUri, null, null)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+            false
+        }
+    }
 }

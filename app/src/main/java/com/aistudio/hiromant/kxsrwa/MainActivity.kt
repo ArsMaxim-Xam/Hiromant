@@ -348,7 +348,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel = viewModel,
                                             onNavigateToLoading = { navController.navigate("loading") },
                                             onNavigateToBilling = { navController.navigate("billing") },
-                                            onNavigateToSettings = { navController.navigate("settings") }
+                                            onNavigateToLanguage = { navController.navigate("language") }
                                         )
                                     }
 
@@ -446,12 +446,12 @@ fun MainContainerScreen(
     viewModel: PalmistViewModel,
     onNavigateToLoading: () -> Unit,
     onNavigateToBilling: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToLanguage: () -> Unit
 ) {
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
-    var activeTab by remember { mutableStateOf("upload") }
+    val activeTab by viewModel.activeTab.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -466,16 +466,17 @@ fun MainContainerScreen(
                     )
                     .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                     .navigationBarsPadding()
-                    .height(58.dp)
-                    .padding(horizontal = 4.dp),
+                    .height(60.dp)
+                    .padding(horizontal = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                // Helper composable inside bottomBar
                 val tabs = listOf(
                     Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
                     Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
                     Triple("history", strings.navHistory, if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History),
+                    Triple("reading", if (currentLang == AppLanguage.RUS) "Чтение" else "Speech", if (activeTab == "reading") Icons.Filled.RecordVoiceOver else Icons.Outlined.RecordVoiceOver),
+                    Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
                     Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
                 )
 
@@ -487,7 +488,7 @@ fun MainContainerScreen(
                             .clickable(
                                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                 indication = null,
-                                onClick = { activeTab = tabId }
+                                onClick = { viewModel.activeTab.value = tabId }
                             )
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -497,12 +498,12 @@ fun MainContainerScreen(
                             imageVector = icon,
                             contentDescription = null,
                             tint = if (isSelected) MysticGold else Color.Gray,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = label,
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             color = if (isSelected) MysticGold else Color.Gray,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             maxLines = 1,
@@ -536,22 +537,15 @@ fun MainContainerScreen(
                     viewModel = viewModel,
                     onNavigateToResult = onNavigateToLoading
                 )
-                "about" -> AboutScreen(viewModel = viewModel)
-            }
-
-            // Settings button in top-right corner
-            IconButton(
-                onClick = onNavigateToSettings,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = MysticGold,
-                    modifier = Modifier.size(28.dp)
+                "reading" -> ReadingConfigScreen(
+                    viewModel = viewModel
                 )
+                "settings" -> SettingsScreen(
+                    viewModel = viewModel,
+                    onNavigateToLanguage = onNavigateToLanguage,
+                    onNavigateBack = { viewModel.activeTab.value = "upload" }
+                )
+                "about" -> AboutScreen(viewModel = viewModel)
             }
         }
     }

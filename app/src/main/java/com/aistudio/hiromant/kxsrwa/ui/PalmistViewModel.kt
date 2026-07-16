@@ -68,6 +68,9 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
     val videoUri = MutableStateFlow<android.net.Uri?>(null)
 
+    // Active navigation tab state
+    val activeTab = MutableStateFlow("upload")
+
     init {
         // Load initially selected language
         val code = repository.getSelectedLanguage()

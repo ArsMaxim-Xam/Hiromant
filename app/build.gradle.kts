@@ -14,12 +14,15 @@ android {
   namespace = "com.aistudio.hiromant.kxsrwa"
   compileSdk = 36
 
+  val versionFile = rootProject.file("version.txt")
+  val currentVersion = if (versionFile.exists()) versionFile.readText().trim() else "1.001"
+
   defaultConfig {
     applicationId = "com.aistudio.hiromant.kxsrwa"
     minSdk = 29
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    versionName = currentVersion
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk {

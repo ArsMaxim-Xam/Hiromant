@@ -335,9 +335,9 @@ object LocalizedStrings {
         billDialogFail = "Не удалось завершить транзакцию.",
 
         slotLeftPalm = "Левая ладонь",
-        slotLeftBack = "Тыльная сторона левой руки",
+        slotLeftBack = "Тыл левой руки",
         slotRightPalm = "Правая ладонь",
-        slotRightBack = "Тыльная сторона правой руки"
+        slotRightBack = "Тыл правой руки"
     )
 
     private val enStrings = PalmistStrings(
