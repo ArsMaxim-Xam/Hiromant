@@ -28,6 +28,19 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     private val _fontScale = MutableStateFlow(1.0f)
     val fontScale: StateFlow<Float> = _fontScale
 
+    // TTS configurations state
+    private val _ttsEnabled = MutableStateFlow(true)
+    val ttsEnabled: StateFlow<Boolean> = _ttsEnabled
+
+    private val _ttsGender = MutableStateFlow("Female")
+    val ttsGender: StateFlow<String> = _ttsGender
+
+    private val _ttsVoiceIndex = MutableStateFlow(0)
+    val ttsVoiceIndex: StateFlow<Int> = _ttsVoiceIndex
+
+    private val _ttsSpeechRate = MutableStateFlow(1.0f)
+    val ttsSpeechRate: StateFlow<Float> = _ttsSpeechRate
+
     // Subscribed state and readings list
     val userProfile: StateFlow<UserProfileEntity?> = repository.userProfile.stateIn(
         scope = viewModelScope,
@@ -79,6 +92,12 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
         // Load initially stored font scale
         _fontScale.value = repository.getFontScale()
+
+        // Load initially stored TTS configurations
+        _ttsEnabled.value = repository.getTtsEnabled()
+        _ttsGender.value = repository.getTtsGender()
+        _ttsVoiceIndex.value = repository.getTtsVoiceIndex()
+        _ttsSpeechRate.value = repository.getTtsSpeechRate()
     }
 
     fun changeFontScale(scale: Float) {
@@ -98,6 +117,28 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
     fun markLanguageSelected() {
         repository.setLanguageSelected(true)
+    }
+
+    // --- TTS settings actions ---
+
+    fun changeTtsEnabled(enabled: Boolean) {
+        _ttsEnabled.value = enabled
+        repository.setTtsEnabled(enabled)
+    }
+
+    fun changeTtsGender(gender: String) {
+        _ttsGender.value = gender
+        repository.setTtsGender(gender)
+    }
+
+    fun changeTtsVoiceIndex(index: Int) {
+        _ttsVoiceIndex.value = index
+        repository.setTtsVoiceIndex(index)
+    }
+
+    fun changeTtsSpeechRate(rate: Float) {
+        _ttsSpeechRate.value = rate
+        repository.setTtsSpeechRate(rate)
     }
 
     // --- Profile actions ---
@@ -191,31 +232,22 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             try {
-                // Beautiful simulated incremental loader steps for the absolute ultimate mystical UX
-                val steps = if (isRussian) listOf(
-                    "Настройка связи со звёздами...",
-                    "Анализ переплетения линий ладони...",
-                    "Изучение силы планетных холмов...",
-                    "Чтение тайных рун и особых знаков...",
-                    "Формирование пророчества..."
-                ) else listOf(
-                    "Aligning with celestial bodies...",
-                    "Tracing palm line intersections...",
-                    "Measuring planetary mount energy...",
-                    "Scanning for sacred geometric symbols...",
-                    "Writing cosmic predictions..."
-                )
-
-                for (i in 0 until steps.size) {
-                    analysisStatus.value = steps[i]
-                    val startProgress = i * 20
-                    for (p in startProgress..(startProgress + 20)) {
-                        analysisProgress.value = p
-                        delay(25) // Smooth scroll
+                // Step 1: Smoothly animate progress from 0% to 50% to represent preparing and uploading images.
+                // 0 to 25: Compress/Prepare
+                // 26 to 50: Send
+                for (p in 1..50) {
+                    analysisProgress.value = p
+                    if (p <= 25) {
+                        analysisStatus.value = if (isRussian) "Подготовка и сжатие снимков ладоней..." else "Preparing and compressing palm images..."
+                        delay(40)
+                    } else {
+                        analysisStatus.value = if (isRussian) "Отправка данных на сервер..." else "Sending data to server..."
+                        delay(40)
                     }
-                    delay(300)
                 }
-
+                
+                analysisStatus.value = if (isRussian) "Данные отправлены. Ожидание ответа..." else "Data sent. Waiting for response..."
+                
                 val reading = repository.analyzePalm(
                     bitmaps = bitmaps,
                     videoUri = videoUri,
@@ -232,7 +264,17 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 // Decrement analysis count locally
                 repository.decrementAnalyses()
 
-                analysisProgress.value = 100
+                // Step 2: Upon response, smoothly increase progress from 51% to 100%
+                for (p in 51..100) {
+                    analysisProgress.value = p
+                    if (p <= 75) {
+                        analysisStatus.value = if (isRussian) "Получен ответ. Интерпретация линий..." else "Response received. Interpreting lines..."
+                    } else {
+                        analysisStatus.value = if (isRussian) "Сохранение результатов и построение карты..." else "Saving results and building map..."
+                    }
+                    delay(30)
+                }
+
                 delay(300)
                 isAnalyzing.value = false
                 onCompleted()

@@ -78,10 +78,9 @@ class MainActivity : ComponentActivity() {
         if (hasFocus) {
             try {
                 val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-                windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+                windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
             } catch (e: Exception) {
-                Log.e("MainActivity", "Failed to apply immersive mode on focus change: ${e.message}")
+                Log.e("MainActivity", "Failed to show system bars on focus change: ${e.message}")
             }
         }
     }
@@ -90,13 +89,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Configure immersive sticky full-screen mode to hide status bar and navigation buttons
         try {
             val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-            windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to setup immersive mode: ${e.message}")
+            Log.e("MainActivity", "Failed to show system bars: ${e.message}")
         }
 
         // Request notification permission dynamically for Android 13+
@@ -280,18 +277,103 @@ class MainActivity : ComponentActivity() {
                             if (viewModel.isLanguageSelected()) "splash" else "language"
                         }
 
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Column(
+                        val navBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentRoute = navBackStackEntry?.destination?.route
+
+                        val showBottomBar = remember(currentRoute) {
+                            currentRoute in listOf("main_container", "result", "billing", "settings")
+                        }
+
+                        val currentLang by viewModel.selectedLanguage.collectAsState()
+                        val strings = LocalizedStrings.get(currentLang)
+                        val activeTab by viewModel.activeTab.collectAsState()
+
+                        Scaffold(
+                            bottomBar = {
+                                if (showBottomBar) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(MysticDarkSurface)
+                                            .border(
+                                                width = 1.dp,
+                                                color = MysticBronze.copy(0.2f),
+                                                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                                            )
+                                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                                            .navigationBarsPadding()
+                                            .height(60.dp)
+                                            .padding(horizontal = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceAround
+                                    ) {
+                                        val tabs = listOf(
+                                            Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
+                                            Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
+                                            Triple("history", strings.navHistory, if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History),
+                                            Triple("reading", if (currentLang == AppLanguage.RUS) "Чтение" else "Speech", if (activeTab == "reading") Icons.Filled.RecordVoiceOver else Icons.Outlined.RecordVoiceOver),
+                                            Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
+                                            Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
+                                        )
+
+                                        tabs.forEach { (tabId, label, icon) ->
+                                            val isSelected = if (currentRoute == "main_container") activeTab == tabId else {
+                                                if (currentRoute == "settings" && tabId == "settings") true
+                                                else if (currentRoute == "result" && tabId == "upload") true
+                                                else false
+                                            }
+                                            Column(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clickable(
+                                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                                        indication = null,
+                                                        onClick = {
+                                                            viewModel.activeTab.value = tabId
+                                                            if (currentRoute != "main_container") {
+                                                                navController.navigate("main_container") {
+                                                                    popUpTo("main_container") { inclusive = false }
+                                                                }
+                                                            }
+                                                        }
+                                                    )
+                                                    .padding(vertical = 4.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = null,
+                                                    tint = if (isSelected) MysticGold else Color.Gray,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 8.sp,
+                                                    color = if (isSelected) MysticGold else Color.Gray,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                            modifier = Modifier.fillMaxSize()
+                        ) { innerPadding ->
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(MysticDarkBackground)
+                                    .padding(innerPadding)
                             ) {
                                 NavHost(
                                     navController = navController,
                                     startDestination = startDest,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxWidth()
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
                                     // 1. Language selector
                                     composable("language") {
@@ -440,7 +522,6 @@ class MainActivity : ComponentActivity() {
 }
 
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainContainerScreen(
     viewModel: PalmistViewModel,
@@ -448,105 +529,37 @@ fun MainContainerScreen(
     onNavigateToBilling: () -> Unit,
     onNavigateToLanguage: () -> Unit
 ) {
-    val currentLang by viewModel.selectedLanguage.collectAsState()
-    val strings = LocalizedStrings.get(currentLang)
-
     val activeTab by viewModel.activeTab.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MysticDarkSurface)
-                    .border(
-                        width = 1.dp,
-                        color = MysticBronze.copy(0.2f),
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                    )
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .navigationBarsPadding()
-                    .height(60.dp)
-                    .padding(horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                val tabs = listOf(
-                    Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
-                    Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
-                    Triple("history", strings.navHistory, if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History),
-                    Triple("reading", if (currentLang == AppLanguage.RUS) "Чтение" else "Speech", if (activeTab == "reading") Icons.Filled.RecordVoiceOver else Icons.Outlined.RecordVoiceOver),
-                    Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
-                    Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
-                )
-
-                tabs.forEach { (tabId, label, icon) ->
-                    val isSelected = activeTab == tabId
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(
-                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                indication = null,
-                                onClick = { viewModel.activeTab.value = tabId }
-                            )
-                            .padding(vertical = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = if (isSelected) MysticGold else Color.Gray,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = label,
-                            fontSize = 8.sp,
-                            color = if (isSelected) MysticGold else Color.Gray,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        },
-        contentWindowInsets = WindowInsets.navigationBars,
-        modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MysticDarkBackground)
-                .padding(innerPadding)
-        ) {
-            when (activeTab) {
-                "upload" -> UploadScreen(
-                    viewModel = viewModel,
-                    onNavigateToLoading = onNavigateToLoading,
-                    onNavigateToBilling = onNavigateToBilling
-                )
-                "compatibility" -> CompatibilityScreen(
-                    viewModel = viewModel,
-                    onNavigateToLoading = onNavigateToLoading,
-                    onNavigateToBilling = onNavigateToBilling
-                )
-                "history" -> HistoryScreen(
-                    viewModel = viewModel,
-                    onNavigateToResult = onNavigateToLoading
-                )
-                "reading" -> ReadingConfigScreen(
-                    viewModel = viewModel
-                )
-                "settings" -> SettingsScreen(
-                    viewModel = viewModel,
-                    onNavigateToLanguage = onNavigateToLanguage,
-                    onNavigateBack = { viewModel.activeTab.value = "upload" }
-                )
-                "about" -> AboutScreen(viewModel = viewModel)
-            }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MysticDarkBackground)
+    ) {
+        when (activeTab) {
+            "upload" -> UploadScreen(
+                viewModel = viewModel,
+                onNavigateToLoading = onNavigateToLoading,
+                onNavigateToBilling = onNavigateToBilling
+            )
+            "compatibility" -> CompatibilityScreen(
+                viewModel = viewModel,
+                onNavigateToLoading = onNavigateToLoading,
+                onNavigateToBilling = onNavigateToBilling
+            )
+            "history" -> HistoryScreen(
+                viewModel = viewModel,
+                onNavigateToResult = onNavigateToLoading
+            )
+            "reading" -> ReadingConfigScreen(
+                viewModel = viewModel
+            )
+            "settings" -> SettingsScreen(
+                viewModel = viewModel,
+                onNavigateToLanguage = onNavigateToLanguage,
+                onNavigateBack = { viewModel.activeTab.value = "upload" }
+            )
+            "about" -> AboutScreen(viewModel = viewModel)
         }
     }
 }

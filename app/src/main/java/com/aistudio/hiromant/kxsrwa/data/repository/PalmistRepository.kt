@@ -55,6 +55,40 @@ class PalmistRepository(
         sharedPrefs.edit().putBoolean("is_language_selected", selected).apply()
     }
 
+    // --- TTS preferences ---
+
+    fun getTtsEnabled(): Boolean {
+        return sharedPrefs.getBoolean("app_tts_enabled", true)
+    }
+
+    fun setTtsEnabled(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean("app_tts_enabled", enabled).apply()
+    }
+
+    fun getTtsGender(): String {
+        return sharedPrefs.getString("app_tts_gender", "Female") ?: "Female"
+    }
+
+    fun setTtsGender(gender: String) {
+        sharedPrefs.edit().putString("app_tts_gender", gender).apply()
+    }
+
+    fun getTtsVoiceIndex(): Int {
+        return sharedPrefs.getInt("app_tts_voice_index", 0)
+    }
+
+    fun setTtsVoiceIndex(index: Int) {
+        sharedPrefs.edit().putInt("app_tts_voice_index", index).apply()
+    }
+
+    fun getTtsSpeechRate(): Float {
+        return sharedPrefs.getFloat("app_tts_speech_rate", 1.0f)
+    }
+
+    fun setTtsSpeechRate(rate: Float) {
+        sharedPrefs.edit().putFloat("app_tts_speech_rate", rate).apply()
+    }
+
     // --- Profile & Account ---
 
     suspend fun saveUserProfile(

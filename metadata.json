@@ -1,5 +1,5 @@
 {
-  "name": "Хиромант 1.001",
+  "name": "Хиромант 1.002",
   "description": "Нативное мистическое Android-приложение для анализа ладони (хиромантии) с помощью ИИ Gemini",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

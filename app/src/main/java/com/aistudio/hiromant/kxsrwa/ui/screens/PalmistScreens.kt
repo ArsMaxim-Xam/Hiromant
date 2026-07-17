@@ -2310,6 +2310,28 @@ fun UploadScreen(
     }
     var showInterpretationScreen by remember { mutableStateOf(false) }
 
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+    val progress by viewModel.analysisProgress.collectAsState()
+    val status by viewModel.analysisStatus.collectAsState()
+
+    val infiniteTransition = rememberInfiniteTransition(label = "BlinkTransition")
+    val textBlinkColor by infiniteTransition.animateColor(
+        initialValue = Color.White,
+        targetValue = Color.Red,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "BlinkTextColor"
+    )
+    val textShadow = remember(textBlinkColor) {
+        Shadow(
+            color = textBlinkColor.copy(alpha = 0.8f),
+            offset = Offset(0f, 0f),
+            blurRadius = 12f
+        )
+    }
+
     // Текстовое озвучивание (TTS) для инструкции
     var isGuideExpanded by remember { mutableStateOf(false) }
     var isPlayingTts by remember { mutableStateOf(false) }
@@ -3105,7 +3127,67 @@ fun UploadScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(if (isAnalyzing) 100.dp else 40.dp))
+            }
+        }
+
+        if (isAnalyzing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { }
+                    }
+            )
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = status,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .border(1.5.dp, MysticGold, RoundedCornerShape(14.dp))
+                ) {
+                    val progressFraction = (progress.toFloat() / 100f).coerceIn(0f, 1f)
+                    if (progressFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(fraction = progressFraction)
+                                .background(MysticGold)
+                        )
+                    }
+
+                    Text(
+                        text = "$progress%",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = if (progressFraction >= 0.5f) Color.Black else MysticGold,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            shadow = if (progressFraction >= 0.5f) null else textShadow
+                        ),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
     }
@@ -3795,17 +3877,40 @@ fun ResultsScreen(
     // Interactive lines map dialog state
     var selectedLineInfo by remember { mutableStateOf<com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis?>(null) }
 
-    // TTS configurations
+    // TTS configurations from central ViewModel state
+    val ttsEnabled by viewModel.ttsEnabled.collectAsState()
+    val ttsGenderState by viewModel.ttsGender.collectAsState()
+    val ttsVoiceIndex by viewModel.ttsVoiceIndex.collectAsState()
+    val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
+
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
     var isPlayingTts by remember { mutableStateOf(false) }
-    var ttsGenderState by remember { mutableStateOf("Female") } // "Male" or "Female"
-    var ttsRateState by remember { mutableStateOf(1.0f) }
     var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var activeLineName by remember { mutableStateOf<String?>(null) }
     var ttsOffset by remember { mutableStateOf(0) }
 
-    var selectedMaleVoice by remember { mutableStateOf<android.speech.tts.Voice?>(null) }
-    var selectedFemaleVoice by remember { mutableStateOf<android.speech.tts.Voice?>(null) }
+    val lineReadingBlocks = remember(palmistReport) {
+        palmistReport?.lines ?: emptyList()
+    }
+
+    val scope = rememberCoroutineScope()
+
+    // Selectable Text Field states
+    var reportTextState by remember { mutableStateOf(TextFieldValue()) }
+    var mapTextState by remember { mutableStateOf(TextFieldValue()) }
+
+    // Initialize Android TTS
+    DisposableEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
+            }
+        }
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
 
     val allAvailableVoices = remember(tts, currentLang) {
         try {
@@ -3855,54 +3960,28 @@ fun ResultsScreen(
         }
     }
 
-    val lineReadingBlocks = remember(palmistReport) {
-        palmistReport?.lines ?: emptyList()
-    }
-
-    val scope = rememberCoroutineScope()
-
-    // Selectable Text Field states
-    var reportTextState by remember { mutableStateOf(TextFieldValue()) }
-    var mapTextState by remember { mutableStateOf(TextFieldValue()) }
-
-    // Initialize Android TTS
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = if (currentLang == AppLanguage.RUS) Locale("ru") else Locale.US
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
+    val selectedVoice = remember(femaleVoicesList, maleVoicesList, ttsGenderState, ttsVoiceIndex) {
+        if (ttsGenderState == "Female") {
+            if (femaleVoicesList.isNotEmpty()) femaleVoicesList[ttsVoiceIndex % femaleVoicesList.size] else null
+        } else {
+            if (maleVoicesList.isNotEmpty()) maleVoicesList[ttsVoiceIndex % maleVoicesList.size] else null
         }
     }
 
     fun applyTtsSettings() {
-        val isFemale = ttsGenderState == "Female"
         tts?.setSpeechRate(ttsRateState)
-        tts?.setPitch(if (isFemale) 1.35f else 0.75f)
+        val basePitch = if (ttsGenderState == "Female") 1.35f else 0.75f
+        val pitchMultiplier = when (ttsVoiceIndex) {
+            0 -> 1.00f
+            1 -> 0.88f
+            2 -> 1.15f
+            else -> 1.00f
+        }
+        tts?.setPitch(basePitch * pitchMultiplier)
+        
         try {
-            if (allAvailableVoices.isNotEmpty()) {
-                val preferredVoice = if (isFemale) {
-                    selectedFemaleVoice ?: femaleVoicesList.firstOrNull() 
-                        ?: allAvailableVoices.firstOrNull { it !in maleVoicesList } 
-                        ?: allAvailableVoices.firstOrNull()
-                } else {
-                    selectedMaleVoice ?: maleVoicesList.firstOrNull() 
-                        ?: allAvailableVoices.firstOrNull { it !in femaleVoicesList } 
-                        ?: allAvailableVoices.firstOrNull()
-                }
-                
-                if (preferredVoice != null) {
-                    tts?.voice = preferredVoice
-                    // Synchronize state
-                    if (isFemale) {
-                        selectedFemaleVoice = preferredVoice
-                    } else {
-                        selectedMaleVoice = preferredVoice
-                    }
-                }
+            if (selectedVoice != null) {
+                tts?.voice = selectedVoice
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -4136,7 +4215,7 @@ fun ResultsScreen(
                             },
                             rate = ttsRateState,
                             onRateChange = { newRate ->
-                                ttsRateState = newRate
+                                viewModel.changeTtsSpeechRate(newRate)
                                 tts?.setSpeechRate(newRate)
                                 if (isPlayingTts) {
                                     val currentWordStart = spokenWordRange?.first ?: 0
@@ -4145,7 +4224,7 @@ fun ResultsScreen(
                             },
                             gender = ttsGenderState,
                             onGenderChange = { newGender ->
-                                ttsGenderState = newGender
+                                viewModel.changeTtsGender(newGender)
                                 applyTtsSettings()
                                 if (isPlayingTts) {
                                     val currentWordStart = spokenWordRange?.first ?: 0
@@ -4154,12 +4233,15 @@ fun ResultsScreen(
                             },
                             maleVoices = maleVoicesList,
                             femaleVoices = femaleVoicesList,
-                            selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
+                            selectedVoice = selectedVoice,
                             onVoiceSelected = { voice ->
-                                if (ttsGenderState == "Female") {
-                                    selectedFemaleVoice = voice
+                                val index = if (ttsGenderState == "Female") {
+                                    femaleVoicesList.indexOf(voice)
                                 } else {
-                                    selectedMaleVoice = voice
+                                    maleVoicesList.indexOf(voice)
+                                }
+                                if (index >= 0) {
+                                    viewModel.changeTtsVoiceIndex(index)
                                 }
                                 applyTtsSettings()
                                 if (isPlayingTts) {
@@ -4478,7 +4560,7 @@ fun ResultsScreen(
                                 },
                                 rate = ttsRateState,
                                 onRateChange = { newRate ->
-                                    ttsRateState = newRate
+                                    viewModel.changeTtsSpeechRate(newRate)
                                     tts?.setSpeechRate(newRate)
                                     if (isPlayingTts) {
                                         val currentWordStart = spokenWordRange?.first ?: 0
@@ -4487,7 +4569,7 @@ fun ResultsScreen(
                                 },
                                 gender = ttsGenderState,
                                 onGenderChange = { newGender ->
-                                    ttsGenderState = newGender
+                                    viewModel.changeTtsGender(newGender)
                                     applyTtsSettings()
                                     if (isPlayingTts) {
                                         val currentWordStart = spokenWordRange?.first ?: 0
@@ -4496,12 +4578,15 @@ fun ResultsScreen(
                                 },
                                 maleVoices = maleVoicesList,
                                 femaleVoices = femaleVoicesList,
-                                selectedVoice = if (ttsGenderState == "Female") selectedFemaleVoice else selectedMaleVoice,
+                                selectedVoice = selectedVoice,
                                 onVoiceSelected = { voice ->
-                                    if (ttsGenderState == "Female") {
-                                        selectedFemaleVoice = voice
+                                    val index = if (ttsGenderState == "Female") {
+                                        femaleVoicesList.indexOf(voice)
                                     } else {
-                                        selectedMaleVoice = voice
+                                        maleVoicesList.indexOf(voice)
+                                    }
+                                    if (index >= 0) {
+                                        viewModel.changeTtsVoiceIndex(index)
                                     }
                                     applyTtsSettings()
                                     if (isPlayingTts) {
@@ -5734,6 +5819,121 @@ fun SettingsScreen(
     var aboutProgramExpanded by remember { mutableStateOf(false) }
     var aboutDevExpanded by remember { mutableStateOf(false) }
 
+    var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isPlayingTts by remember { mutableStateOf(false) }
+    var currentWordRange by remember { mutableStateOf<IntRange?>(null) }
+    var activeSpeakingText by remember { mutableStateOf("") } // "program" or "dev"
+
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+
+    val aboutProgramText = if (currentLang == AppLanguage.RUS) {
+        "Программа «Хиромант» — это ваш персональный проводник в мир древних знаний о ладонях. С помощью современных алгоритмов искусственного интеллекта и нейросетей Gemini, приложение анализирует форму рук, пальцев и переплетение линий на ладони, сопоставляя их с канонами классической ведической и западной хиромантии. Программа считывает холмы планет, особые знаки (такие как Мистический Крест или Кольцо Соломона) и линии сердца, головы, жизни и судьбы, чтобы раскрыть ваш врождённый потенциал и дать практические советы на жизненном пути.\n\nВерсия 1.002"
+    } else {
+        "The 'Palmist' app is your personal guide to the ancient wisdom of palm reading. Powered by modern Gemini AI algorithms, the app analyzes your hand shape, finger proportions, and palm line networks, mapping them to the canons of classic Vedic and Western palmistry. It reads planetary mounts, sacred markings (like the Mystic Cross or Ring of Solomon), and the primary lines of Heart, Head, Life, and Destiny to unlock your innate potential and deliver actionable life guidelines.\n\nVersion 1.002"
+    }
+
+    val aboutDevText = if (currentLang == AppLanguage.RUS) {
+        "Разработчик: Максим Арс. (ArsMaxim)\nКонтакты: arsmaxim@gmail.com\n\nЯ увлечён созданием интеллектуальных, красивых и полезных мобильных приложений, которые объединяют современные технологии ИИ и классическое наследие человечества. Спасибо, что выбрали моё приложение!"
+    } else {
+        "Developer: Maxim Ars. (ArsMaxim)\nContact: arsmaxim@gmail.com\n\nI am passionate about creating smart, beautiful, and helpful mobile applications that merge cutting-edge AI technologies with classical human heritage. Thank you for choosing my app!"
+    }
+
+    DisposableEffect(Unit) {
+        var tts: TextToSpeech? = null
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+            }
+        }
+        
+        tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                isPlayingTts = true
+            }
+
+            override fun onDone(utteranceId: String?) {
+                isPlayingTts = false
+                currentWordRange = null
+                activeSpeakingText = ""
+            }
+
+            override fun onError(utteranceId: String?) {
+                isPlayingTts = false
+                currentWordRange = null
+                activeSpeakingText = ""
+            }
+
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                currentWordRange = start..end
+            }
+        })
+        
+        ttsInstance = tts
+        
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
+    }
+
+    val annotatedAboutProgram = remember(currentWordRange, activeSpeakingText, currentLang) {
+        buildAnnotatedString {
+            append(aboutProgramText)
+            
+            if (activeSpeakingText == "program" && currentWordRange != null) {
+                val start = currentWordRange!!.first
+                val end = currentWordRange!!.last
+                if (start in 0..length && end in start..length) {
+                    addStyle(
+                        style = SpanStyle(
+                            background = MysticGold.copy(alpha = 0.4f),
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        start = start,
+                        end = end
+                    )
+                }
+            }
+        }
+    }
+
+    val annotatedAboutDev = remember(currentWordRange, activeSpeakingText, currentLang) {
+        buildAnnotatedString {
+            append(aboutDevText)
+            
+            val emailStr = "arsmaxim@gmail.com"
+            val emailIndex = aboutDevText.indexOf(emailStr)
+            if (emailIndex != -1) {
+                addStyle(
+                    style = SpanStyle(
+                        color = MysticGold,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    start = emailIndex,
+                    end = emailIndex + emailStr.length
+                )
+            }
+            
+            if (activeSpeakingText == "dev" && currentWordRange != null) {
+                val start = currentWordRange!!.first
+                val end = currentWordRange!!.last
+                if (start in 0..length && end in start..length) {
+                    addStyle(
+                        style = SpanStyle(
+                            background = MysticGold.copy(alpha = 0.4f),
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        start = start,
+                        end = end
+                    )
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -5872,16 +6072,63 @@ fun SettingsScreen(
                     }
                     if (aboutProgramExpanded) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) {
-                                "Программа «Хиромант» — это ваш персональный проводник в мир древних знаний о ладонях. С помощью современных алгоритмов искусственного интеллекта и нейросетей Gemini, приложение анализирует форму рук, пальцев и переплетение линий на ладони, сопоставляя их с канонами классической ведической и западной хиромантии. Программа считывает холмы планет, особые знаки (такие как Мистический Крест или Кольцо Соломона) и линии сердца, головы, жизни и судьбы, чтобы раскрыть ваш врождённый потенциал и дать практические советы на жизненном пути."
-                            } else {
-                                "The 'Palmist' app is your personal guide to the ancient wisdom of palm reading. Powered by modern Gemini AI algorithms, the app analyzes your hand shape, finger proportions, and palm line networks, mapping them to the canons of classic Vedic and Western palmistry. It reads planetary mounts, sacred markings (like the Mystic Cross or Ring of Solomon), and the primary lines of Heart, Head, Life, and Destiny to unlock your innate potential and deliver actionable life guidelines."
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFFC0C0D0),
-                            lineHeight = 20.sp
-                        )
+                        
+                        // TTS audio panel
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0x1F1E1E2C), RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    if (isPlayingTts && activeSpeakingText == "program") {
+                                        ttsInstance?.stop()
+                                        isPlayingTts = false
+                                        currentWordRange = null
+                                        activeSpeakingText = ""
+                                    } else {
+                                        ttsInstance?.stop()
+                                        activeSpeakingText = "program"
+                                        val speakParams = android.os.Bundle().apply {
+                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "settings_program")
+                                        }
+                                        ttsInstance?.speak(aboutProgramText, TextToSpeech.QUEUE_FLUSH, speakParams, "settings_program")
+                                        isPlayingTts = true
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlayingTts && activeSpeakingText == "program") Icons.Default.Stop else Icons.Default.VolumeUp,
+                                    contentDescription = "Read aloud",
+                                    tint = MysticGold,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = if (isPlayingTts && activeSpeakingText == "program") {
+                                    if (currentLang == AppLanguage.RUS) "Читает..." else "Reading..."
+                                } else {
+                                    if (currentLang == AppLanguage.RUS) "Прослушать" else "Listen"
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(
+                                text = annotatedAboutProgram,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFC0C0D0),
+                                lineHeight = 20.sp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
@@ -5920,16 +6167,106 @@ fun SettingsScreen(
                     }
                     if (aboutDevExpanded) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) {
-                                "Разработчик: Арсений (ArsMaxim)\nКонтакты: arsmaxim@gmail.com\n\nЯ увлечён созданием интеллектуальных, красивых и полезных мобильных приложений, которые объединяют современные технологии ИИ и классическое наследие человечества. Спасибо, что выбрали моё приложение!"
-                            } else {
-                                "Developer: Arseniy (ArsMaxim)\nContact: arsmaxim@gmail.com\n\nI am passionate about creating smart, beautiful, and helpful mobile applications that merge cutting-edge AI technologies with classical human heritage. Thank you for choosing my app!"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFFC0C0D0),
-                            lineHeight = 20.sp
-                        )
+                        
+                        // TTS audio panel with direct click Email fallback icon
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0x1F1E1E2C), RoundedCornerShape(8.dp))
+                                .padding(8.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    if (isPlayingTts && activeSpeakingText == "dev") {
+                                        ttsInstance?.stop()
+                                        isPlayingTts = false
+                                        currentWordRange = null
+                                        activeSpeakingText = ""
+                                    } else {
+                                        ttsInstance?.stop()
+                                        activeSpeakingText = "dev"
+                                        val speakParams = android.os.Bundle().apply {
+                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "settings_dev")
+                                        }
+                                        ttsInstance?.speak(aboutDevText, TextToSpeech.QUEUE_FLUSH, speakParams, "settings_dev")
+                                        isPlayingTts = true
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlayingTts && activeSpeakingText == "dev") Icons.Default.Stop else Icons.Default.VolumeUp,
+                                    contentDescription = "Read aloud",
+                                    tint = MysticGold,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text = if (isPlayingTts && activeSpeakingText == "dev") {
+                                    if (currentLang == AppLanguage.RUS) "Читает..." else "Reading..."
+                                } else {
+                                    if (currentLang == AppLanguage.RUS) "Прослушать" else "Listen"
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            // Email action button
+                            IconButton(
+                                onClick = {
+                                    try {
+                                        uriHandler.openUri("mailto:arsmaxim@gmail.com")
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = "Send Email",
+                                    tint = MysticGold,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+                        
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(
+                                text = annotatedAboutDev,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFC0C0D0),
+                                lineHeight = 20.sp,
+                                onTextLayout = { textLayoutResult = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .pointerInput(aboutDevText) {
+                                        detectTapGestures { offset ->
+                                            textLayoutResult?.let { layout ->
+                                                val charIndex = layout.getOffsetForPosition(offset)
+                                                val emailStr = "arsmaxim@gmail.com"
+                                                val emailStart = aboutDevText.indexOf(emailStr)
+                                                if (emailStart != -1) {
+                                                    val emailEnd = emailStart + emailStr.length
+                                                    if (charIndex in emailStart until emailEnd) {
+                                                        try {
+                                                            uriHandler.openUri("mailto:arsmaxim@gmail.com")
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                            )
+                        }
                     }
                 }
             }
@@ -6835,9 +7172,11 @@ fun ReadingConfigScreen(
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
-    var ttsEnabled by remember { mutableStateOf(true) }
-    var voiceGender by remember { mutableStateOf("Female") }
-    var speechRate by remember { mutableStateOf(1.0f) }
+    val ttsEnabled by viewModel.ttsEnabled.collectAsState()
+    val voiceGender by viewModel.ttsGender.collectAsState()
+    val voiceIndex by viewModel.ttsVoiceIndex.collectAsState()
+    val speechRate by viewModel.ttsSpeechRate.collectAsState()
+
     var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
     var isSpeakingTest by remember { mutableStateOf(false) }
 
@@ -6915,7 +7254,7 @@ fun ReadingConfigScreen(
                     }
                     Switch(
                         checked = ttsEnabled,
-                        onCheckedChange = { ttsEnabled = it },
+                        onCheckedChange = { viewModel.changeTtsEnabled(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MysticGold,
                             checkedTrackColor = MysticGold.copy(0.4f),
@@ -6937,7 +7276,7 @@ fun ReadingConfigScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (currentLang == AppLanguage.RUS) "Тип голоса" else "Voice Gender",
+                        text = if (currentLang == AppLanguage.RUS) "Пол голоса" else "Voice Gender",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
@@ -6959,12 +7298,12 @@ fun ReadingConfigScreen(
                                     if (voiceGender == "Female") MysticGold else MysticBronze.copy(0.3f),
                                     RoundedCornerShape(8.dp)
                                 )
-                                .clickable { voiceGender = "Female" }
+                                .clickable { viewModel.changeTtsGender("Female") }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (currentLang == AppLanguage.RUS) "Женский голос" else "Female Voice",
+                                text = if (currentLang == AppLanguage.RUS) "Женский" else "Female",
                                 color = if (voiceGender == "Female") Color.Black else Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
@@ -6984,16 +7323,95 @@ fun ReadingConfigScreen(
                                     if (voiceGender == "Male") MysticGold else MysticBronze.copy(0.3f),
                                     RoundedCornerShape(8.dp)
                                 )
-                                .clickable { voiceGender = "Male" }
+                                .clickable { viewModel.changeTtsGender("Male") }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (currentLang == AppLanguage.RUS) "Мужской голос" else "Male Voice",
+                                text = if (currentLang == AppLanguage.RUS) "Мужской" else "Male",
                                 color = if (voiceGender == "Male") Color.Black else Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Выберите исполнителя (Голос)" else "Select Interpreter (Voice)",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val voiceOptions = if (voiceGender == "Female") {
+                        if (currentLang == AppLanguage.RUS) listOf(
+                            "Голос 1: Стандартный (Чистый тембр)",
+                            "Голос 2: Нежный (Успокаивающий)",
+                            "Голос 3: Звонкий (Энергичный)"
+                        ) else listOf(
+                            "Voice 1: Standard (Clear timbre)",
+                            "Voice 2: Gentle (Soothing)",
+                            "Voice 3: Vibrant (Energetic)"
+                        )
+                    } else {
+                        if (currentLang == AppLanguage.RUS) listOf(
+                            "Голос 1: Стандартный (Авторитетный)",
+                            "Голос 2: Бархатный (Глубокий)",
+                            "Голос 3: Четкий (Уверенный)"
+                        ) else listOf(
+                            "Voice 1: Standard (Authoritative)",
+                            "Voice 2: Velvet (Deep)",
+                            "Voice 3: Crisp (Confident)"
+                        )
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        voiceOptions.forEachIndexed { idx, optionName ->
+                            val isSelected = voiceIndex == idx
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (isSelected) MysticGold.copy(0.12f) else Color.White.copy(0.03f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) MysticGold else Color.White.copy(0.08f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { viewModel.changeTtsVoiceIndex(idx) }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // Custom circular radio indicator
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .border(2.dp, if (isSelected) MysticGold else Color.Gray, androidx.compose.foundation.shape.CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .background(MysticGold, androidx.compose.foundation.shape.CircleShape)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = optionName,
+                                    color = if (isSelected) MysticGold else Color.White,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -7028,7 +7446,7 @@ fun ReadingConfigScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Slider(
                         value = speechRate,
-                        onValueChange = { speechRate = it },
+                        onValueChange = { viewModel.changeTtsSpeechRate(it) },
                         valueRange = 0.5f..2.0f,
                         colors = SliderDefaults.colors(
                             thumbColor = MysticGold,
@@ -7055,7 +7473,66 @@ fun ReadingConfigScreen(
                     } else {
                         ttsInstance?.stop()
                         ttsInstance?.setSpeechRate(speechRate)
-                        ttsInstance?.setPitch(if (voiceGender == "Female") 1.35f else 0.75f)
+                        
+                        val allVoices = ttsInstance?.voices?.toList() ?: emptyList()
+                        val langCode = if (currentLang == AppLanguage.RUS) "ru" else "en"
+                        val matchingVoices = allVoices.filter { 
+                            it.locale.language.equals(langCode, ignoreCase = true) 
+                        }
+                        
+                        val femaleVoices = matchingVoices.filter { voice ->
+                            val nameLower = voice.name.lowercase()
+                            nameLower.contains("female") || 
+                            nameLower.contains("f-local") || 
+                            nameLower.contains("ruf") || 
+                            nameLower.contains("dfc") || 
+                            nameLower.contains("dfh") || 
+                            nameLower.contains("rua") || 
+                            nameLower.contains("ruc") || 
+                            nameLower.contains("rue") ||
+                            nameLower.contains("ru-ru-a") ||
+                            nameLower.contains("ru-ru-c") ||
+                            nameLower.contains("ru-ru-e") ||
+                            nameLower.contains("-f-") ||
+                            nameLower.contains("-f_") ||
+                            nameLower.contains("_f_")
+                        }
+
+                        val maleVoices = matchingVoices.filter { voice ->
+                            val nameLower = voice.name.lowercase()
+                            nameLower.contains("male") || 
+                            nameLower.contains("m-local") || 
+                            nameLower.contains("rum") || 
+                            nameLower.contains("dfd") || 
+                            nameLower.contains("dfg") || 
+                            nameLower.contains("rub") || 
+                            nameLower.contains("rud") ||
+                            nameLower.contains("ru-ru-b") ||
+                            nameLower.contains("ru-ru-d") ||
+                            nameLower.contains("-m-") ||
+                            nameLower.contains("-m_") ||
+                            nameLower.contains("_m_")
+                        }
+                        
+                        val preferredVoice = if (voiceGender == "Female") {
+                            if (femaleVoices.isNotEmpty()) femaleVoices[voiceIndex % femaleVoices.size] else null
+                        } else {
+                            if (maleVoices.isNotEmpty()) maleVoices[voiceIndex % maleVoices.size] else null
+                        }
+                        
+                        if (preferredVoice != null) {
+                            ttsInstance?.voice = preferredVoice
+                        }
+                        
+                        val basePitch = if (voiceGender == "Female") 1.35f else 0.75f
+                        val pitchMultiplier = when (voiceIndex) {
+                            0 -> 1.00f
+                            1 -> 0.88f
+                            2 -> 1.15f
+                            else -> 1.00f
+                        }
+                        ttsInstance?.setPitch(basePitch * pitchMultiplier)
+
                         val phrase = if (currentLang == AppLanguage.RUS) {
                             "Здравствуйте! Я ваш персональный хиромант. Озвучивание настроено и готово к работе."
                         } else {
