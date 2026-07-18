@@ -63,6 +63,23 @@ class PalmistApplication : Application() {
             oldHandler?.uncaughtException(thread, throwable)
         }
 
+        // Миграция со 2 на 3 версию базы данных для добавления таблицы истории платежей (сохраняет старые данные)
+        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Создаем таблицу истории платежей, если она еще не создана
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `payment_history` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `amountRub` INTEGER NOT NULL,
+                        `paymentSystem` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `readingType` TEXT NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
         try {
             AppLogger.i("PalmistApplication", "Building PalmistDatabase instance...")
             database = Room.databaseBuilder(
@@ -70,6 +87,7 @@ class PalmistApplication : Application() {
                 PalmistDatabase::class.java,
                 "palmist_database"
             )
+            .addMigrations(MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
             AppLogger.i("PalmistApplication", "PalmistDatabase successfully built.")

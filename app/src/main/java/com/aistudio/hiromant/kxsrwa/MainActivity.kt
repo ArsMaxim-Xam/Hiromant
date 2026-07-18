@@ -289,6 +289,35 @@ class MainActivity : ComponentActivity() {
                         val activeTab by viewModel.activeTab.collectAsState()
 
                         Scaffold(
+                            topBar = {
+                                val showTopBar = remember(currentRoute) {
+                                    currentRoute in listOf("main_container", "result", "billing", "settings", "loading", "video_scan")
+                                }
+                                if (showTopBar) {
+                                    val billingStateVal by viewModel.billingState.collectAsState()
+                                    val count = billingStateVal?.remainingAnalyses ?: 0
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color(0xFF0F0E17))
+                                            .statusBarsPadding()
+                                            .border(width = 1.dp, color = MysticBronze.copy(0.15f), shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
+                                            .padding(vertical = 12.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = if (currentLang == AppLanguage.RUS) 
+                                                "Доступно полных анализов: $count" 
+                                            else "Available full analyses: $count",
+                                            style = MaterialTheme.typography.titleSmall.copy(
+                                                color = MysticGold,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                        )
+                                    }
+                                }
+                            },
                             bottomBar = {
                                 if (showBottomBar) {
                                     Row(
@@ -310,7 +339,7 @@ class MainActivity : ComponentActivity() {
                                         val tabs = listOf(
                                             Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
                                             Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
-                                            Triple("history", strings.navHistory, if (activeTab == "history") Icons.Filled.History else Icons.Outlined.History),
+                                            Triple("user_cabinet", if (currentLang == AppLanguage.RUS) "Кабинет" else "Cabinet", if (activeTab == "user_cabinet") Icons.Filled.Person else Icons.Outlined.Person),
                                             Triple("reading", if (currentLang == AppLanguage.RUS) "Чтение" else "Speech", if (activeTab == "reading") Icons.Filled.RecordVoiceOver else Icons.Outlined.RecordVoiceOver),
                                             Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
                                             Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
@@ -430,7 +459,21 @@ class MainActivity : ComponentActivity() {
                                             viewModel = viewModel,
                                             onNavigateToLoading = { navController.navigate("loading") },
                                             onNavigateToBilling = { navController.navigate("billing") },
-                                            onNavigateToLanguage = { navController.navigate("language") }
+                                            onNavigateToLanguage = { navController.navigate("language") },
+                                            onNavigateToVideoScan = { navController.navigate("video_scan") }
+                                        )
+                                    }
+
+                                    // 10. Post-payment video recording screen
+                                    composable("video_scan") {
+                                        PostPaymentVideoScreen(
+                                            viewModel = viewModel,
+                                            onNavigateToLoading = {
+                                                navController.navigate("loading") {
+                                                    popUpTo("video_scan") { inclusive = true }
+                                                }
+                                            },
+                                            onNavigateBack = { navController.popBackStack() }
                                         )
                                     }
 
@@ -527,7 +570,8 @@ fun MainContainerScreen(
     viewModel: PalmistViewModel,
     onNavigateToLoading: () -> Unit,
     onNavigateToBilling: () -> Unit,
-    onNavigateToLanguage: () -> Unit
+    onNavigateToLanguage: () -> Unit,
+    onNavigateToVideoScan: () -> Unit
 ) {
     val activeTab by viewModel.activeTab.collectAsState()
 
@@ -540,14 +584,15 @@ fun MainContainerScreen(
             "upload" -> UploadScreen(
                 viewModel = viewModel,
                 onNavigateToLoading = onNavigateToLoading,
-                onNavigateToBilling = onNavigateToBilling
+                onNavigateToBilling = onNavigateToBilling,
+                onNavigateToVideoScan = onNavigateToVideoScan
             )
             "compatibility" -> CompatibilityScreen(
                 viewModel = viewModel,
                 onNavigateToLoading = onNavigateToLoading,
                 onNavigateToBilling = onNavigateToBilling
             )
-            "history" -> HistoryScreen(
+            "user_cabinet" -> UserCabinetScreen(
                 viewModel = viewModel,
                 onNavigateToResult = onNavigateToLoading
             )

@@ -44,3 +44,14 @@ data class BillingStateEntity(
     val isPremiumSubscribed: Boolean = false,
     val purchasedItemIds: String = "" // comma separated IDs
 )
+
+@Entity(tableName = "payment_history")
+data class PaymentHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long = System.currentTimeMillis(), // Время совершения платежа
+    val amountRub: Int, // Сумма в рублях
+    val paymentSystem: String, // Платежная система (например, ЮKassa)
+    val status: String, // Статус платежа (например, Успешно, Ошибка)
+    val readingType: String // Тип анализа ("full_char", "full_path" и т.д.)
+)
+

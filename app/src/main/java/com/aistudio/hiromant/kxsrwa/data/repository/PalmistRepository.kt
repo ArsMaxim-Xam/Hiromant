@@ -89,6 +89,14 @@ class PalmistRepository(
         sharedPrefs.edit().putFloat("app_tts_speech_rate", rate).apply()
     }
 
+    fun getTtsPitch(): Float {
+        return sharedPrefs.getFloat("app_tts_pitch", 1.0f)
+    }
+
+    fun setTtsPitch(pitch: Float) {
+        sharedPrefs.edit().putFloat("app_tts_pitch", pitch).apply()
+    }
+
     // --- Profile & Account ---
 
     suspend fun saveUserProfile(
@@ -309,6 +317,7 @@ class PalmistRepository(
                 }
             """.trimIndent()
 
+            // Ветка для краткого анализа жизненного пути (Судьбы)
             "brief_path" -> """
                 Please perform a BRIEF, FREE Life Path & Events reading of my palm.
                 My profile data:
@@ -319,9 +328,9 @@ class PalmistRepository(
                 - Dominant Hand: ${profile.dominantHand} (Remember: for ${profile.dominantHand}, active life is on this hand, birth potentials on the other).
                 
                 Since this is a BRIEF, FREE life path reading:
-                - Focus primarily on sections 4, 5, and 6: Life Path and Events (major milestones/ages), Life Situations & External Influences, and Relationships (family, marriage, children, life partners).
-                - Each of these 3 sections must be approximately 1/3 of the length of a full detailed analysis (about 1-2 paragraphs each).
-                - Leave sections 1, 2, and 3 empty (empty strings "").
+                - Focus primarily on sections 1, 2, 4, 5, and 6: Left Hand Analysis (what is inherited/innate), Right Hand Analysis (what was developed/realized), Life Path and Events (major milestones/ages), Life Situations & External Influences, and Relationships (family, marriage, children, life partners).
+                - Each of these 5 sections must be approximately 1/3 of the length of a full detailed analysis (about 1-2 paragraphs each).
+                - Leave section 3 empty (empty string "").
                 
                 Please evaluate the major lines (especially Destiny and Life lines) and planetary mounts.
                 
@@ -330,8 +339,8 @@ class PalmistRepository(
                 {
                   "overallPortrait": "Brief summary of life path and destiny.",
                   "handType": "Type of hand.",
-                  "leftHand": "",
-                  "rightHand": "",
+                  "leftHand": "1. Анализ Левой руки (врожденные склонности и изначальный потенциал судьбы) - краткий, около 1/3 от полного.",
+                  "rightHand": "2. Анализ Правой руки (активный жизненный путь и реализованные события) - краткий, около 1/3 от полного.",
                   "characterQualities": "",
                   "lifePathEvents": "4. Анализ Жизненного пути и событий - краткий, около 1/3 от полного.",
                   "lifeSituationsInfluence": "5. Анализ Жизненных ситуаций и внешнего влияния на жизнь человека - краткий, около 1/3 от полного.",
@@ -361,8 +370,9 @@ class PalmistRepository(
                     }
                   ]
                 }
-            """.trimIndent()
+            """.trimIndent() // Очищаем отступы и возвращаем промпт для краткой судьбы
 
+            // Ветка по умолчанию для полного, платного детального анализа жизненного пути
             else -> """
                 Please perform a FULL, DETAILED, PAID Life Path & Events reading of my palm.
                 My profile data:
@@ -373,9 +383,9 @@ class PalmistRepository(
                 - Dominant Hand: ${profile.dominantHand} (Remember: for ${profile.dominantHand}, active life is on this hand, birth potentials on the other).
                 
                 Since this is a FULL, DETAILED life path reading:
-                - Focus exhaustively on sections 4, 5, and 6: Life Path and Events (detailed milestones, transitions, ages), Life Situations & External Influences (challenges, opportunities, cosmic influences), and Relationships (family, marriage, kids, partners).
-                - Each of these 3 sections must be as detailed, rich, and comprehensive as possible (at least 3-4 deep paragraphs each).
-                - Leave sections 1, 2, and 3 empty (empty strings "").
+                - Focus exhaustively on sections 1, 2, 4, 5, and 6: Left Hand Analysis (what is inherited/innate), Right Hand Analysis (what was developed/realized), Life Path and Events (detailed milestones, transitions, ages), Life Situations & External Influences (challenges, opportunities, cosmic influences), and Relationships (family, marriage, kids, partners).
+                - Each of these 5 sections must be as detailed, rich, and comprehensive as possible (at least 3-4 deep paragraphs each).
+                - Leave section 3 empty (empty string "").
                 
                 Please evaluate the major lines (especially Destiny, Life, Heart lines), planetary mounts, signs, and markings.
                 
@@ -384,8 +394,8 @@ class PalmistRepository(
                 {
                   "overallPortrait": "Comprehensive, rich summary of life path and destiny.",
                   "handType": "Type of hand.",
-                  "leftHand": "",
-                  "rightHand": "",
+                  "leftHand": "1. Анализ Левой руки (врожденные склонности и изначальный потенциал судьбы) - максимально подробно и развернуто.",
+                  "rightHand": "2. Анализ Правой руки (активный жизненный путь и реализованные события) - максимально подробно и развернуто.",
                   "characterQualities": "",
                   "lifePathEvents": "4. Анализ Жизненного пути и событий - максимально подробно и развернуто.",
                   "lifeSituationsInfluence": "5. Анализ Жизненных ситуаций и внешнего влияния на жизнь человека - максимально подробно и развернуто.",
@@ -415,7 +425,7 @@ class PalmistRepository(
                     }
                   ]
                 }
-            """.trimIndent()
+            """.trimIndent() // Очищаем отступы и возвращаем промпт для платной судьбы
         }
 
         val apiKey = BuildConfig.GEMINI_API_KEY
@@ -657,52 +667,66 @@ class PalmistRepository(
         isFull: Boolean,
         isCharacter: Boolean
     ): String {
-        val report = if (isRussian) {
-            val leftHandText = if (isCharacter) {
-                if (isFull) {
-                    "Анализ Левой руки (то, что заложено в человеке): Левая рука ${profile.name} раскрывает мощный врожденный потенциал. С рождения вам предначертаны глубокая интуиция, развитая фантазия и склонность к созерцанию. Вы унаследовали сильный творческий дух, тонкую душевную организацию и обостренное чувство справедливости. Ваша врожденная матрица несет в себе способность улавливать скрытые мотивы людей и тонко чувствовать красоту окружающего мира."
-                } else {
-                    "Анализ Левой руки (то, что заложено в человеке): Врожденная матрица ${profile.name} несет в себе сильный творческий потенциал, высокую интуицию и стремление к духовным поискам."
+        val report = if (isRussian) { // Начинаем генерацию русского демо-отчета
+            // Анализ Левой руки (врожденный потенциал)
+            val leftHandText = if (isCharacter) { // Если тип анализа - Характер
+                if (isFull) { // Полный платный отчет по характеру
+                    "Левая рука раскрывает ваш глубокий врожденный потенциал, унаследованный от предков. С рождения вам предначертаны обостренная интуиция, богатое творческое воображение и чуткое восприятие мира. На пассивной руке прослеживается мощный бугор Луны, что наделяет вас способностью улавливать тонкие эмоциональные вибрации окружающих людей. Линии указывают на врожденную склонность к духовному поиску, эстетический вкус и заложенную способность видеть суть вещей там, где другие замечают лишь внешнюю форму. Ваш внутренний мир изначально был задуман как тихая гавань для глубоких размышлений и созидания."
+                } else { // Краткий бесплатный отчет по характеру
+                    "Ваша левая рука указывает на сильный врожденный творческий потенциал, высокую интуитивную чувствительность и стремление к гармонии."
                 }
-            } else ""
+            } else { // Если тип анализа - Судьба и события жизни
+                if (isFull) { // Полный платный отчет по судьбе
+                    "Левая рука (пассивная) хранит изначальный чертеж вашей судьбы, начертанный звездами в момент вашего рождения. Здесь отчетливо видны глубокие врожденные таланты, предрасположенность к долголетию и скрытые защитные знаки, оберегающие вас от фатальных происшествий. Линии показывают, что с самого детства вам была предначертана яркая судьба, наполненная важными духовными поисками и глубинным пониманием своего жизненного предназначения."
+                } else { // Краткий бесплатный отчет по судьбе
+                    "Ваша левая рука (пассивная) указывает на высокий врожденный жизненный потенциал, сильные защитные знаки и предрасположенность к долголетию."
+                }
+            }
 
-            val rightHandText = if (isCharacter) {
-                if (isFull) {
-                    "Анализ Правой руки (то, как человек живёт и реализуется): Правая (активная) ладонь показывает, как вы распорядились дарами судьбы. Вы научились контролировать свои эмоции, развили сильную волю и способность доводить начатое до конца. Приобретенная практичность и умение адаптироваться к жизненным трудностям помогают вам реализовывать врожденные таланты в материальном мире. Вы трансформировали юношеский идеализм в осознанную мудрость."
-                } else {
-                    "Анализ Правой руки (то, как человек живёт и реализуется): На протяжении жизни вы развили сильную волю, практичность в делах и умение справляться со сложными ситуациями."
+            // Анализ Правой руки (реализованные таланты)
+            val rightHandText = if (isCharacter) { // Если тип анализа - Характер
+                if (isFull) { // Полный платный отчет по характеру
+                    "Ваша активная правая рука наглядно показывает, как именно вы распорядились врожденными дарами и талантами. В процессе жизненного пути вы выработали колоссальную силу воли, научились контролировать избыточную эмоциональность и развили способность доводить начатые проекты до победного конца. Четкость линий на правой ладони свидетельствует о том, что вы успешно преодолели юношеский идеализм, превратив его в зрелую мудрость и практическую хватку. Вы приобрели неоценимое умение адаптироваться к самым суровым внешним обстоятельствам, сохраняя верность своим внутренним принципам."
+                } else { // Краткий бесплатный отчет по характеру
+                    "Правая рука показывает, что вы развили твердую волю, практичность в делах и способность успешно справляться с жизненными трудностями."
                 }
-            } else ""
+            } else { // Если тип анализа - Судьба и события жизни
+                if (isFull) { // Полный платный отчет по судьбе
+                    "Правая рука (активная) отражает ваш реальный жизненный путь и те изменения, которые вы вносите своими решениями и действиями. На ней запечатлены ваши карьерные триумфы, ключевые выборы в возрасте 20-22 лет и грандиозный успех на рубеже 33-35 лет. Правая ладонь доказывает, что вы являетесь истинным хозяином своей судьбы, преодолевающим любые внешние препятствия своей невероятной силой воли и целеустремленностью."
+                } else { // Краткий бесплатный отчет по судьбе
+                    "Правая рука (активная) показывает успешное раскрытие вашего потенциала, преодоление преград и ключевые вехи развития (включая успехи в районе 33-35 лет)."
+                }
+            }
 
             val charQualitiesText = if (isCharacter) {
                 if (isFull) {
-                    "Анализ Характера и Качеств человека: Ваш характер отличается редким сочетанием чувствительности и решительности. Вы обладаете аналитическим складом ума, но при этом часто полагаетесь на интуицию, которая вас редко подводит. В общении вы проявляете себя как преданный друг, мудрый собеседник и человек слова. Основные качества — благородство, искренность, упорство в достижении целей и стремление к непрерывному саморазвитию."
+                    "Анализ вашей личности раскрывает уникальное и редкое сочетание глубокой душевной чувствительности и непоколебимой решимости. Вы обладаете острим аналитическим складом ума, который находится в постоянном синергетическом балансе с вашей сильной интуицией. Вы — человек слова, отличающийся благородством, искренностью и невероятным упорством в достижении значимых целей. Ваша сильная сторона — это способность вдохновлять других людей своим примером и давать мудрые советы. Вы постоянно стремитесь к самосовершенствованию и духовному росту, не допуская застоя в своей жизни."
                 } else {
-                    "Анализ Характера и Качеств человека: Основные черты вашего характера — благородство, целеустремленность, сочетание разума и развитой интуиции."
+                    "Основные черты вашего характера — благородство, целеустремленность, а также гармоничное сочетание холодного разума и чуткой интуиции."
                 }
             } else ""
 
             val lifePathEventsText = if (!isCharacter) {
                 if (isFull) {
-                    "Анализ Жизненного пути и событий: Ваш жизненный путь полон интересных вызовов и триумфальных моментов. В возрасте 20-22 лет произошел важный выбор жизненного ориентира. На рубеже 33-35 лет вас ожидает масштабный прорыв, связанный с обретением финансовой независимости и раскрытием личного предназначения. Период после 45 лет характеризуется укреплением авторитета, стабильным ростом благосостояния и глубокой гармонией во всех сферах жизни."
+                    "Ваш жизненный путь предстает как череда знаковых событий и триумфальных свершений. Анализ показывает, что в возрасте около 20-22 лет вы столкнулись с судьбоносным выбором, определившим ваше текущее направление. Впереди, на рубеже 33-35 лет, вас ожидает масштабный жизненный прорыв — это точка раскрытия вашего истинного космического предназначения, которая принесет финансовую независимость и высокий социальный статус. Период зрелости после 45 лет характеризуется абсолютной стабильностью, укреплением вашего авторитета в обществе и обретением глубокой внутренней гармонии."
                 } else {
-                    "Анализ Жизненного пути и событий: Жизненный путь отмечен важным выбором в 20-22 года, карьерным прорывом в районе 33-35 лет и стабильностью в зрелом возрасте."
+                    "Ваш жизненный путь отмечен ключевым выбором в возрасте 20-22 лет, крупным успехом на рубеже 33-35 лет и стабильностью в зрелые годы."
                 }
             } else ""
 
             val lifeSituationsInfluenceText = if (!isCharacter) {
                 if (isFull) {
-                    "Анализ Жизненных ситуаций и внешнего влияния на жизнь человека: Внешние обстоятельства часто проверяют вас на прочность, но каждое испытание делает вас сильнее. Влияние других людей на вашу судьбу минимально — вы сами являетесь творцом своей реальности. Тем не менее, в вашей жизни присутствуют покровители, чьи своевременные советы уберегут вас от неверных шагов. Звезды советуют сохранять спокойствие в периоды турбулентности."
+                    "Внешние обстоятельства и жизненные ситуации периодически устраивают вам проверки на прочность, однако каждое такое испытание лишь закаляет ваш внутренний стержень. Линии указывают на то, что влияние посторонних людей на вашу судьбу минимально — вы являетесь истинным и полноправным архитектором своей реальности. В моменты серьезного выбора в вашей жизни будут появляться мудрые наставники и покровители, чьи своевременные подсказки помогут уберечься от фатальных ошибок. Вы обладаете мощной энергетической защитой."
                 } else {
-                    "Анализ Жизненных ситуаций и внешнего влияния на жизнь человека: Вы успешно преодолеваете внешние преграды, опираясь на внутренний стержень и редкие, но ценные советы наставников."
+                    "Вы успешно преодолеваете внешние вызовы благодаря сильному внутреннему стержню и поддержке своевременно приходящих наставников."
                 }
             } else ""
 
             val marriageChildrenText = if (!isCharacter) {
                 if (isFull) {
-                    "Анализ Отношений Семьи, Брака, Дети и Спутники жизни: В сфере отношений ваша ладонь указывает на глубокую преданность и стремление создать крепкий семейный очаг. Линия Брака глубокая и ровная, что предвещает гармоничный, счастливый и долговечный союз с родственной душой. Спутник жизни будет человеком интеллектуальным и поддерживающим. Также отчетливо видны знаки детей, которые принесут в ваш дом радость и тепло."
+                    "В сфере личных взаимоотношений и брака ваша ладонь указывает на стремление к созданию глубокого, искреннего союза и теплого семейного очага. Линия Брака глубокая, ровная и свободная от негативных пересечений, что предвещает счастливый, гармоничный и исключительно долговечный союз с вашей родственной душой. Ваш спутник жизни будет человеком высокого интеллекта и сильного характера, который обеспечит вам надежную поддержку. Проявленные знаки детей указывают на счастливое родительство, которое наполнит ваш дом уютом и радостью."
                 } else {
-                    "Анализ Отношений Семьи, Брака, Дети и Спутники жизни: Ладонь указывает на крепкий, основанный на доверии брак и гармоничные семейные отношения, согретые любовью детей."
+                    "Ваша ладонь указывает на прочный, основанный на доверии и духовной близости брак, а также на гармоничные семейные отношения."
                 }
             } else ""
 
@@ -758,21 +782,34 @@ class PalmistRepository(
                 characterQualities = charQualitiesText
             )
         } else {
-            val leftHandText = if (isCharacter) {
-                if (isFull) {
+            // Generating English mock report
+            val leftHandText = if (isCharacter) { // If character reading
+                if (isFull) { // Full paid character report
                     "Left Hand Analysis (Innate Potentials): Left hand of ${profile.name} reveals a powerful inherited blueprint. Since birth, a deep sense of intuition, high imagination, and a philosophical mind have been set. You possess an innate empathy and high artistic talent."
-                } else {
+                } else { // Brief character report
                     "Left Hand Analysis (Innate Potentials): Your birth potential is characterized by deep creativity, natural intuition, and high adaptive intelligence."
                 }
-            } else ""
+            } else { // If life path reading
+                if (isFull) { // Full paid life path report
+                    "Left Hand Analysis (Destiny Blueprint): The passive left hand holds the celestial blueprint of your destiny. It displays your innate resilience, longevity markers, and cosmic protections. You were born with a pre-designed framework pointing to spiritual expansion and significant life wisdom."
+                } else { // Brief life path report
+                    "Left Hand Analysis (Destiny Blueprint): Your passive hand displays a rich natural baseline of vitality and robust karmic protection."
+                }
+            }
 
-            val rightHandText = if (isCharacter) {
-                if (isFull) {
+            val rightHandText = if (isCharacter) { // If character reading
+                if (isFull) { // Full paid character report
                     "Right Hand Analysis (Acquired Traits): The active right hand highlights how you have actualized your innate talents. You have structured your mind, strengthened your personal boundaries, and developed a strong sense of worldly logic and determination."
-                } else {
+                } else { // Brief character report
                     "Right Hand Analysis (Acquired Traits): Over the years you have developed superb practical skills, professional diligence, and emotional composure."
                 }
-            } else ""
+            } else { // If life path reading
+                if (isFull) { // Full paid life path report
+                    "Right Hand Analysis (Active Life Path): The active right hand reflects your choices and real-time self-determination. It outlines your professional breakthroughs, key decision periods around ages 20-22, and major prosperity peaks near 33-35. It shows that you are the architect of your own timeline."
+                } else { // Brief life path report
+                    "Right Hand Analysis (Active Life Path): Your active hand shows solid career milestones, self-made opportunities, and dynamic adaptation to obstacles."
+                }
+            }
 
             val charQualitiesText = if (isCharacter) {
                 if (isFull) {
@@ -896,6 +933,21 @@ class PalmistRepository(
         }
 
         return moshi.adapter(CompatibilityReport::class.java).toJson(report)
+    }
+
+    // --- История Оплаты (Payment History) ---
+
+    // Получение всех записей платежей из БД в реальном времени
+    val allPayments: Flow<List<PaymentHistoryEntity>> = dao.getAllPayments()
+
+    // Сохранение записи о новом переводе в базу данных
+    suspend fun insertPayment(payment: PaymentHistoryEntity): Long = withContext(Dispatchers.IO) {
+        dao.insertPayment(payment)
+    }
+
+    // Полная очистка истории платежей
+    suspend fun clearPaymentHistory() = withContext(Dispatchers.IO) {
+        dao.clearPaymentHistory()
     }
 
     private fun resizeBitmap(bitmap: Bitmap, maxSize: Int = 1200): Bitmap {

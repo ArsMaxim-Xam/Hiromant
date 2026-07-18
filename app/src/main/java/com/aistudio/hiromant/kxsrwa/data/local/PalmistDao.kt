@@ -40,4 +40,15 @@ interface PalmistDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBillingState(state: BillingStateEntity)
+
+    // --- Методы для работы с историей платежей ---
+
+    @Query("SELECT * FROM payment_history ORDER BY timestamp DESC")
+    fun getAllPayments(): Flow<List<PaymentHistoryEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPayment(payment: PaymentHistoryEntity): Long
+
+    @Query("DELETE FROM payment_history")
+    suspend fun clearPaymentHistory()
 }

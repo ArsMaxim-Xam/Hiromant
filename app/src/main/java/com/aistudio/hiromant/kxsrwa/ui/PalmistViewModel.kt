@@ -41,6 +41,9 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     private val _ttsSpeechRate = MutableStateFlow(1.0f)
     val ttsSpeechRate: StateFlow<Float> = _ttsSpeechRate
 
+    private val _ttsPitch = MutableStateFlow(1.0f)
+    val ttsPitch: StateFlow<Float> = _ttsPitch
+
     // Subscribed state and readings list
     val userProfile: StateFlow<UserProfileEntity?> = repository.userProfile.stateIn(
         scope = viewModelScope,
@@ -55,6 +58,13 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val allReadings: StateFlow<List<ReadingEntity>> = repository.allReadings.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    // Поток всех платежей пользователя из базы данных для отображения на экране "Кабинет"
+    val allPayments: StateFlow<List<com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity>> = repository.allPayments.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -80,6 +90,9 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val rightBackPath = MutableStateFlow<String?>(null)
 
     val videoUri = MutableStateFlow<android.net.Uri?>(null)
+    val leftVideoUri = MutableStateFlow<android.net.Uri?>(null)
+    val rightVideoUri = MutableStateFlow<android.net.Uri?>(null)
+    val currentAnalysisTypeState = MutableStateFlow("brief_char")
 
     // Active navigation tab state
     val activeTab = MutableStateFlow("upload")
@@ -98,6 +111,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         _ttsGender.value = repository.getTtsGender()
         _ttsVoiceIndex.value = repository.getTtsVoiceIndex()
         _ttsSpeechRate.value = repository.getTtsSpeechRate()
+        _ttsPitch.value = repository.getTtsPitch()
     }
 
     fun changeFontScale(scale: Float) {
@@ -141,6 +155,11 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         repository.setTtsSpeechRate(rate)
     }
 
+    fun changeTtsPitch(pitch: Float) {
+        _ttsPitch.value = pitch
+        repository.setTtsPitch(pitch)
+    }
+
     // --- Profile actions ---
 
     fun saveProfile(
@@ -160,16 +179,32 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Billing actions (Simulated for testing, fully updates the local database state!) ---
 
-    fun simulateBuySubscription() {
+    fun simulateBuySubscription(amount: Int = 999, method: String = "Google Play (Встроенная)") {
         viewModelScope.launch {
             repository.addAnalyses(10)
+            // Сохраняем информацию о покупке пакета анализов в единой базе данных
+            val payment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = amount,
+                paymentSystem = method,
+                status = "Успешно",
+                readingType = "Премиум подписка (10 сеансов)"
+            )
+            repository.insertPayment(payment)
         }
     }
 
-    fun simulateBuySingleAnalysis(analysisType: String) {
+    fun simulateBuySingleAnalysis(analysisType: String, amount: Int = 199, method: String = "ЮKassa (Банковская карта)") {
         viewModelScope.launch {
             repository.unlockFeature(analysisType)
             repository.addAnalyses(1)
+            // Сохраняем информацию об оплате одного анализа в единой базе данных
+            val payment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = amount,
+                paymentSystem = method,
+                status = "Успешно",
+                readingType = "Одиночный анализ: $analysisType"
+            )
+            repository.insertPayment(payment)
         }
     }
 
@@ -209,6 +244,56 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     fun deleteReading(id: Long) {
         viewModelScope.launch {
             repository.deleteReading(id)
+        }
+    }
+
+    // --- Методы для работы с историей оплат и реферальными начислениями (сохранение в БД) ---
+
+    // Добавление новой записи о платеже в единую базу данных и начисление оплаченных анализов
+    fun addPayment(amount: Int, paymentSystem: String, readingType: String, status: String = "Успешно") {
+        viewModelScope.launch {
+            // Создаем сущность платежа для записи в базу данных
+            val payment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = amount,
+                paymentSystem = paymentSystem,
+                status = status,
+                readingType = readingType
+            )
+            // Вставляем платеж в БД через репозиторий
+            repository.insertPayment(payment)
+            
+            // Начисляем анализы в зависимости от суммы платежа
+            val count = when {
+                amount >= 999 -> 10 // Премиум-подписка (10 анализов)
+                amount >= 499 -> 5  // Набор из 5 анализов
+                amount >= 199 -> 3  // Набор из 3 анализов
+                else -> 1           // 1 одиночный полный анализ
+            }
+            repository.addAnalyses(count)
+        }
+    }
+
+    // Полная очистка истории платежей в базе данных
+    fun clearPaymentHistory() {
+        viewModelScope.launch {
+            repository.clearPaymentHistory()
+        }
+    }
+
+    // Начисление вознаграждения (+3 полных анализа) за успешный шеринг и установку приложения
+    fun rewardUserForSharing() {
+        viewModelScope.launch {
+            // Записываем информацию о бонусе в таблицу истории платежей БД для прозрачности
+            val promoReward = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = 0, // Бонусное начисление (0 рублей)
+                paymentSystem = "Бонус за установку (Поделиться)",
+                status = "Успешно начислено +3",
+                readingType = "sharing_bonus"
+            )
+            // Сохраняем промо-начисление в единую базу данных
+            repository.insertPayment(promoReward)
+            // Добавляем 3 анализа пользователю в профиль в БД
+            repository.addAnalyses(3)
         }
     }
 
@@ -344,7 +429,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun unlockPaidReading(readingId: Long, onUnlocked: () -> Unit) {
+    fun unlockPaidReading(readingId: Long, amount: Int = 150, method: String = "ЮKassa (СБП)", onUnlocked: () -> Unit) {
         viewModelScope.launch {
             repository.unlockPaidReading(readingId)
             val updated = repository.getReadingById(readingId)
@@ -354,6 +439,15 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 } else {
                     currentReading.value = updated
                 }
+                
+                // Автоматически регистрируем платеж в единой базе данных в истории платежей
+                val payment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                    amountRub = amount,
+                    paymentSystem = method,
+                    status = "Успешно",
+                    readingType = "Разблокировка: " + (if (updated.analysisType == "compatibility") "Совместимость" else "Анализ ладони")
+                )
+                repository.insertPayment(payment)
             }
             onUnlocked()
         }

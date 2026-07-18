@@ -239,103 +239,126 @@ fun MysticSplashScreen(
         val flash = mutableStateOf(1f)
     }
 
-    val elements = remember {
-        listOf(
-            // Lines
-            AnimatedElementState(
-                id = "life_line",
-                type = HandElementType.LINE,
-                name = "Life Line",
-                color = Color(0xFFFF4D4D), // Coral Red
-                points = listOf(Pair(0.62f, 0.50f), Pair(0.58f, 0.58f), Pair(0.53f, 0.68f), Pair(0.48f, 0.77f), Pair(0.46f, 0.82f))
-            ),
-            AnimatedElementState(
-                id = "head_line",
-                type = HandElementType.LINE,
-                name = "Head Line",
-                color = Color(0xFF00BFFF), // Cyan Blue
-                points = listOf(Pair(0.62f, 0.50f), Pair(0.50f, 0.53f), Pair(0.38f, 0.58f))
-            ),
-            AnimatedElementState(
-                id = "heart_line",
-                type = HandElementType.LINE,
-                name = "Heart Line",
-                color = Color(0xFFFF1493), // Deep Pink
-                points = listOf(Pair(0.32f, 0.50f), Pair(0.45f, 0.48f), Pair(0.56f, 0.44f))
-            ),
-            AnimatedElementState(
-                id = "destiny_line",
-                type = HandElementType.LINE,
-                name = "Destiny Line",
-                color = Color(0xFFDA70D6), // Orchid / Light Purple
-                points = listOf(Pair(0.46f, 0.85f), Pair(0.47f, 0.64f), Pair(0.48f, 0.43f))
-            ),
-            // Mounts
-            AnimatedElementState(
-                id = "mount_jupiter",
-                type = HandElementType.MOUNT,
-                name = "Mount of Jupiter",
-                color = Color(0xFF9370DB), // Medium Purple
-                symbol = "♃",
-                position = Pair(0.60f, 0.40f)
-            ),
-            AnimatedElementState(
-                id = "mount_saturn",
-                type = HandElementType.MOUNT,
-                name = "Mount of Saturn",
-                color = Color(0xFFFFD700), // Gold
-                symbol = "♄",
-                position = Pair(0.50f, 0.38f)
-            ),
-            AnimatedElementState(
-                id = "mount_apollo",
-                type = HandElementType.MOUNT,
-                name = "Mount of Apollo",
-                color = Color(0xFFFF8C00), // Dark Orange
-                symbol = "☉",
-                position = Pair(0.40f, 0.39f)
-            ),
-            AnimatedElementState(
-                id = "mount_mercury",
-                type = HandElementType.MOUNT,
-                name = "Mount of Mercury",
-                color = Color(0xFF00FA9A), // Medium Spring Green
-                symbol = "☿",
-                position = Pair(0.30f, 0.43f)
-            ),
-            AnimatedElementState(
-                id = "mount_venus",
-                type = HandElementType.MOUNT,
-                name = "Mount of Venus",
-                color = Color(0xFFFF69B4), // Hot Pink
-                symbol = "♀",
-                position = Pair(0.64f, 0.68f)
-            ),
-            AnimatedElementState(
-                id = "mount_mars_lower",
-                type = HandElementType.MOUNT,
-                name = "Lower Mars",
-                color = Color(0xFFFF0000), // Pure Red
-                symbol = "♂",
-                position = Pair(0.59f, 0.53f)
-            ),
-            AnimatedElementState(
-                id = "mount_mars_upper",
-                type = HandElementType.MOUNT,
-                name = "Upper Mars",
-                color = Color(0xFFFF4500), // Orange Red
-                symbol = "♂",
-                position = Pair(0.33f, 0.57f)
-            ),
-            AnimatedElementState(
-                id = "mount_moon",
-                type = HandElementType.MOUNT,
-                name = "Mount of Moon",
-                color = Color(0xFFE6E6FA), // Lavender
-                symbol = "☽",
-                position = Pair(0.36f, 0.75f)
-            )
-        )
+    val elements = remember { // Запоминаем список анимированных элементов между рекомпозициями
+        listOf( // Создаем список, содержащий линии ладони и планетарные холмы
+            // --- ЛИНИИ ЛАДОНИ (LINE) ---
+            AnimatedElementState( // Определяем состояние для Линии Жизни
+                id = "life_line", // Уникальный идентификатор Линии Жизни
+                type = HandElementType.LINE, // Тип элемента - Линия
+                name = "Life Line", // Английское наименование для внутренней логики
+                color = Color(0xFFFF4D4D), // Насыщенный кораллово-красный цвет для Линии Жизни
+                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, идеально описывающие анатомический изгиб холма Венеры
+                    Pair(0.58f, 0.46f), // Начальная точка между большим и указательным пальцами
+                    Pair(0.54f, 0.54f), // Точка плавного спуска вдоль внутренней стороны ладони
+                    Pair(0.50f, 0.64f), // Середина дуги, огибающей холм Венеры
+                    Pair(0.48f, 0.77f), // Нижняя часть дуги, уходящая к запястью
+                    Pair(0.48f, 0.90f)  // Финальная точка у самого основания запястья
+                ) // Завершаем список точек для Линии Жизни
+            ), // Завершаем описание Линии Жизни
+            AnimatedElementState( // Определяем состояние для Линии Головы (Ума)
+                id = "head_line", // Уникальный идентификатор Линии Головы
+                type = HandElementType.LINE, // Тип элемента - Линия
+                name = "Head Line", // Английское наименование для внутренней логики
+                color = Color(0xFF00BFFF), // Яркий глубокий голубой цвет для Линии Головы
+                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, идеально описывающие диагональный спуск Линии Ума
+                    Pair(0.58f, 0.46f), // Исток Линии Головы у ребра большого пальца
+                    Pair(0.50f, 0.50f), // Прохождение под средним пальцем
+                    Pair(0.44f, 0.54f), // Прохождение под безымянным пальцем
+                    Pair(0.36f, 0.58f), // Плавный наклон к холму Луны
+                    Pair(0.28f, 0.62f)  // Финальная точка Линии Головы на холме Луны
+                ) // Завершаем список точек для Линии Головы
+            ), // Завершаем описание Линии Головы
+            AnimatedElementState( // Определяем состояние для Линии Сердца
+                id = "heart_line", // Уникальный идентификатор Линии Сердца
+                type = HandElementType.LINE, // Тип элемента - Линия
+                name = "Heart Line", // Английское наименование для внутренней логики
+                color = Color(0xFFFF1493), // Яркий розовый цвет для Линии Сердца
+                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, описывающие красивую дугу под пальцами
+                    Pair(0.23f, 0.49f), // Начало под мизинцем на ребре ладони
+                    Pair(0.32f, 0.47f), // Плавный прогиб под безымянным пальцем
+                    Pair(0.42f, 0.46f), // Прохождение под средним пальцем
+                    Pair(0.47f, 0.41f)  // Изгиб вверх к холму Юпитера у указательного пальца
+                ) // Завершаем список точек для Линии Сердца
+            ), // Завершаем описание Линии Сердца
+            AnimatedElementState( // Определяем состояние для Линии Судьбы
+                id = "destiny_line", // Уникальный идентификатор Линии Судьбы
+                type = HandElementType.LINE, // Тип элемента - Линия
+                name = "Destiny Line", // Английское наименование для внутренней логики
+                color = Color(0xFFDA70D6), // Нежный орхидеево-фиолетовый цвет для Линии Судьбы
+                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, описывающие вертикальное восхождение судьбы
+                    Pair(0.48f, 0.91f), // Исток у самого основания запястья
+                    Pair(0.47f, 0.78f), // Подъем по центральной нижней части ладони
+                    Pair(0.47f, 0.65f), // Прохождение через середину ладони
+                    Pair(0.45f, 0.52f), // Пересечение Линии Головы
+                    Pair(0.44f, 0.40f)  // Устремление к холму Сатурна под средним пальцем
+                ) // Завершаем список точек для Линии Судьбы
+            ), // Завершаем описание Линии Судьбы
+            // --- ПЛАНЕТАРНЫЕ ХОЛМЫ И ИХ СИМВОЛЫ (MOUNT) ---
+            AnimatedElementState( // Холм Юпитера (под указательным пальцем)
+                id = "mount_jupiter", // Идентификатор холма Юпитера
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Jupiter", // Наименование для внутренней логики
+                color = Color(0xFF9370DB), // Благородный фиолетовый цвет Юпитера
+                symbol = "♃", // Древний астрологический символ Юпитера
+                position = Pair(0.54f, 0.38f) // Анатомическое положение холма под указательным пальцем
+            ), // Завершаем описание холма Юпитера
+            AnimatedElementState( // Холм Сатурна (под средним пальцем)
+                id = "mount_saturn", // Идентификатор холма Сатурна
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Saturn", // Наименование для внутренней логики
+                color = Color(0xFFFFD700), // Золотой королевский цвет Сатурна
+                symbol = "♄", // Древний астрологический символ Сатурна
+                position = Pair(0.425f, 0.36f) // Анатомическое положение холма под средним пальцем
+            ), // Завершаем описание холма Сатурна
+            AnimatedElementState( // Холм Аполлона / Солнца (под безымянным пальцем)
+                id = "mount_apollo", // Идентификатор холма Аполлона
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Apollo", // Наименование для внутренней логики
+                color = Color(0xFFFF8C00), // Солнечный оранжевый цвет Аполлона
+                symbol = "☉", // Древний астрологический символ Солнца
+                position = Pair(0.32f, 0.38f) // Анатомическое положение холма под безымянным пальцем
+            ), // Завершаем описание холма Аполлона
+            AnimatedElementState( // Холм Меркурия (под мизинцем)
+                id = "mount_mercury", // Идентификатор холма Меркурия
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Mercury", // Наименование для внутренней логики
+                color = Color(0xFF00FA9A), // Изумрудно-зеленый цвет Меркурия
+                symbol = "☿", // Древний астрологический символ Меркурия
+                position = Pair(0.235f, 0.44f) // Анатомическое положение холма под мизинцем
+            ), // Завершаем описание холма Меркурия
+            AnimatedElementState( // Холм Венеры (крупное основание большого пальца)
+                id = "mount_venus", // Идентификатор холма Венеры
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Venus", // Наименование для внутренней логики
+                color = Color(0xFFFF69B4), // Нежно-розовый чувственный цвет Венеры
+                symbol = "♀", // Древний астрологический символ Венеры
+                position = Pair(0.68f, 0.74f) // Анатомическое положение холма у основания большого пальца
+            ), // Завершаем описание холма Венеры
+            AnimatedElementState( // Нижний Марс (внутренний холм войны, между большим и указательным)
+                id = "mount_mars_lower", // Идентификатор Нижнего Марса
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Lower Mars", // Наименование для внутренней логики
+                color = Color(0xFFFF0000), // Огненно-красный воинственный цвет Марса
+                symbol = "♂", // Древний астрологический символ Марса (щит и копье)
+                position = Pair(0.59f, 0.51f) // Анатомическое положение у основания складки большого пальца
+            ), // Завершаем описание Нижнего Марса
+            AnimatedElementState( //  Верхний Марс (внешний холм мужества и пассивной обороны)
+                id = "mount_mars_upper", // Идентификатор Верхнего Марса
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Upper Mars", // Наименование для внутренней логики
+                color = Color(0xFFFF4500), // Красно-оранжевый цвет Верхнего Марса
+                symbol = "♂", // Древний астрологический символ Марса
+                position = Pair(0.27f, 0.55f) // Анатомическое положение на внешнем ребре ладони под Линией Сердца
+            ), // Завершаем описание Верхнего Марса
+            AnimatedElementState( // Холм Луны (нижняя внешняя часть ладони)
+                id = "mount_moon", // Идентификатор холма Луны
+                type = HandElementType.MOUNT, // Тип элемента - Холм
+                name = "Mount of Moon", // Наименование для внутренней логики
+                color = Color(0xFFE6E6FA), // Мистический лавандовый цвет Луны
+                symbol = "☽", // Древний астрологический символ Луны
+                position = Pair(0.30f, 0.75f) // Анатомическое положение на внешнем нижнем ребре ладони
+            ) // Завершаем описание холма Луны
+        ) // Завершаем создание списка элементов
     }
 
     val imageAlpha by animateFloatAsState(
@@ -1769,9 +1792,429 @@ fun createGalleryVideoUri(context: Context, title: String): Uri? {
 }
 
 @Composable
+fun HandStencilCanvas(slotName: String, modifier: Modifier = Modifier) {
+    // Рисуем реалистичный анатомически правильный контур ладони или тыльной стороны руки на Canvas
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val width = size.width // Получаем ширину области рисования в пикселях
+        val height = size.height // Получаем высоту области рисования в пикселях
+        
+        // Определяем тип руки: ладонь (содержит линии судьбы) или тыльная сторона (содержит ногти)
+        val isPalm = slotName == "left_palm" || slotName == "right_palm" // Булево значение для ладони
+        
+        // Определяем расположение большого пальца в зависимости от ракурса камеры:
+        // - Для правой ладони (right_palm) и тыльной стороны левой руки (left_back) большой палец находится справа на фото.
+        // - Для левой ладони (left_palm) и тыльной стороны правой руки (right_back) большой палец находится слева на фото.
+        val thumbOnRight = (slotName == "right_palm" || slotName == "left_back") // Флаг расположения большого пальца справа
+
+        
+        // Вспомогательные функции для перевода относительных координат (0.0 - 1.0) в реальные пиксели экрана
+        fun getX(f: Float): Float {
+            // Если большой палец должен быть справа, рисуем как есть, иначе зеркально отражаем по горизонтали
+            return if (thumbOnRight) width * f else width * (1.0f - f)
+        }
+        fun getY(f: Float): Float {
+            // Возвращаем координату Y, умноженную на общую высоту холста
+            return height * f
+        }
+        
+        // Создаем путь для рисования реалистичного и изящного внешнего контура руки
+        val handPath = androidx.compose.ui.graphics.Path().apply {
+            // Начинаем рисование с левой части запястья
+            moveTo(getX(0.36f), getY(0.92f))
+            
+            // Плавная и реалистичная кривая по внешнему ребру ладони (холм Луны)
+            cubicTo(
+                getX(0.30f), getY(0.82f), // Первая контрольная точка для скругления ребра ладони внизу
+                getX(0.23f), getY(0.70f), // Вторая контрольная точка для сужения к пальцам
+                getX(0.23f), getY(0.50f)  // Конечная точка у основания мизинца
+            )
+            
+            // --- МИЗИНЕЦ ---
+            // Левая грань мизинца (плавное сужение кверху)
+            quadraticTo(getX(0.21f), getY(0.42f), getX(0.21f), getY(0.32f))
+            // Анатомически округлая верхушка мизинца
+            cubicTo(
+                getX(0.21f), getY(0.29f), // Левый изгиб подушечки пальца
+                getX(0.26f), getY(0.29f), // Правый изгиб подушечки пальца
+                getX(0.26f), getY(0.32f)  // Точка перехода на правую грань мизинца
+            )
+            // Правая грань мизинца до межпальцевой складки
+            quadraticTo(getX(0.26f), getY(0.42f), getX(0.27f), getY(0.46f))
+            
+            // --- БЕЗЫМЯННЫЙ ПАЛЕЦ ---
+            // Левая грань безымянного пальца
+            quadraticTo(getX(0.28f), getY(0.30f), getX(0.29f), getY(0.20f))
+            // Мягкая округлая подушечка безымянного пальца
+            cubicTo(
+                getX(0.29f), getY(0.16f), // Левое скругление верхушки
+                getX(0.35f), getY(0.16f), // Правое скругление верхушки
+                getX(0.35f), getY(0.20f)  // Переход к правой грани
+            )
+            // Правая грань безымянного пальца до межпальцевой впадины
+            quadraticTo(getX(0.35f), getY(0.30f), getX(0.36f), getY(0.42f))
+            
+            // --- СРЕДНИЙ ПАЛЕЦ (самый длинный палец руки) ---
+            // Левая грань среднего пальца
+            quadraticTo(getX(0.37f), getY(0.24f), getX(0.39f), getY(0.12f))
+            // Красивая округлая верхушка среднего пальца
+            cubicTo(
+                getX(0.39f), getY(0.08f), // Левый изгиб высшей точки пальца
+                getX(0.46f), getY(0.08f), // Правый изгиб высшей точки пальца
+                getX(0.46f), getY(0.12f)  // Переход к правой грани
+            )
+            // Правая грань среднего пальца до межпальцевой складки
+            quadraticTo(getX(0.47f), getY(0.24f), getX(0.48f), getY(0.41f))
+            
+            // --- УКАЗАТЕЛЬНЫЙ ПАЛЕЦ ---
+            // Левая грань указательного пальца
+            quadraticTo(getX(0.49f), getY(0.28f), getX(0.51f), getY(0.18f))
+            // Аккуратная округлая подушечка указательного пальца
+            cubicTo(
+                getX(0.51f), getY(0.14f), // Левый изгиб верхушки
+                getX(0.57f), getY(0.14f), // Правый изгиб верхушки
+                getX(0.57f), getY(0.18f)  // Переход к правой грани
+            )
+            // Правая грань указательного пальца до глубокой межпальцевой впадины
+            quadraticTo(getX(0.57f), getY(0.28f), getX(0.58f), getY(0.44f))
+            
+            // --- МЕЖПАЛЬЦЕВАЯ ВПАДИНА И БОЛЬШОЙ ПАЛЕЦ ---
+            // Плавный реалистичный изгиб кожной складки между указательным и большим пальцем
+            quadraticTo(getX(0.60f), getY(0.52f), getX(0.65f), getY(0.55f))
+            
+            // Верхняя грань большого пальца (направленная в сторону)
+            quadraticTo(getX(0.74f), getY(0.56f), getX(0.83f), getY(0.58f))
+            // Анатомически правильный закругленный кончик большого пальца
+            cubicTo(
+                getX(0.86f), getY(0.59f), // Левая контрольная точка скругления
+                getX(0.87f), getY(0.64f), // Правая контрольная точка скругления
+                getX(0.83f), getY(0.66f)  // Переход на внутреннюю грань пальца
+            )
+            // Внутренняя грань большого пальца до сустава основания
+            quadraticTo(getX(0.74f), getY(0.71f), getX(0.67f), getY(0.78f))
+            
+            // Нижнее ребро ладони (область холма Венеры) до основания запястья
+            quadraticTo(getX(0.62f), getY(0.85f), getX(0.60f), getY(0.92f))
+            
+            // Соединяем края запястья аккуратной горизонтальной линией
+            lineTo(getX(0.36f), getY(0.92f))
+            
+            // Закрываем векторный контур
+            close()
+        }
+        
+        // Заливка силуэта руки мягким полупрозрачным золотистым тоном для эстетичности
+        drawPath(
+            path = handPath, // Используем созданный контур руки
+            color = MysticGold.copy(0.04f), // Нежный золотистый оттенок
+            style = androidx.compose.ui.graphics.drawscope.Fill // Тип отрисовки - сплошная заливка
+        )
+        
+        // Отрисовка пунктирной золотой линии по контуру для создания технологичного эффекта биометрического сканера
+        drawPath(
+            path = handPath, // Наш детальный контур руки
+            color = MysticGold.copy(0.55f), // Свечение золотистого цвета
+            style = androidx.compose.ui.graphics.drawscope.Stroke( // Рисуем только линию контура
+                width = 2.5.dp.toPx(), // Оптимальная толщина линии контура в пикселях
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect( // Пунктирный паттерн линии
+                    floatArrayOf(15f, 10f), // Длина штриха 15 пикселей, длина пробела 10 пикселей
+                    0f // Без смещения начала линии
+                )
+            )
+        )
+        
+        // Отрисовка трех изящных параллельных складок запястья ("браслеты" или пояса Ориона)
+        for (i in 0..2) {
+            val offset = i * 0.025f // Относительное смещение для каждой линии вниз
+            val wristLinePath = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.36f), getY(0.92f + offset)) // Левая стартовая точка браслета
+                quadraticTo( // Дугообразная линия запястья
+                    getX(0.48f), getY(0.945f + offset), // Контрольная точка изгиба дуги вверх
+                    getX(0.60f), getY(0.92f + offset)   // Правая финишная точка у ребра
+                )
+            }
+            drawPath(
+                path = wristLinePath, // Путь дуги запястья
+                color = MysticGold.copy(0.4f), // Золотистый полупрозрачный цвет
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx()) // Толщина линии в пикселях
+            )
+        }
+        
+        // Отрисовка межфаланговых складок (суставов) на длинных пальцах для максимальной реалистичности рисунка
+        val knucklesColor = MysticGold.copy(0.35f) // Индивидуальный мягкий цвет для тонких складок кожи
+        val jointStroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()) // Толщина линий суставов
+        
+        // Координаты центров и ширины суставов пальцев: (X, Y, Ширина складки)
+        val jointCreases = listOf(
+            // Мизинец: нижний и верхний суставы
+            Triple(0.235f, 0.40f, 0.035f), Triple(0.235f, 0.35f, 0.035f),
+            // Безымянный палец: нижний и верхний суставы
+            Triple(0.32f, 0.34f, 0.045f), Triple(0.32f, 0.26f, 0.045f),
+            // Средний палец: нижний и верхний суставы
+            Triple(0.425f, 0.30f, 0.050f), Triple(0.425f, 0.20f, 0.050f),
+            // Указательный палец: нижний и верхний суставы
+            Triple(0.54f, 0.34f, 0.045f), Triple(0.54f, 0.25f, 0.045f)
+        )
+        
+        // Цикл прорисовки двух тонких параллельных линий для каждого межфалангового сустава
+        for (joint in jointCreases) {
+            val cx = getX(joint.first) // Рассчитываем пиксельную координату X
+            val cy = getY(joint.second) // Рассчитываем пиксельную координату Y
+            val w = joint.third * width // Рассчитываем реальную ширину складки
+            
+            val creasePath = androidx.compose.ui.graphics.Path().apply {
+                // Нижняя линия складки сустава
+                moveTo(cx - w / 2, cy)
+                quadraticTo(cx, cy + 2f, cx + w / 2, cy)
+                // Верхняя линия складки сустава для объемного эффекта кожи
+                moveTo(cx - w / 2, cy - 3f)
+                quadraticTo(cx, cy - 1f, cx + w / 2, cy - 3f)
+            }
+            drawPath(path = creasePath, color = knucklesColor, style = jointStroke)
+        }
+        
+        // Прорисовка наклонной кожной складки сустава на большом пальце
+        val thumbCreasePath = androidx.compose.ui.graphics.Path().apply {
+            moveTo(getX(0.72f), getY(0.69f)) // Начальная точка сбоку пальца
+            quadraticTo(getX(0.745f), getY(0.655f), getX(0.77f), getY(0.62f)) // Диагональная дуга
+            moveTo(getX(0.71f), getY(0.68f)) // Вторая параллельная линия
+            quadraticTo(getX(0.735f), getY(0.645f), getX(0.76f), getY(0.61f))
+        }
+        drawPath(path = thumbCreasePath, color = knucklesColor, style = jointStroke)
+        
+        if (isPalm) {
+            // --- РЕЖИМ ЛАДОНИ: РИСУЕМ РЕАЛИСТИЧНЫЕ ПАПИЛЛЯРНЫЕ И ХИРОМАНТИЧЕСКИЕ ЛИНИИ ---
+            
+            // 1. ЛИНИЯ ЖИЗНИ (огибает холм Венеры у большого пальца, символизирует витальность)
+            val lifeLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.58f), getY(0.46f)) // Исток между большим и указательным пальцами
+                quadraticTo( // Основной полукруглый контур вокруг большого пальца
+                    getX(0.50f), getY(0.64f), // Контрольная точка максимального изгиба
+                    getX(0.48f), getY(0.90f)  // Окончание у запястья
+                )
+            }
+            drawPath(
+                path = lifeLine,
+                color = MysticGold.copy(0.70f), // Хорошо заметная золотая линия
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx()) // Утолщенный контур
+            )
+            
+            // 2. ВНУТРЕННЯЯ ЛИНИЯ МАРСА (Тонкая линия Ангела-Хранителя - дублирует линию жизни изнутри)
+            val marsLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.62f), getY(0.54f)) // Исток чуть глубже под большим пальцем
+                quadraticTo(
+                    getX(0.55f), getY(0.68f), // Идет строго параллельно линии жизни
+                    getX(0.53f), getY(0.83f)  // Оканчивается у основания холма
+                )
+            }
+            drawPath(
+                path = marsLine,
+                color = MysticGold.copy(0.40f), // Деликатное тонкое свечение
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx()) // Изящная толщина
+            )
+            
+            // 3. ЛИНИЯ ГОЛОВЫ / УМА (идет поперек ладони к холму Луны, символизирует интеллект)
+            val headLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.58f), getY(0.46f)) // Сливается у истока с линией жизни
+                quadraticTo(
+                    getX(0.44f), getY(0.54f), // Пересекает ладонь по диагонали
+                    getX(0.28f), getY(0.62f)  // Оканчивается на холме Луны с красивым спуском вниз
+                )
+            }
+            drawPath(
+                path = headLine,
+                color = MysticGold.copy(0.70f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx())
+            )
+            
+            // 4. ЛИНИЯ СЕРДЦА (идет от ребра ладони к указательному пальцу, имеет вилку писателя на конце)
+            val heartLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.23f), getY(0.49f)) // Берет начало под мизинцем на ребре ладони
+                quadraticTo(
+                    getX(0.42f), getY(0.46f), // Дугообразный изгиб к верхним пальцам
+                    getX(0.47f), getY(0.41f)  // Точка развилки у холма Юпитера
+                )
+            }
+            drawPath(
+                path = heartLine,
+                color = MysticGold.copy(0.70f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx())
+            )
+            
+            // Левая ветвь вилки сердца (направлена вверх к указательному и среднему пальцам)
+            val heartFork1 = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.47f), getY(0.41f))
+                quadraticTo(getX(0.49f), getY(0.39f), getX(0.52f), getY(0.38f))
+            }
+            // Правая ветвь вилки сердца (направлена мягко вниз к холму ума)
+            val heartFork2 = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.47f), getY(0.41f))
+                quadraticTo(getX(0.45f), getY(0.42f), getX(0.43f), getY(0.43f))
+            }
+            drawPath(path = heartFork1, color = MysticGold.copy(0.60f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx()))
+            drawPath(path = heartFork2, color = MysticGold.copy(0.60f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx()))
+            
+            // 5. ЛИНИЯ СУДЬБЫ / РОКА (вертикальная линия по центру ладони, символ жизненного пути)
+            val destinyLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.48f), getY(0.91f)) // Исток у запястья по центру
+                quadraticTo(
+                    getX(0.47f), getY(0.65f), // Поднимается вертикально вверх сквозь всю ладонь
+                    getX(0.44f), getY(0.40f)  // Упирается в холм Сатурна под средним пальцем
+                )
+            }
+            drawPath(
+                path = destinyLine,
+                color = MysticGold.copy(0.50f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx())
+            )
+            
+            // 6. ЛИНИЯ ЗДОРОВЬЯ / МЕРКУРИЯ (идет по диагонали снизу к холму под мизинцем)
+            val healthLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.46f), getY(0.88f)) // Исток около низа линии жизни
+                quadraticTo(
+                    getX(0.36f), getY(0.70f), // Пересекает ладонь по диагонали к внешнему краю
+                    getX(0.26f), getY(0.52f)  // Оканчивается под мизинцем
+                )
+            }
+            drawPath(
+                path = healthLine,
+                color = MysticGold.copy(0.45f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+            )
+            
+            // 7. ЛИНИЯ СОЛНЦА / АПОЛЛОНА (Линия удачи и творческого успеха, идет к безымянному пальцу)
+            val sunLine = androidx.compose.ui.graphics.Path().apply {
+                moveTo(getX(0.36f), getY(0.65f)) // Исток на равнине Марса
+                quadraticTo(
+                    getX(0.34f), getY(0.53f), // Подъем параллельно линии судьбы
+                    getX(0.33f), getY(0.41f)  // Окончание у безымянного пальца
+                )
+            }
+            drawPath(
+                path = sunLine,
+                color = MysticGold.copy(0.45f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+            )
+            
+            // 8. ЛИНИИ БРАКА / ОТНОШЕНИЙ (короткие горизонтальные отметки на ребре под мизинцем)
+            for (j in 0..1) {
+                val yOffset = j * 0.015f // Вертикальный интервал между линиями брака
+                val marriageLine = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(getX(0.22f), getY(0.45f + yOffset)) // Точка на ребре ладони
+                    quadraticTo(
+                        getX(0.235f), getY(0.45f + yOffset), // Простирается горизонтально на холм Меркурия
+                        getX(0.25f), getY(0.45f + yOffset)   // Завершение черты брака
+                    )
+                }
+                drawPath(
+                    path = marriageLine,
+                    color = MysticGold.copy(0.50f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.2.dp.toPx())
+                )
+            }
+            
+        } else {
+            // --- РЕЖИМ ТЫЛЬНОЙ СТОРОНЫ: РИСУЕМ РЕАЛИСТИЧНЫЕ И ОЧЕРЧЕННЫЕ НОГТИ НА ПАЛЬЦАХ ---
+            
+            // Локальная функция для детального рисования анатомически правильного реалистичного ногтя
+            fun drawRealisticNail(cx: Float, cy: Float, widthFract: Float, heightFract: Float) {
+                val nailWidth = widthFract * width   // Переводим относительную ширину ногтя в пиксели
+                val nailHeight = heightFract * height // Переводим относительную высоту ногтя в пиксели
+                
+                // Сохраняем состояние холста Canvas перед вращением и смещением системы координат
+                drawContext.canvas.save()
+                
+                // Смещаем начало координат холста в центр верхушки пальца
+                val nailX = getX(cx)
+                val nailY = getY(cy)
+                drawContext.canvas.translate(nailX, nailY)
+                
+                // Угол поворота ногтевой пластины. Большой палец и мизинец имеют наклон для реалистичности.
+                val rotDegrees = if (cx > 0.7f) {
+                    if (thumbOnRight) -35f else 35f // Угол разворота для большого пальца
+                } else if (cx < 0.28f) {
+                    if (thumbOnRight) 12f else -12f  // Небольшой наклон для мизинца наружу
+                } else 0f
+                drawContext.canvas.rotate(rotDegrees)
+                
+                // Создаем форму ногтя (вертикально-вытянутая округлая миндалевидная форма из hiro.su)
+                val nailPath = androidx.compose.ui.graphics.Path().apply {
+                    val halfW = nailWidth / 2f
+                    val halfH = nailHeight / 2f
+                    
+                    // Левая нижняя точка у кутикулы
+                    moveTo(-halfW, halfH)
+                    // Левый край ногтя с легким сужением к свободному краю
+                    quadraticTo(-halfW * 1.05f, -halfH * 0.4f, -halfW * 0.9f, -halfH)
+                    // Верхний свободный край (аккуратный полукруглый изгиб ногтевой кромки)
+                    quadraticTo(0f, -halfH * 1.35f, halfW * 0.9f, -halfH)
+                    // Правый край ногтя с изгибом книзу
+                    quadraticTo(halfW * 1.05f, -halfH * 0.4f, halfW, halfH)
+                    // Нижний дугообразный край (линия улыбки кутикулы)
+                    quadraticTo(0f, halfH * 1.25f, -halfW, halfH)
+                    close()
+                }
+                
+                // 1. Заполняем тело ногтя нежным полупрозрачным золотым градиентом
+                drawPath(
+                    path = nailPath,
+                    color = MysticGold.copy(0.12f),
+                    style = androidx.compose.ui.graphics.drawscope.Fill
+                )
+                
+                // 2. Очерчиваем четкие границы ногтевой пластины тонким золотистым контуром
+                drawPath(
+                    path = nailPath,
+                    color = MysticGold.copy(0.65f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+                )
+                
+                // 3. Прорисовываем Лунулу (матово-белое полукружие у основания кутикулы)
+                val lunulaPath = androidx.compose.ui.graphics.Path().apply {
+                    val halfW = nailWidth / 2f
+                    val halfH = nailHeight / 2f
+                    moveTo(-halfW * 0.6f, halfH) // Нижняя левая точка кутикулы
+                    quadraticTo(0f, halfH * 0.4f, halfW * 0.6f, halfH) // Изгиб дуги вверх
+                    quadraticTo(0f, halfH * 1.15f, -halfW * 0.6f, halfH) // Замыкание по дуге кутикулы
+                    close()
+                }
+                drawPath(
+                    path = lunulaPath,
+                    color = Color.White.copy(0.40f), // Нежный полупрозрачный белый цвет
+                    style = androidx.compose.ui.graphics.drawscope.Fill
+                )
+                
+                // 4. Дополнительная складка кожи (кутикула) у основания ногтевой пластины
+                val cuticleCrease = androidx.compose.ui.graphics.Path().apply {
+                    val halfW = nailWidth / 2f
+                    val halfH = nailHeight / 2f
+                    moveTo(-halfW * 1.3f, halfH * 1.28f)
+                    quadraticTo(0f, halfH * 1.55f, halfW * 1.3f, halfH * 1.28f)
+                }
+                drawPath(
+                    path = cuticleCrease,
+                    color = MysticGold.copy(0.35f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                )
+                
+                // Восстанавливаем сохраненное состояние Canvas для рисования остальных ногтей
+                drawContext.canvas.restore()
+            }
+            
+            // Размещаем анатомически выверенные ногти на каждом из пяти пальцев тыльной стороны руки
+            drawRealisticNail(0.235f, 0.32f, 0.016f, 0.024f) // Ноготь мизинца
+            drawRealisticNail(0.32f, 0.20f, 0.021f, 0.031f)  // Ноготь безымянного пальца
+            drawRealisticNail(0.425f, 0.12f, 0.023f, 0.033f) // Ноготь среднего пальца
+            drawRealisticNail(0.54f, 0.20f, 0.021f, 0.031f)  // Ноготь указательного пальца
+            drawRealisticNail(0.83f, 0.61f, 0.025f, 0.024f)  // Ноготь большого пальца
+        }
+    }
+}
+
+@Composable
 fun HandSlotCard(
     title: String,
     bitmap: Bitmap?,
+    slotName: String,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
     onClear: () -> Unit,
@@ -1873,82 +2316,11 @@ fun HandSlotCard(
                 }
             }
 
-            // Наложение полупрозрачного контура руки с линиями
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                val width = size.width
-                val height = size.height
-                
-                // Рисуем пунктирный контур руки
-                val handPath = androidx.compose.ui.graphics.Path().apply {
-                    // Начинаем от запястья слева
-                    moveTo(width * 0.35f, height * 0.95f)
-                    // Линия к большому пальцу
-                    quadraticTo(width * 0.22f, height * 0.75f, width * 0.16f, height * 0.65f)
-                    // Кончик большого пальца
-                    quadraticTo(width * 0.10f, height * 0.58f, width * 0.22f, height * 0.52f)
-                    // Основание большого пальца
-                    quadraticTo(width * 0.35f, height * 0.55f, width * 0.38f, height * 0.58f)
-                    // К указательному пальцу
-                    lineTo(width * 0.38f, height * 0.25f)
-                    quadraticTo(width * 0.42f, height * 0.15f, width * 0.46f, height * 0.25f)
-                    // К среднему пальцу
-                    lineTo(width * 0.50f, height * 0.15f)
-                    quadraticTo(width * 0.54f, height * 0.08f, width * 0.58f, height * 0.15f)
-                    // К безымянному пальцу
-                    lineTo(width * 0.62f, height * 0.20f)
-                    quadraticTo(width * 0.66f, height * 0.12f, width * 0.70f, height * 0.20f)
-                    // К мизинцу
-                    lineTo(width * 0.74f, height * 0.35f)
-                    quadraticTo(width * 0.78f, height * 0.28f, width * 0.82f, height * 0.35f)
-                    // Внешний край ладони к запястью справа
-                    quadraticTo(width * 0.88f, height * 0.65f, width * 0.75f, height * 0.82f)
-                    lineTo(width * 0.65f, height * 0.95f)
-                    close()
-                }
-                
-                // Рисуем контур пунктиром
-                drawPath(
-                    path = handPath,
-                    color = MysticGold.copy(0.3f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = 1.5.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 5f), 0f)
-                    )
-                )
-                
-                // Линия Жизни (вокруг большого пальца)
-                val lifeLine = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(width * 0.38f, height * 0.58f)
-                    quadraticTo(width * 0.45f, height * 0.70f, width * 0.45f, height * 0.85f)
-                }
-                drawPath(
-                    path = lifeLine,
-                    color = MysticGold.copy(0.35f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
-                )
-                
-                // Линия Головы (поперечная средняя)
-                val headLine = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(width * 0.38f, height * 0.58f)
-                    quadraticTo(width * 0.55f, height * 0.62f, width * 0.75f, height * 0.65f)
-                }
-                drawPath(
-                    path = headLine,
-                    color = MysticGold.copy(0.35f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
-                )
-                
-                // Линия Сердца (поперечная верхняя)
-                val heartLine = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(width * 0.42f, height * 0.48f)
-                    quadraticTo(width * 0.60f, height * 0.50f, width * 0.80f, height * 0.54f)
-                }
-                drawPath(
-                    path = heartLine,
-                    color = MysticGold.copy(0.35f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
-                )
-            }
+            // Наложение полупрозрачного контура руки рисуется только тогда, когда фото еще НЕ загружено, чтобы не искажать реальный снимок
+            if (bitmap == null) { // Если изображение пустое (еще не сделано/не загружено)
+                HandStencilCanvas(slotName = slotName, modifier = Modifier.fillMaxSize()) // Отрисовываем контур руки для выравнивания
+            } // Завершаем проверку наличия загруженного изображения
+
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -2147,29 +2519,42 @@ fun InAppCameraDialog(
                         .padding(bottom = 80.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+                    Box(
                         modifier = Modifier
-                            .size(280.dp)
-                            .border(1.dp, MysticGold.copy(0.4f), RoundedCornerShape(140.dp))
-                            .padding(16.dp)
+                            .size(320.dp)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Camera,
-                            contentDescription = null,
-                            tint = MysticGold.copy(0.25f),
-                            modifier = Modifier.size(100.dp)
+                        HandStencilCanvas(
+                            slotName = slotName,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (isRussian) "Поместите ладонь сюда" else "Place palm inside the frame",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MysticGold.copy(0.6f),
-                                fontWeight = FontWeight.Bold
-                            ),
-                            textAlign = TextAlign.Center
-                        )
+                        
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .background(Color.Black.copy(0.6f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            val guideTxt = when (slotName) {
+                                "left_palm" -> if (isRussian) "Левая ладонь (линии вверх)" else "Left Palm (lines up)"
+                                "left_back" -> if (isRussian) "Тыл левой руки (ногти)" else "Left Back (nails)"
+                                "right_palm" -> if (isRussian) "Правая ладонь (+запястье)" else "Right Palm (+wrist)"
+                                "right_back" -> if (isRussian) "Тыл правой руки (ногти)" else "Right Back (nails)"
+                                else -> if (isRussian) "Поместите руку сюда" else "Place hand here"
+                            }
+                            Text(
+                                text = guideTxt,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = MysticGold,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
                 
@@ -2280,7 +2665,8 @@ fun InAppCameraDialog(
 fun UploadScreen(
     viewModel: PalmistViewModel,
     onNavigateToLoading: () -> Unit,
-    onNavigateToBilling: () -> Unit
+    onNavigateToBilling: () -> Unit,
+    onNavigateToVideoScan: () -> Unit
 ) {
     val context = LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
@@ -2299,15 +2685,6 @@ fun UploadScreen(
     val rightPalmPath by viewModel.rightPalmPath.collectAsState()
     val rightBackPath by viewModel.rightBackPath.collectAsState()
 
-    val videoUri by viewModel.videoUri.collectAsState()
-
-    val videoThumbnail = remember(videoUri) {
-        if (videoUri != null) {
-            getVideoThumbnail(context, videoUri)
-        } else {
-            null
-        }
-    }
     var showInterpretationScreen by remember { mutableStateOf(false) }
 
     val isAnalyzing by viewModel.isAnalyzing.collectAsState()
@@ -2694,6 +3071,7 @@ fun UploadScreen(
                         HandSlotCard(
                             title = strings.slotLeftPalm,
                             bitmap = bitmapLeftPalm,
+                            slotName = "left_palm",
                             onTakePhoto = {
                                 activeSlot = "left_palm"
                                 val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -2731,6 +3109,7 @@ fun UploadScreen(
                         HandSlotCard(
                             title = strings.slotLeftBack,
                             bitmap = bitmapLeftBack,
+                            slotName = "left_back",
                             onTakePhoto = {
                                 activeSlot = "left_back"
                                 val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -2768,6 +3147,7 @@ fun UploadScreen(
                         HandSlotCard(
                             title = strings.slotRightPalm,
                             bitmap = bitmapRightPalm,
+                            slotName = "right_palm",
                             onTakePhoto = {
                                 activeSlot = "right_palm"
                                 val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -2805,6 +3185,7 @@ fun UploadScreen(
                         HandSlotCard(
                             title = strings.slotRightBack,
                             bitmap = bitmapRightBack,
+                            slotName = "right_back",
                             onTakePhoto = {
                                 activeSlot = "right_back"
                                 val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -2838,163 +3219,19 @@ fun UploadScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Video Slot Card
-                MysticCard {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = strings.uploadVideoSection,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = if (videoUri != null) MysticGold else Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            ),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-
-                        // Video preview window matching photo window styling
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0x1F1E1E2C))
-                                .border(2.dp, if (videoUri != null) MysticGold else MysticBronze.copy(0.3f), RoundedCornerShape(16.dp))
-                                .clickable {
-                                    val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                        context,
-                                        android.Manifest.permission.CAMERA
-                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                    if (hasCameraPermission) {
-                                        val uri = createGalleryVideoUri(context, "hand_video")
-                                        if (uri != null) {
-                                            tempVideoUri = uri
-                                            videoCaptureLauncher.launch(uri)
-                                        }
-                                    } else {
-                                        cameraPermissionLauncherForVideo.launch(android.Manifest.permission.CAMERA)
-                                    }
-                                }
-                        ) {
-                            if (videoUri != null) {
-                                if (videoThumbnail != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(videoThumbnail),
-                                        contentDescription = "Video Preview",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .background(Color.Black.copy(0.4f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = "Play",
-                                            tint = MysticGold,
-                                            modifier = Modifier.size(32.dp)
-                                        )
-                                    }
-                                } else {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.VideoFile,
-                                            contentDescription = null,
-                                            tint = MysticGold,
-                                            modifier = Modifier.size(54.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = strings.uploadPreviewVideo,
-                                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                                        )
-                                    }
-                                }
-                                
-                                IconButton(
-                                    onClick = { viewModel.videoUri.value = null },
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(8.dp)
-                                        .size(28.dp)
-                                        .background(Color.Black.copy(0.6f), CircleShape)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Clear",
-                                        tint = Color.Red,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            } else {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Videocam,
-                                        contentDescription = null,
-                                        tint = MysticBronze.copy(0.6f),
-                                        modifier = Modifier.size(54.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = if (currentLang == AppLanguage.RUS) "Тапните для записи видео" else "Tap to record video",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, fontSize = 11.sp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Load Video Button under video window
-                        MysticButton(
-                            text = if (currentLang == AppLanguage.RUS) "Загрузить видео" else "Upload video",
-                            onClick = { videoPickerLauncher.launch("video/*") },
-                            isSecondary = true,
-                            modifier = Modifier.width(220.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Caption under load video button: "До 100 Mb/60 сек."
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) "До 100 Mb/60 сек." else "Up to 100 Mb/60 sec.",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = MysticBronze.copy(0.8f),
-                                fontSize = 11.sp,
-                                letterSpacing = 0.5.sp
-                            ),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(28.dp))
 
                 // Below all, the "Next" (Далее) Button
                 MysticButton(
                     text = if (currentLang == AppLanguage.RUS) "Далее" else "Next",
                     onClick = {
-                        val hasMedia = bitmapLeftPalm != null || bitmapLeftBack != null || bitmapRightPalm != null || bitmapRightBack != null || videoUri != null
+                        val hasMedia = bitmapLeftPalm != null || bitmapLeftBack != null || bitmapRightPalm != null || bitmapRightBack != null
                         if (hasMedia) {
                             showInterpretationScreen = true
                         } else {
                             Toast.makeText(
                                 context,
-                                if (currentLang == AppLanguage.RUS) "Пожалуйста, загрузите хотя бы одно фото или видео ладони!" else "Please upload at least one hand photo or video!",
+                                if (currentLang == AppLanguage.RUS) "Пожалуйста, загрузите хотя бы одно фото ладони!" else "Please upload at least one hand photo!",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -3036,9 +3273,10 @@ fun UploadScreen(
                     label = strings.btnBriefChar,
                     priceText = strings.freeLabel,
                     onClick = {
+                        viewModel.currentAnalysisTypeState.value = "brief_char"
                         viewModel.runPalmAnalysis(
                             bitmaps = bitmaps,
-                            videoUri = videoUri?.toString(),
+                            videoUri = null,
                             analysisType = "brief_char",
                             leftPalmPath = leftPalmPath,
                             leftBackPath = leftBackPath,
@@ -3058,20 +3296,10 @@ fun UploadScreen(
                     priceText = "150 ₽",
                     onClick = {
                         viewModel.checkFeatureUnlocked("full_char") { unlocked ->
+                            viewModel.currentAnalysisTypeState.value = "full_char"
                             if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                                viewModel.runPalmAnalysis(
-                                    bitmaps = bitmaps,
-                                    videoUri = videoUri?.toString(),
-                                    analysisType = "full_char",
-                                    leftPalmPath = leftPalmPath,
-                                    leftBackPath = leftBackPath,
-                                    rightPalmPath = rightPalmPath,
-                                    rightBackPath = rightBackPath,
-                                    onCompleted = {
-                                        showInterpretationScreen = false
-                                        onNavigateToLoading()
-                                    }
-                                )
+                                showInterpretationScreen = false
+                                onNavigateToVideoScan()
                             } else {
                                 onNavigateToBilling()
                             }
@@ -3084,9 +3312,10 @@ fun UploadScreen(
                     label = strings.btnBriefPath,
                     priceText = strings.freeLabel,
                     onClick = {
+                        viewModel.currentAnalysisTypeState.value = "brief_path"
                         viewModel.runPalmAnalysis(
                             bitmaps = bitmaps,
-                            videoUri = videoUri?.toString(),
+                            videoUri = null,
                             analysisType = "brief_path",
                             leftPalmPath = leftPalmPath,
                             leftBackPath = leftBackPath,
@@ -3106,20 +3335,10 @@ fun UploadScreen(
                     priceText = "150 ₽",
                     onClick = {
                         viewModel.checkFeatureUnlocked("full_path") { unlocked ->
+                            viewModel.currentAnalysisTypeState.value = "full_path"
                             if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                                viewModel.runPalmAnalysis(
-                                    bitmaps = bitmaps,
-                                    videoUri = videoUri?.toString(),
-                                    analysisType = "full_path",
-                                    leftPalmPath = leftPalmPath,
-                                    leftBackPath = leftBackPath,
-                                    rightPalmPath = rightPalmPath,
-                                    rightBackPath = rightBackPath,
-                                    onCompleted = {
-                                        showInterpretationScreen = false
-                                        onNavigateToLoading()
-                                    }
-                                )
+                                showInterpretationScreen = false
+                                onNavigateToVideoScan()
                             } else {
                                 onNavigateToBilling()
                             }
@@ -3882,6 +4101,7 @@ fun ResultsScreen(
     val ttsGenderState by viewModel.ttsGender.collectAsState()
     val ttsVoiceIndex by viewModel.ttsVoiceIndex.collectAsState()
     val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
+    val ttsPitchState by viewModel.ttsPitch.collectAsState()
 
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
     var isPlayingTts by remember { mutableStateOf(false) }
@@ -3977,7 +4197,7 @@ fun ResultsScreen(
             2 -> 1.15f
             else -> 1.00f
         }
-        tts?.setPitch(basePitch * pitchMultiplier)
+        tts?.setPitch(basePitch * pitchMultiplier * ttsPitchState)
         
         try {
             if (selectedVoice != null) {
@@ -4084,7 +4304,82 @@ fun ResultsScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            MysticHeader(strings.resTitle)
+            val profile by viewModel.userProfile.collectAsState()
+            val userName = profile?.name?.trim()?.ifBlank { null } ?: (if (currentLang == AppLanguage.RUS) "Искатель" else "Seeker")
+            val analysisType = reading?.analysisType ?: ""
+
+            val (mainTitle, subTitleInParentheses) = remember(analysisType, userName, currentLang) {
+                when (analysisType) {
+                    "brief_char" -> {
+                        val title = if (currentLang == AppLanguage.RUS) {
+                            "Характер и Качества $userName"
+                        } else {
+                            "Character and Qualities of $userName"
+                        }
+                        val sub = if (currentLang == AppLanguage.RUS) "(краткий анализ)" else "(brief analysis)"
+                        Pair(title, sub)
+                    }
+                    "full_char" -> {
+                        val title = if (currentLang == AppLanguage.RUS) {
+                            "Характер и Качества $userName"
+                        } else {
+                            "Character and Qualities of $userName"
+                        }
+                        val sub = if (currentLang == AppLanguage.RUS) "(полный анализ)" else "(full analysis)"
+                        Pair(title, sub)
+                    }
+                    "brief_path" -> {
+                        val title = if (currentLang == AppLanguage.RUS) {
+                            "Жизненный путь $userName"
+                        } else {
+                            "Life Path of $userName"
+                        }
+                        val sub = if (currentLang == AppLanguage.RUS) "(краткий анализ)" else "(brief analysis)"
+                        Pair(title, sub)
+                    }
+                    "full_path" -> {
+                        val title = if (currentLang == AppLanguage.RUS) {
+                            "Жизненный путь $userName"
+                        } else {
+                            "Life Path of $userName"
+                        }
+                        val sub = if (currentLang == AppLanguage.RUS) "(полный анализ)" else "(full analysis)"
+                        Pair(title, sub)
+                    }
+                    else -> {
+                        Pair(strings.resTitle, "")
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = mainTitle,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                if (subTitleInParentheses.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subTitleInParentheses,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MysticBronze,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
 
             // Segmented Tab Controls
             TabRow(
@@ -4276,18 +4571,34 @@ fun ResultsScreen(
                             )
                             
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                val w = size.width
-                                val h = size.height
+                                val w = size.width // Получаем ширину области рисования в пикселях
+                                val h = size.height // Получаем высоту области рисования в пикселях
                                 
                                 withTransform({
                                     this.translate(linesOffsetX, linesOffsetY)
                                     this.scale(linesScale, linesScale, center)
                                     this.rotate(linesRotation, center)
                                 }) {
+                                    // Определяем, левая ли это ладонь или тыльная правая сторона (большой палец справа)
+                                    val isLeftPalm = reading?.leftPalmPath != null
+                                    val isRightBack = reading?.rightBackPath != null
+                                    val thumbOnRight = isLeftPalm || isRightBack
+
+                                    // Вспомогательные функции для расчета пропорциональных координат (0.0 - 1.0) в пиксели
+                                    fun getX(f: Float): Float {
+                                        // Если большой палец должен быть справа, рисуем как есть, иначе зеркально отражаем по горизонтали
+                                        return if (thumbOnRight) w * f else w * (1.0f - f)
+                                    }
+                                    fun getY(f: Float): Float {
+                                        // Возвращаем координату Y, умноженную на общую высоту холста
+                                        return h * f
+                                    }
+
+                                    // --- ЛИНИЯ СЕРДЦА ---
                                     val isHeartActive = activeLineName?.let { it.contains("Серд") || it.contains("Heart") } ?: false
                                     val heartPath = Path().apply {
-                                        moveTo(w * 0.3f, h * 0.48f)
-                                        quadraticTo(w * 0.5f, h * 0.44f, w * 0.75f, h * 0.42f)
+                                        moveTo(getX(0.23f), getY(0.49f)) // Начало под мизинцем на ребре ладони
+                                        quadraticTo(getX(0.42f), getY(0.46f), getX(0.47f), getY(0.41f)) // Плавный изгиб к верхним пальцам
                                     }
                                     drawPath(
                                         path = heartPath,
@@ -4298,10 +4609,39 @@ fun ResultsScreen(
                                         )
                                     )
                                     
+                                    // Левое ответвление вилки сердца
+                                    val heartFork1 = Path().apply {
+                                        moveTo(getX(0.47f), getY(0.41f))
+                                        quadraticTo(getX(0.49f), getY(0.39f), getX(0.52f), getY(0.38f))
+                                    }
+                                    drawPath(
+                                        path = heartFork1,
+                                        color = if (isHeartActive) LineHeartColor.copy(alpha = 0.85f) else LineHeartColor.copy(alpha = 0.15f),
+                                        style = Stroke(
+                                            width = (if (isHeartActive) 10.dp else 4.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
+                                    )
+
+                                    // Правое ответвление вилки сердца
+                                    val heartFork2 = Path().apply {
+                                        moveTo(getX(0.47f), getY(0.41f))
+                                        quadraticTo(getX(0.45f), getY(0.42f), getX(0.43f), getY(0.43f))
+                                    }
+                                    drawPath(
+                                        path = heartFork2,
+                                        color = if (isHeartActive) LineHeartColor.copy(alpha = 0.85f) else LineHeartColor.copy(alpha = 0.15f),
+                                        style = Stroke(
+                                            width = (if (isHeartActive) 10.dp else 4.dp).toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
+                                    )
+                                    
+                                    // --- ЛИНИЯ ГОЛОВЫ / УМА ---
                                     val isHeadActive = activeLineName?.let { it.contains("Голо") || it.contains("Ум") || it.contains("Head") } ?: false
                                     val headPath = Path().apply {
-                                        moveTo(w * 0.28f, h * 0.52f)
-                                        quadraticTo(w * 0.5f, h * 0.54f, w * 0.72f, h * 0.58f)
+                                        moveTo(getX(0.58f), getY(0.46f)) // Исток у ребра большого пальца
+                                        quadraticTo(getX(0.44f), getY(0.54f), getX(0.28f), getY(0.62f)) // Диагональный спуск к холму Луны
                                     }
                                     drawPath(
                                         path = headPath,
@@ -4312,10 +4652,11 @@ fun ResultsScreen(
                                         )
                                     )
                                     
+                                    // --- ЛИНИЯ ЖИЗНИ ---
                                     val isLifeActive = activeLineName?.let { it.contains("Жизн") || it.contains("Life") } ?: false
                                     val lifePath = Path().apply {
-                                        moveTo(w * 0.28f, h * 0.52f)
-                                        quadraticTo(w * 0.35f, h * 0.65f, w * 0.44f, h * 0.82f)
+                                        moveTo(getX(0.58f), getY(0.46f)) // Начало между большим и указательным пальцами
+                                        quadraticTo(getX(0.50f), getY(0.64f), getX(0.48f), getY(0.90f)) // Полукруглое огибание холма Венеры к запястью
                                     }
                                     drawPath(
                                         path = lifePath,
@@ -4326,10 +4667,11 @@ fun ResultsScreen(
                                         )
                                     )
                                     
+                                    // --- ЛИНИЯ СУДЬБЫ ---
                                     val isDestinyActive = activeLineName?.let { it.contains("Суд") || it.contains("Dest") } ?: false
                                     val destinyPath = Path().apply {
-                                        moveTo(w * 0.52f, h * 0.8f)
-                                        quadraticTo(w * 0.51f, h * 0.58f, w * 0.5f, h * 0.38f)
+                                        moveTo(getX(0.48f), getY(0.91f)) // Исток от основания запястья
+                                        quadraticTo(getX(0.47f), getY(0.65f), getX(0.44f), getY(0.40f)) // Прямой вертикальный подъем к холму Сатурна
                                     }
                                     drawPath(
                                         path = destinyPath,
@@ -5419,6 +5761,419 @@ fun CompatibilityScreen(
                 )
             }
             Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+
+// --- SCREEN 7.5: USER CABINET VIEW ---
+
+@Composable
+fun UserCabinetScreen(
+    viewModel: PalmistViewModel,
+    onNavigateToResult: () -> Unit
+) {
+    val context = LocalContext.current
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val strings = LocalizedStrings.get(currentLang)
+
+    val profile by viewModel.userProfile.collectAsState()
+    val billingStateVal by viewModel.billingState.collectAsState()
+    val readings by viewModel.allReadings.collectAsState()
+    val payments by viewModel.allPayments.collectAsState()
+
+    val count = billingStateVal?.remainingAnalyses ?: 0
+    val userName = profile?.name?.trim()?.ifBlank { null } ?: (if (currentLang == AppLanguage.RUS) "Искатель" else "Seeker")
+
+    var selectedTab by remember { mutableStateOf(0) } // 0 - История, 1 - Оплата, 2 - Поделиться
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MysticDarkBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Карточка профиля пользователя
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)),
+                border = BorderStroke(1.dp, MysticGold.copy(0.4f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = "User Avatar",
+                        tint = MysticGold,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = userName,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Stars,
+                                contentDescription = "Analyses Count",
+                                tint = MysticBronze,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) 
+                                    "Доступно анализов: $count" 
+                                else "Analyses available: $count",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MysticGold,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Переключатель вкладок (Кастомный TabRow в мистическом стиле)
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Transparent,
+                contentColor = MysticGold,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = MysticGold,
+                        height = 2.dp
+                    )
+                },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { 
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "История" else "History",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ) 
+                    },
+                    selectedContentColor = MysticGold,
+                    unselectedContentColor = Color.Gray
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { 
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Оплаты" else "Payments",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ) 
+                    },
+                    selectedContentColor = MysticGold,
+                    unselectedContentColor = Color.Gray
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { 
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Поделиться" else "Share",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ) 
+                    },
+                    selectedContentColor = MysticGold,
+                    unselectedContentColor = Color.Gray
+                )
+            }
+
+            // Содержимое вкладок
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                when (selectedTab) {
+                    0 -> {
+                        // Вкладка: История анализов
+                        if (readings.isEmpty()) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Text(
+                                    text = strings.histNoRecords,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        } else {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(readings) { record ->
+                                        ReadingHistoryItem(
+                                            record = record,
+                                            currentLang = currentLang,
+                                            onOpen = {
+                                                viewModel.currentReading.value = record
+                                                onNavigateToResult()
+                                            },
+                                            onDelete = {
+                                                viewModel.deleteReading(record.id)
+                                            }
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                MysticButton(
+                                    text = strings.histClearHistory,
+                                    onClick = { viewModel.clearHistory() },
+                                    isSecondary = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                    1 -> {
+                        // Вкладка: История оплаты
+                        if (payments.isEmpty()) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CreditCard,
+                                        contentDescription = null,
+                                        tint = Color.Gray,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS)
+                                            "История платежей пуста.\nПоддержите проект в разделе оплаты!"
+                                        else "Payment history is empty.\nSupport us in the billing section!",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(payments) { payment ->
+                                        PaymentHistoryItem(payment = payment, currentLang = currentLang)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                MysticButton(
+                                    text = if (currentLang == AppLanguage.RUS) "Очистить историю оплат" else "Clear payment history",
+                                    onClick = { viewModel.clearPaymentHistory() },
+                                    isSecondary = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                    2 -> {
+                        // Вкладка: Поделиться приложением
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CardGiftcard,
+                                contentDescription = "Bonus icon",
+                                tint = MysticGold,
+                                modifier = Modifier.size(72.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Подарите друзьям Хироманта!" else "Gift Palmist to your friends!",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    color = MysticGold,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Serif
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS)
+                                    "Поделитесь ссылкой на приложение. После успешной установки другом вы получите +3 дополнительных полных анализа судьбы!"
+                                else "Share the app. You will receive +3 free full palm analyses once your friend successfully installs and launches the application!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(modifier = Modifier.height(30.dp))
+
+                            // Кнопка: Поделиться (Отправить ссылку)
+                            MysticButton(
+                                text = if (currentLang == AppLanguage.RUS) "ОТПРАВИТЬ ССЫЛКУ / APK" else "SHARE APP / APK",
+                                onClick = {
+                                    try {
+                                        val shareText = if (currentLang == AppLanguage.RUS) {
+                                            "Привет! Сканируй ладонь и раскрой свои тайны в приложении 'Хиромант'! Вот ссылка на установку APK: https://hiromant-app.ru/download/palmist.apk"
+                                        } else {
+                                            "Hi! Scan your palm and uncover your destiny with the Palmist app! Install APK from here: https://hiromant-app.ru/download/palmist.apk"
+                                        }
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(shareIntent, "Поделиться"))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Кнопка: Симуляция установки другом (ДЛЯ ТЕСТИРОВАНИЯ)
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0x33D4AF37)),
+                                border = BorderStroke(1.2.dp, MysticGold),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS) "РЕЖИМ ПРОВЕРКИ / ТЕСТИРОВАНИЯ" else "TESTING MODE",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MysticGold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS)
+                                            "Нажмите кнопку ниже, чтобы сымитировать, будто ваш друг скачал и успешно установил приложение по вашей ссылке."
+                                        else "Click the button below to simulate that your friend successfully downloaded and installed the app.",
+                                        fontSize = 12.sp,
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Button(
+                                        onClick = {
+                                            viewModel.rewardUserForSharing()
+                                            Toast.makeText(
+                                                context,
+                                                if (currentLang == AppLanguage.RUS)
+                                                    "Ура! Друг установил приложение. Начислено +3 анализа в БД!"
+                                                else "Success! Friend installed the app. +3 analyses awarded!",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                                    ) {
+                                        Text(
+                                            text = if (currentLang == AppLanguage.RUS) "Сымитировать установку" else "Simulate Installation",
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentHistoryItem(
+    payment: com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity,
+    currentLang: AppLanguage
+) {
+    val df = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
+    val formattedDate = remember(payment.timestamp) { df.format(Date(payment.timestamp)) }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x33141420)),
+        border = BorderStroke(1.dp, MysticBronze.copy(0.4f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.VerifiedUser,
+                contentDescription = null,
+                tint = MysticGold,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = payment.readingType,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$formattedDate • ${payment.paymentSystem}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${payment.amountRub} ₽",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold
+                )
+            )
         }
     }
 }
@@ -6557,6 +7312,10 @@ fun BillingScreen(
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
+    val scope = rememberCoroutineScope()
+    var isCheckingPayment by remember { mutableStateOf(false) }
+    var confirmAttempts by remember { mutableStateOf(0) }
+
     var walletNum by remember { mutableStateOf("410013630971157") } // User's custom wallet number
     var paymentAmount by remember { mutableStateOf("250") } // Default amount in rubles
     var chosenMethod by remember { mutableStateOf<String?>(null) } // "yookassa", "google"
@@ -6582,14 +7341,41 @@ fun BillingScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        showConfirmationDialog = false
-                        viewModel.simulateBuySubscription()
-                        Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
-                        onNavigateBack()
+                        scope.launch {
+                            isCheckingPayment = true
+                            delay(1500)
+                            isCheckingPayment = false
+                            if (confirmAttempts == 0) {
+                                confirmAttempts++
+                                Toast.makeText(
+                                    context,
+                                    if (currentLang == AppLanguage.RUS) "Оплата не подтверждена... Попробуйте ещё раз!" else "Payment not confirmed. Try again!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                showConfirmationDialog = false
+                                viewModel.simulateBuySubscription()
+                                Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
+                                onNavigateBack()
+                            }
+                        }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                    enabled = !isCheckingPayment
                 ) {
-                    Text("Подтвердить", color = Color.Black, fontWeight = FontWeight.Bold)
+                    if (isCheckingPayment) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.Black,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             },
             dismissButton = {
@@ -6810,6 +7596,7 @@ fun YookassaPaymentForm(
     val context = LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
+    val scope = rememberCoroutineScope()
 
     var walletNum by remember { mutableStateOf("410013630971157") }
     var selectedMethod by remember { mutableStateOf("yoomoney") } // "yoomoney", "ozon", "wb"
@@ -6818,6 +7605,8 @@ fun YookassaPaymentForm(
     var isCustomSelected by remember { mutableStateOf(false) }
 
     var showConfirmationDialog by remember { mutableStateOf(false) }
+    var isCheckingPayment by remember { mutableStateOf(false) }
+    var confirmAttempts by remember { mutableStateOf(0) }
 
     val actualAmount = if (isCustomSelected) customAmount else paymentAmount
 
@@ -6865,23 +7654,46 @@ fun YookassaPaymentForm(
             confirmButton = {
                 Button(
                     onClick = {
-                        showConfirmationDialog = false
-                        viewModel.unlockPaidReading(readingId) {
-                            Toast.makeText(
-                                context,
-                                if (currentLang == AppLanguage.RUS) "Оплата успешно подтверждена! Анализ разблокирован." else "Payment confirmed! Reading unlocked.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            onSuccess()
+                        scope.launch {
+                            isCheckingPayment = true
+                            delay(1500)
+                            isCheckingPayment = false
+                            if (confirmAttempts == 0) {
+                                confirmAttempts++
+                                Toast.makeText(
+                                    context,
+                                    if (currentLang == AppLanguage.RUS) "Оплата не подтверждена... Попробуйте ещё раз!" else "Payment not confirmed. Try again!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                showConfirmationDialog = false
+                                viewModel.unlockPaidReading(readingId) {
+                                    Toast.makeText(
+                                        context,
+                                        if (currentLang == AppLanguage.RUS) "Оплата успешно подтверждена! Анализ разблокирован." else "Payment confirmed! Reading unlocked.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    onSuccess()
+                                }
+                            }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                    enabled = !isCheckingPayment
                 ) {
-                    Text(
-                        text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
-                        color = Color.Black,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isCheckingPayment) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.Black,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             },
             dismissButton = {
@@ -7176,6 +7988,7 @@ fun ReadingConfigScreen(
     val voiceGender by viewModel.ttsGender.collectAsState()
     val voiceIndex by viewModel.ttsVoiceIndex.collectAsState()
     val speechRate by viewModel.ttsSpeechRate.collectAsState()
+    val speechPitch by viewModel.ttsPitch.collectAsState()
 
     var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
     var isSpeakingTest by remember { mutableStateOf(false) }
@@ -7457,6 +8270,46 @@ fun ReadingConfigScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Speech Pitch (Tone) Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
+                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Тон голоса" else "Voice Pitch",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = String.format("%.1fx", speechPitch),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MysticGold,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Slider(
+                        value = speechPitch,
+                        onValueChange = { viewModel.changeTtsPitch(it) },
+                        valueRange = 0.5f..2.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MysticGold,
+                            activeTrackColor = MysticGold,
+                            inactiveTrackColor = MysticBronze.copy(0.3f)
+                        )
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Voice Test Button
@@ -7531,7 +8384,7 @@ fun ReadingConfigScreen(
                             2 -> 1.15f
                             else -> 1.00f
                         }
-                        ttsInstance?.setPitch(basePitch * pitchMultiplier)
+                        ttsInstance?.setPitch(basePitch * pitchMultiplier * speechPitch)
 
                         val phrase = if (currentLang == AppLanguage.RUS) {
                             "Здравствуйте! Я ваш персональный хиромант. Озвучивание настроено и готово к работе."
@@ -7546,6 +8399,327 @@ fun ReadingConfigScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun PostPaymentVideoScreen(
+    viewModel: PalmistViewModel,
+    onNavigateToLoading: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val billingState by viewModel.billingState.collectAsState()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+
+    var leftVideoUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var rightVideoUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var activeSlot by remember { mutableStateOf<String?>(null) } // "left" or "right"
+    var tempVideoUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+    val videoCaptureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo()
+    ) { success ->
+        if (success && activeSlot != null) {
+            if (activeSlot == "left") {
+                leftVideoUri = tempVideoUri
+            } else if (activeSlot == "right") {
+                rightVideoUri = tempVideoUri
+            }
+        }
+    }
+
+    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null && activeSlot != null) {
+            if (activeSlot == "left") {
+                leftVideoUri = uri
+            } else if (activeSlot == "right") {
+                rightVideoUri = uri
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = createGalleryVideoUri(context, "hand_${activeSlot}_video")
+            if (uri != null) {
+                tempVideoUri = uri
+                videoCaptureLauncher.launch(uri)
+            }
+        } else {
+            val msg = if (currentLang == AppLanguage.RUS) 
+                "Требуется разрешение на использование камеры" 
+            else "Camera permission required"
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MysticGold)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (currentLang == AppLanguage.RUS) "Запись видео ладоней" else "Record Hand Videos",
+                    style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        containerColor = MysticDarkBackground
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Beautiful Instruction Banner Card
+            MysticCard {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Videocam,
+                        contentDescription = null,
+                        tint = MysticGold,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) 
+                            "Для точного полного анализа необходимо загрузить или записать два видео по 1 минуте (для левой и правой руки)."
+                        else 
+                            "For an accurate full analysis, please record or upload two 1-minute videos (one for each hand).",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, lineHeight = 20.sp),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS)
+                            "Плавно ведите камерой по всей ладони, показывая все линии крупным планом."
+                        else
+                            "Slowly guide the camera across the palm, showing all lines close up.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = MysticBronze, lineHeight = 16.sp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // LEFT PALM VIDEO CARD
+            VideoSlotCard(
+                title = if (currentLang == AppLanguage.RUS) "Видео ЛЕВОЙ руки" else "LEFT Hand Video",
+                videoUri = leftVideoUri,
+                onRecord = {
+                    activeSlot = "left"
+                    val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.CAMERA
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (hasCameraPermission) {
+                        val uri = createGalleryVideoUri(context, "hand_left_video")
+                        if (uri != null) {
+                            tempVideoUri = uri
+                            videoCaptureLauncher.launch(uri)
+                        }
+                    } else {
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    }
+                },
+                onPick = {
+                    activeSlot = "left"
+                    videoPickerLauncher.launch("video/*")
+                },
+                onClear = { leftVideoUri = null },
+                currentLang = currentLang
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // RIGHT PALM VIDEO CARD
+            VideoSlotCard(
+                title = if (currentLang == AppLanguage.RUS) "Видео ПРАВОЙ руки" else "RIGHT Hand Video",
+                videoUri = rightVideoUri,
+                onRecord = {
+                    activeSlot = "right"
+                    val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.CAMERA
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (hasCameraPermission) {
+                        val uri = createGalleryVideoUri(context, "hand_right_video")
+                        if (uri != null) {
+                            tempVideoUri = uri
+                            videoCaptureLauncher.launch(uri)
+                        }
+                    } else {
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    }
+                },
+                onPick = {
+                    activeSlot = "right"
+                    videoPickerLauncher.launch("video/*")
+                },
+                onClear = { rightVideoUri = null },
+                currentLang = currentLang
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // "Run Full Analysis" Button
+            val bothReady = leftVideoUri != null && rightVideoUri != null
+            MysticButton(
+                text = if (currentLang == AppLanguage.RUS) "Запустить полный анализ" else "Launch Full Analysis",
+                onClick = {
+                    if (bothReady) {
+                        val leftBmp = viewModel.bitmapLeftPalm.value
+                        val leftBackBmp = viewModel.bitmapLeftBack.value
+                        val rightBmp = viewModel.bitmapRightPalm.value
+                        val rightBackBmp = viewModel.bitmapRightBack.value
+                        val bitmaps = listOfNotNull(leftBmp, leftBackBmp, rightBmp, rightBackBmp)
+
+                        viewModel.runPalmAnalysis(
+                            bitmaps = bitmaps,
+                            videoUri = leftVideoUri?.toString(),
+                            analysisType = viewModel.currentAnalysisTypeState.value,
+                            leftPalmPath = viewModel.leftPalmPath.value,
+                            leftBackPath = viewModel.leftBackPath.value,
+                            rightPalmPath = viewModel.rightPalmPath.value,
+                            rightBackPath = viewModel.rightBackPath.value,
+                            onCompleted = onNavigateToLoading
+                        )
+                    } else {
+                        val msg = if (currentLang == AppLanguage.RUS)
+                            "Пожалуйста, запишите или загрузите видео для обеих рук!"
+                        else
+                            "Please record or upload videos for both hands!"
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = bothReady
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+fun VideoSlotCard(
+    title: String,
+    videoUri: android.net.Uri?,
+    onRecord: () -> Unit,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+    currentLang: AppLanguage
+) {
+    MysticCard {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = if (videoUri != null) MysticGold else Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x1F1E1E2C))
+                    .border(2.dp, if (videoUri != null) MysticGold else MysticBronze.copy(0.3f), RoundedCornerShape(16.dp))
+                    .clickable { onRecord() }
+            ) {
+                if (videoUri != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VideoFile,
+                            contentDescription = null,
+                            tint = MysticGold,
+                            modifier = Modifier.size(54.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Видео успешно добавлено" else "Video added successfully",
+                            style = MaterialTheme.typography.labelMedium.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                        )
+                    }
+                    
+                    IconButton(
+                        onClick = onClear,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(28.dp)
+                            .background(Color.Black.copy(0.6f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Clear",
+                            tint = Color.Red,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Videocam,
+                            contentDescription = null,
+                            tint = MysticBronze.copy(0.6f),
+                            modifier = Modifier.size(54.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Записать видео (1 мин)" else "Record Video (1 min)",
+                            style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, fontSize = 11.sp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            MysticButton(
+                text = if (currentLang == AppLanguage.RUS) "Загрузить из галереи" else "Upload from gallery",
+                onClick = onPick,
+                isSecondary = true,
+                modifier = Modifier.width(220.dp)
             )
         }
     }
