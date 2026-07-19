@@ -7733,15 +7733,13 @@ fun YookassaPaymentForm(
 
     var walletNum by remember { mutableStateOf("410013630971157") }
     var selectedMethod by remember { mutableStateOf("yoomoney") } // "yoomoney", "ozon", "wb"
-    var paymentAmount by remember { mutableStateOf("150") } // Default amount 150 RUB
-    var customAmount by remember { mutableStateOf("") }
-    var isCustomSelected by remember { mutableStateOf(false) }
+    var paymentAmount by remember { mutableStateOf("250") } // Default amount 250 RUB
 
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var isCheckingPayment by remember { mutableStateOf(false) }
     var confirmAttempts by remember { mutableStateOf(0) }
 
-    val actualAmount = if (isCustomSelected) customAmount else paymentAmount
+    val actualAmount = paymentAmount
 
     if (showConfirmationDialog) {
         val dialogTitle = when (selectedMethod) {
@@ -7985,7 +7983,7 @@ fun YookassaPaymentForm(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 listOf("250", "500", "1000").forEach { valAmount ->
-                    val isSelected = !isCustomSelected && paymentAmount == valAmount
+                    val isSelected = paymentAmount == valAmount
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -7999,7 +7997,6 @@ fun YookassaPaymentForm(
                                 RoundedCornerShape(8.dp)
                             )
                             .clickable {
-                                isCustomSelected = false // Сбрасываем флаг произвольного ввода
                                 paymentAmount = valAmount // Задаем выбранную сумму
                             }
                             .padding(vertical = 12.dp),
@@ -8013,43 +8010,36 @@ fun YookassaPaymentForm(
                         )
                     }
                 }
-                
-                // Кнопка для произвольного ввода (Другая сумма)
-                val isCustomActive = isCustomSelected
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            if (isCustomActive) MysticGold else Color.White.copy(0.05f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .border(
-                            1.dp,
-                            if (isCustomActive) MysticGold else MysticBronze.copy(0.3f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .clickable { isCustomSelected = true } // Активируем произвольный ввод
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (currentLang == AppLanguage.RUS) "Другая" else "Custom", // Текст кнопки
-                        color = if (isCustomActive) Color.Black else Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
             }
             
-            if (isCustomSelected) {
-                Spacer(modifier = Modifier.height(12.dp))
-                MysticTextField(
-                    value = customAmount,
-                    onValueChange = { customAmount = it },
-                    label = if (currentLang == AppLanguage.RUS) "Сумма в рублях" else "Amount in RUB",
-                    placeholder = "Например: 1000"
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Надпись "Поддержать проект" под кнопками сумм
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "Поддержать проект"
+                } else {
+                    "Support the Project"
+                },
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MysticGold,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Поле ввода с текстом "Введите любую сумму..." внутри
+            MysticTextField(
+                value = paymentAmount,
+                onValueChange = { newVal ->
+                    val digits = newVal.filter { it.isDigit() }
+                    paymentAmount = digits
+                },
+                label = if (currentLang == AppLanguage.RUS) "Сумма поддержки" else "Support Amount",
+                placeholder = if (currentLang == AppLanguage.RUS) "Введите любую сумму..." else "Enter any amount...",
+                modifier = Modifier.fillMaxWidth()
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             
