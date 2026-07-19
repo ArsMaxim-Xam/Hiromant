@@ -103,6 +103,9 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     // Active navigation tab state
     val activeTab = MutableStateFlow("upload")
 
+    // Dynamic billing amount preselection state
+    val paymentAmountToPreselect = MutableStateFlow("250")
+
     init {
         // Load initially selected language
         val code = repository.getSelectedLanguage()
@@ -315,6 +318,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         rightBackPath: String? = null,
         onCompleted: () -> Unit
     ) {
+        currentCompatibilityReading.value = null
         isAnalyzing.value = true
         analysisProgress.value = 0
         
@@ -384,6 +388,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         partnerName: String,
         onCompleted: () -> Unit
     ) {
+        currentReading.value = null
         isAnalyzing.value = true
         analysisProgress.value = 0
         
@@ -456,6 +461,51 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 repository.insertPayment(payment)
             }
             onUnlocked()
+        }
+    }
+
+    fun addSupportPayment(amountRub: Int, paymentSystem: String) {
+        viewModelScope.launch {
+            try {
+                val currentRead = currentReading.value ?: currentCompatibilityReading.value
+                val profile = repository.getUserProfileSync()
+                
+                val name = currentRead?.name ?: profile?.name ?: "Искатель"
+                val age = currentRead?.age ?: profile?.age ?: 25
+                val lp = currentRead?.leftPalmPath
+                val lb = currentRead?.leftBackPath
+                val rp = currentRead?.rightPalmPath
+                val rb = currentRead?.rightBackPath
+                
+                val granted = amountRub / 100
+                
+                val currentBilling = repository.getBillingStateSync()
+                val currentRemaining = currentBilling?.remainingAnalyses ?: 0
+                val newRemaining = currentRemaining + granted
+                
+                val supportPayment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                    amountRub = amountRub,
+                    paymentSystem = paymentSystem,
+                    status = "Успешно",
+                    readingType = "Поддержка проекта (+$granted анализов)",
+                    userName = name,
+                    userAge = age,
+                    leftPalmPath = lp,
+                    leftBackPath = lb,
+                    rightPalmPath = rp,
+                    rightBackPath = rb,
+                    grantedAnalyses = granted,
+                    remainingAnalysesAfterPayment = newRemaining
+                )
+                
+                repository.insertPayment(supportPayment)
+                
+                if (granted > 0) {
+                    repository.addAnalyses(granted)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

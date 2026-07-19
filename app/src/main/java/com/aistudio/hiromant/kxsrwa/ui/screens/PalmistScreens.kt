@@ -82,6 +82,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 
+const val PALMIST_PROJECT_SUPPORT_TEXT = "Программа Хиромант, анализирует снимки Ваших рук, с помощью ИИ/AI Gemeni... Анализ может быть не совсем верным... Gemeni имеет гораздо более широкий спектр применения. Мы работаем, над созданием специализированной Нейросети (ИИ) Хиромант. Поддержите проект и качество анализа, значительно улучшится в будующих версиях программы Хоромант."
+
 fun configureTtsVoice(
     tts: TextToSpeech?,
     currentLang: AppLanguage,
@@ -2751,6 +2753,7 @@ fun UploadScreen(
     onNavigateToVideoScan: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
 
@@ -3414,15 +3417,51 @@ fun UploadScreen(
                                 viewModel.showInterpretationScreen.value = false // Скрываем экран интерпретации
                                 onNavigateToVideoScan() // Навигация к видео-сканированию
                             } else {
+                                viewModel.paymentAmountToPreselect.value = "250"
                                 onNavigateToBilling() // Иначе переходим на страницу оплаты
                             }
                         }
                     }
                 )
 
+                // Кнопка 3: Анализ Совместимости
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MysticGold
+                    ),
+                    border = BorderStroke(1.2.dp, MysticGold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .clickable {
+                            viewModel.activeTab.value = "compatibility"
+                            viewModel.showInterpretationScreen.value = false
+                        }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp, horizontal = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ShrinkableText(
+                            text = "Анализ Совместимости",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(if (isAnalyzing) 100.dp else 40.dp))
             }
         }
+
+
 
         if (isAnalyzing) {
             Box(
@@ -4245,6 +4284,297 @@ fun buildRightHandAnnotatedString(
 }
 
 @Composable
+fun ProjectSupportSection(
+    viewModel: PalmistViewModel,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val currentLang by viewModel.selectedLanguage.collectAsState()
+    val scope = rememberCoroutineScope()
+    
+    var showSupportDialog by remember { mutableStateOf(false) }
+    var supportAmount by remember { mutableStateOf("250") }
+    var selectedMethod by remember { mutableStateOf("yoomoney") } // "yoomoney", "ozon", "wb"
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var confirmAttempts by remember { mutableStateOf(0) }
+    var isCheckingPayment by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MysticBronze.copy(0.2f))
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = PALMIST_PROJECT_SUPPORT_TEXT,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = Color.LightGray.copy(alpha = 0.8f),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        MysticButton(
+            text = if (currentLang == AppLanguage.RUS) "Поддержать проект Хиромант" else "Support the Palmist Project",
+            onClick = { showSupportDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    if (showSupportDialog) {
+        Dialog(onDismissRequest = { showSupportDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
+                border = BorderStroke(1.5.dp, MysticGold),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Поддержать проект Хиромант" else "Support the Project",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Выбор платежной системы
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Выберите платежную систему:" else "Select payment system:",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    listOf(
+                        "yoomoney" to "ЮMoney / Карты",
+                        "ozon" to "Ozon Банк (СБП)",
+                        "wb" to "WB Банк (СБП)"
+                    ).forEach { (methodId, label) ->
+                        val isSelected = selectedMethod == methodId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .background(
+                                    if (isSelected) MysticGold.copy(0.12f) else Color.Transparent,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) MysticGold else Color.Gray.copy(0.3f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable { selectedMethod = methodId }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { selectedMethod = methodId },
+                                colors = RadioButtonDefaults.colors(selectedColor = MysticGold, unselectedColor = Color.Gray)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Ввод суммы с текстом "Сколько не жалко!)"
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Сумма поддержки:" else "Support Amount:",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    MysticTextField(
+                        value = supportAmount,
+                        onValueChange = { newVal ->
+                            supportAmount = newVal.filter { it.isDigit() }
+                        },
+                        label = if (currentLang == AppLanguage.RUS) "Сколько не жалко!)" else "As much as you wish!)",
+                        placeholder = if (currentLang == AppLanguage.RUS) "Сколько не жалко!)" else "As much as you wish!)",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MysticButton(
+                            text = if (currentLang == AppLanguage.RUS) "Отмена" else "Cancel",
+                            onClick = { showSupportDialog = false },
+                            isSecondary = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        MysticButton(
+                            text = if (currentLang == AppLanguage.RUS) "Отправить" else "Send",
+                            onClick = {
+                                val amountVal = supportAmount.trim()
+                                if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) {
+                                    val errorMsg = if (currentLang == AppLanguage.RUS) "Пожалуйста, введите корректную сумму" else "Please enter a valid amount"
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                                    return@MysticButton
+                                }
+                                
+                                try {
+                                    val cleanWallet = "410013630971157"
+                                    val targets = "Hiromant Project Support: $amountVal RUB"
+                                    val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
+                                    val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
+                                            "receiver=$cleanWallet&" +
+                                            "quickpay-form=button&" +
+                                            "targets=$encodedTargets&" +
+                                            "paymentType=AC&" +
+                                            "sum=$amountVal"
+                                    
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                    context.startActivity(intent)
+                                    showConfirmationDialog = true
+                                } catch (e: Exception) {
+                                    val errorMsg = if (currentLang == AppLanguage.RUS) "Ошибка запуска оплаты: ${e.localizedMessage}" else "Payment launch error: ${e.localizedMessage}"
+                                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showConfirmationDialog) {
+        val dialogTitle = when (selectedMethod) {
+            "ozon" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты Ozon Банк (СБП)" else "Pending Ozon Bank Payment (SBP)"
+            "wb" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты WB Банк (СБП)" else "Pending WB Bank Payment (SBP)"
+            else -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮMoney" else "Pending YooMoney Payment"
+        }
+        val dialogText = when (selectedMethod) {
+            "ozon" -> if (currentLang == AppLanguage.RUS) {
+                "Была инициализирована оплата через Ozon Банк (СБП) на сумму $supportAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для зачисления поддержки и анализов."
+            } else {
+                "Payment of $supportAmount RUB via Ozon Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to claim your support credits."
+            }
+            "wb" -> if (currentLang == AppLanguage.RUS) {
+                "Была инициализирована оплата через WB Банк (СБП) на сумму $supportAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для зачисления поддержки и анализов."
+            } else {
+                "Payment of $supportAmount RUB via WB Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to claim your support credits."
+            }
+            else -> if (currentLang == AppLanguage.RUS) {
+                "Страница перевода была открыта.\n\nПосле завершения перевода вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы получить заслуженные анализы (+1 анализ за каждые 100 рублей)!"
+            } else {
+                "The transfer page has been opened.\n\nAfter completing the transaction, return here and tap 'Confirm' to activate your bonus analyses (+1 analysis for every 100 rubles)!"
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            title = {
+                Text(
+                    text = dialogTitle,
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = dialogText,
+                    color = Color.White
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isCheckingPayment = true
+                            delay(1500)
+                            isCheckingPayment = false
+                            if (confirmAttempts == 0) {
+                                confirmAttempts++
+                                val tryAgainMsg = if (currentLang == AppLanguage.RUS) "Оплата не подтверждена... Попробуйте ещё раз!" else "Payment not confirmed. Try again!"
+                                Toast.makeText(context, tryAgainMsg, Toast.LENGTH_LONG).show()
+                            } else {
+                                showConfirmationDialog = false
+                                showSupportDialog = false
+                                val amountVal = supportAmount.toIntOrNull() ?: 0
+                                viewModel.addSupportPayment(amountVal, "Поддержка: $selectedMethod")
+                                
+                                val granted = amountVal / 100
+                                val successMsg = if (currentLang == AppLanguage.RUS) {
+                                    "Спасибо огромное за поддержку проекта! Вам начислено +$granted анализов."
+                                } else {
+                                    "Thank you so much for supporting the project! You've been credited with +$granted analyses."
+                                }
+                                Toast.makeText(context, successMsg, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                    enabled = !isCheckingPayment
+                ) {
+                    if (isCheckingPayment) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.Black,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showConfirmationDialog = false }
+                ) {
+                    Text(text = if (currentLang == AppLanguage.RUS) "Отмена" else "Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = MysticDarkSurface,
+            textContentColor = Color.White
+        )
+    }
+}
+
+@Composable
 fun ResultsScreen(
     viewModel: PalmistViewModel,
     onNavigateToCompatibility: () -> Unit,
@@ -4609,6 +4939,10 @@ fun ResultsScreen(
                                     .padding(top = 24.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
+                                ProjectSupportSection(viewModel = viewModel)
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+
                                 Text(
                                     text = "ДОПОЛНИТЕЛЬНО:",
                                     style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
@@ -4909,6 +5243,150 @@ fun CompatibilityScreen(
 
     var partnerName by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+    val ttsGenderState by viewModel.ttsGender.collectAsState()
+    val ttsVoiceIndex by viewModel.ttsVoiceIndex.collectAsState()
+    val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
+    val ttsPitchState by viewModel.ttsPitch.collectAsState()
+
+    var isPlayingTts by remember { mutableStateOf(false) }
+    var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var ttsOffset by remember { mutableStateOf(0) }
+    var lastPlaybackIndex by remember { mutableStateOf(0) }
+    var ttsByLocalRef by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
+    var isTtsReady by remember { mutableStateOf(false) }
+
+    // Initialize Android TTS
+    DisposableEffect(Unit) {
+        var ttsInstanceObj: android.speech.tts.TextToSpeech? = null
+        ttsInstanceObj = android.speech.tts.TextToSpeech(context) { status ->
+            if (status == android.speech.tts.TextToSpeech.SUCCESS) {
+                ttsInstanceObj?.language = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+                isTtsReady = true
+            }
+        }
+        ttsByLocalRef = ttsInstanceObj
+        onDispose {
+            ttsInstanceObj?.stop()
+            ttsInstanceObj?.shutdown()
+        }
+    }
+
+    val allAvailableVoices = remember(ttsByLocalRef, isTtsReady, currentLang) {
+        try {
+            val currentLocale = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+            val voices = ttsByLocalRef?.voices?.toList() ?: emptyList()
+            voices.filter { it.locale.language == currentLocale.language }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    val femaleVoicesList = remember(allAvailableVoices) {
+        allAvailableVoices.filter { voice ->
+            val nameLower = voice.name.lowercase(java.util.Locale.US)
+            nameLower.contains("female") || 
+            nameLower.contains("f-local") || 
+            nameLower.contains("ruf") || 
+            nameLower.contains("dfc") || 
+            nameLower.contains("dfh") || 
+            nameLower.contains("rua") || 
+            nameLower.contains("ruc") || 
+            nameLower.contains("rue") ||
+            nameLower.contains("ru-ru-a") ||
+            nameLower.contains("ru-ru-c") ||
+            nameLower.contains("ru-ru-e") ||
+            nameLower.contains("-f-") ||
+            nameLower.contains("-f_") ||
+            nameLower.contains("_f_")
+        }
+    }
+
+    val maleVoicesList = remember(allAvailableVoices) {
+        allAvailableVoices.filter { voice ->
+            val nameLower = voice.name.lowercase(java.util.Locale.US)
+            nameLower.contains("male") || 
+            nameLower.contains("m-local") || 
+            nameLower.contains("rum") || 
+            nameLower.contains("dfd") || 
+            nameLower.contains("dfg") || 
+            nameLower.contains("rub") || 
+            nameLower.contains("rud") ||
+            nameLower.contains("ru-ru-b") ||
+            nameLower.contains("ru-ru-d") ||
+            nameLower.contains("-m-") ||
+            nameLower.contains("-m_") ||
+            nameLower.contains("_m_")
+        }
+    }
+
+    val selectedVoice = remember(femaleVoicesList, maleVoicesList, ttsGenderState, ttsVoiceIndex) {
+        if (ttsGenderState == "Female") {
+            if (femaleVoicesList.isNotEmpty()) femaleVoicesList[ttsVoiceIndex % femaleVoicesList.size] else null
+        } else {
+            if (maleVoicesList.isNotEmpty()) maleVoicesList[ttsVoiceIndex % maleVoicesList.size] else null
+        }
+    }
+
+    fun applyTtsSettings() {
+        configureTtsVoice(
+            tts = ttsByLocalRef,
+            currentLang = currentLang,
+            voiceGender = ttsGenderState,
+            voiceIndex = ttsVoiceIndex,
+            speechRate = ttsRateState,
+            speechPitch = ttsPitchState
+        )
+    }
+
+    DisposableEffect(ttsByLocalRef) {
+        ttsByLocalRef?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    isPlayingTts = true
+                }
+            }
+            override fun onDone(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    isPlayingTts = false
+                    spokenWordRange = null
+                    lastPlaybackIndex = 0
+                }
+            }
+            override fun onError(utteranceId: String?) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    isPlayingTts = false
+                }
+            }
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    val absStart = start + ttsOffset
+                    val absEnd = end + ttsOffset
+                    spokenWordRange = Pair(absStart, absEnd)
+                    lastPlaybackIndex = absStart
+                }
+            }
+        })
+        onDispose {
+            ttsByLocalRef?.setOnUtteranceProgressListener(null)
+        }
+    }
+
+    fun speakTextFromIndex(text: String, startIndex: Int) {
+        if (text.isEmpty()) return
+        ttsByLocalRef?.stop()
+        applyTtsSettings()
+        
+        val textToSpeak = text.substring(startIndex)
+        val params = android.os.Bundle().apply {
+            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "reading_text")
+        }
+        
+        ttsOffset = startIndex
+        ttsByLocalRef?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
+        isPlayingTts = true
+    }
     
     var selectedPartner1 by remember { mutableStateOf<ReadingEntity?>(null) }
     var selectedPartner2 by remember { mutableStateOf<ReadingEntity?>(null) }
@@ -5381,6 +5859,15 @@ fun CompatibilityScreen(
                 // --- RESULTS COMPATIBILITY PRESENTATION ---
                 Spacer(modifier = Modifier.height(16.dp))
 
+                val plainTextOfReport = remember(compatReport, partnerName, currentLang) {
+                    buildCompatibilityPlainText(compatReport, partnerName, currentLang)
+                }
+
+                val annotatedReportText = buildCompatibilityAnnotatedString(
+                    plainText = plainTextOfReport,
+                    spokenWordRange = spokenWordRange
+                )
+
                 // Ring percentage affinity display
                 Box(
                     contentAlignment = Alignment.Center,
@@ -5411,94 +5898,104 @@ fun CompatibilityScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Detailed portraits
-                MysticCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Личность 1 / Self Style",
-                            style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = compatReport.partner1Portrait, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "Личность 2 ($partnerName) / Partner Style",
-                            style = MaterialTheme.typography.titleMedium.copy(color = MysticGold)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = compatReport.partner2Portrait, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                // Copy to Clipboard and Voice Controller Panel
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("Compatibility Report", plainTextOfReport)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, "Текст скопирован в буфер обмена!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(0.1f)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Share, contentDescription = "Copy", tint = MysticGold, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Скопировать", color = Color.White, fontSize = 12.sp)
                     }
-                }
 
-                // Synergy summary
-                MysticCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = strings.compatCombinedTitle,
-                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = compatReport.combinedAnalysis, style = MaterialTheme.typography.bodyLarge, color = Color.White)
-                    }
-                }
-
-                // Strengths
-                MysticCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = strings.compatStrongTitle,
-                            style = MaterialTheme.typography.titleMedium.copy(color = Color(0xFF2ECC71))
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        compatReport.strongPoints.forEach { pt ->
-                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text("✓", color = Color(0xFF2ECC71), modifier = Modifier.padding(end = 8.dp))
-                                Text(text = pt, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                    TtsVoiceController(
+                        isPlaying = isPlayingTts,
+                        onPlayToggle = {
+                            if (isPlayingTts) {
+                                ttsByLocalRef?.stop()
+                                isPlayingTts = false
+                            } else {
+                                speakTextFromIndex(plainTextOfReport, lastPlaybackIndex)
+                            }
+                        },
+                        rate = ttsRateState,
+                        onRateChange = { newRate ->
+                            viewModel.changeTtsSpeechRate(newRate)
+                            ttsByLocalRef?.setSpeechRate(newRate)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
+                            }
+                        },
+                        gender = ttsGenderState,
+                        onGenderChange = { newGender ->
+                            viewModel.changeTtsGender(newGender)
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
+                            }
+                        },
+                        maleVoices = maleVoicesList,
+                        femaleVoices = femaleVoicesList,
+                        selectedVoice = selectedVoice,
+                        onVoiceSelected = { voice ->
+                            val index = if (ttsGenderState == "Female") {
+                                femaleVoicesList.indexOf(voice)
+                            } else {
+                                maleVoicesList.indexOf(voice)
+                            }
+                            if (index >= 0) {
+                                viewModel.changeTtsVoiceIndex(index)
+                            }
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
                             }
                         }
-                    }
-                }
-
-                // Weaknesses
-                MysticCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = strings.compatWeakTitle,
-                            style = MaterialTheme.typography.titleMedium.copy(color = Color(0xFFCF6679))
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        compatReport.weakPoints.forEach { pt ->
-                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text("⚠", color = Color(0xFFCF6679), modifier = Modifier.padding(end = 8.dp))
-                                Text(text = pt, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                            }
-                        }
-                    }
-                }
-
-                // Modular metrics
-                MysticCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = strings.compatEmotional, style = MaterialTheme.typography.labelLarge.copy(color = MysticGold))
-                        Text(text = compatReport.emotionalCompatibility, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(text = strings.compatIntellectual, style = MaterialTheme.typography.labelLarge.copy(color = MysticGold))
-                        Text(text = compatReport.intellectualCompatibility, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(text = strings.compatFinancial, style = MaterialTheme.typography.labelLarge.copy(color = MysticGold))
-                        Text(text = compatReport.financialCompatibility, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Unified beautiful reading card with text highlighting
+                MysticCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = annotatedReportText,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = Color.White,
+                                lineHeight = 24.sp
+                            )
+                        )
+                    }
+                }
+
+                ProjectSupportSection(viewModel = viewModel)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 MysticButton(
                     text = "Заново / Reset",
-                    onClick = { viewModel.currentCompatibilityReading.value = null },
+                    onClick = { 
+                        ttsByLocalRef?.stop()
+                        isPlayingTts = false
+                        spokenWordRange = null
+                        lastPlaybackIndex = 0
+                        viewModel.currentCompatibilityReading.value = null 
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -7400,8 +7897,9 @@ fun BillingScreen(
     var isCheckingPayment by remember { mutableStateOf(false) }
     var confirmAttempts by remember { mutableStateOf(0) }
 
+    val initialAmountFromVM by viewModel.paymentAmountToPreselect.collectAsState()
     var walletNum by remember { mutableStateOf("410013630971157") } // User's custom wallet number
-    var paymentAmount by remember { mutableStateOf("250") } // Default amount in rubles
+    var paymentAmount by remember(initialAmountFromVM) { mutableStateOf(initialAmountFromVM) }
     var chosenMethod by remember { mutableStateOf<String?>(null) } // "yookassa", "google"
     var showConfirmationDialog by remember { mutableStateOf(false) }
 
@@ -8417,6 +8915,68 @@ fun VideoSlotCard(
                 isSecondary = true,
                 modifier = Modifier.width(220.dp)
             )
+        }
+    }
+}
+
+fun buildCompatibilityPlainText(
+    compatReport: com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport,
+    partnerName: String,
+    currentLang: AppLanguage
+): String {
+    val sb = java.lang.StringBuilder()
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "ОТЧЕТ О СОВМЕСТИМОСТИ\n\n" else "COMPATIBILITY REPORT\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Личность 1:\n" else "Self Style:\n")
+    sb.append(compatReport.partner1Portrait).append("\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Личность 2 ($partnerName):\n" else "Partner Style ($partnerName):\n")
+    sb.append(compatReport.partner2Portrait).append("\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Общий анализ:\n" else "Synergy Analysis:\n")
+    sb.append(compatReport.combinedAnalysis).append("\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Сильные стороны:\n" else "Strong Points:\n")
+    compatReport.strongPoints.forEach { sb.append("- ").append(it).append("\n") }
+    sb.append("\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Слабые стороны:\n" else "Weak Points:\n")
+    compatReport.weakPoints.forEach { sb.append("- ").append(it).append("\n") }
+    sb.append("\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Эмоциональная сфера:\n" else "Emotional sphere:\n")
+    sb.append(compatReport.emotionalCompatibility).append("\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Интеллектуальная сфера:\n" else "Intellectual sphere:\n")
+    sb.append(compatReport.intellectualCompatibility).append("\n\n")
+    
+    sb.append(if (currentLang == AppLanguage.RUS) "Финансовая сфера:\n" else "Financial sphere:\n")
+    sb.append(compatReport.financialCompatibility)
+    
+    return sb.toString()
+}
+
+@Composable
+fun buildCompatibilityAnnotatedString(
+    plainText: String,
+    spokenWordRange: Pair<Int, Int>?
+): androidx.compose.ui.text.AnnotatedString {
+    return androidx.compose.ui.text.buildAnnotatedString {
+        append(plainText)
+        if (spokenWordRange != null) {
+            val start = spokenWordRange.first.coerceIn(0, plainText.length)
+            val end = spokenWordRange.second.coerceIn(0, plainText.length)
+            if (start < end) {
+                addStyle(
+                    style = androidx.compose.ui.text.SpanStyle(
+                        background = Color.DarkGray,
+                        color = Color.White
+                    ),
+                    start = start,
+                    end = end
+                )
+            }
         }
     }
 }

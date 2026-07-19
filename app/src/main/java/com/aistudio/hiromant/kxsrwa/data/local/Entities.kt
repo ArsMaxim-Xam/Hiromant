@@ -52,6 +52,14 @@ data class PaymentHistoryEntity(
     val amountRub: Int, // Сумма в рублях
     val paymentSystem: String, // Платежная система (например, ЮKassa)
     val status: String, // Статус платежа (например, Успешно, Ошибка)
-    val readingType: String // Тип анализа ("full_char", "full_path" и т.д.)
+    val readingType: String, // Тип анализа
+    val userName: String = "",
+    val userAge: Int = 18,
+    val leftPalmPath: String? = null,
+    val leftBackPath: String? = null,
+    val rightPalmPath: String? = null,
+    val rightBackPath: String? = null,
+    val grantedAnalyses: Int = 0,
+    val remainingAnalysesAfterPayment: Int = 0
 )
 

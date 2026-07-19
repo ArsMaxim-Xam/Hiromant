@@ -481,8 +481,16 @@ class MainActivity : ComponentActivity() {
                                         
                                         LaunchedEffect(isAnalyzing) {
                                             if (!isAnalyzing) {
-                                                navController.navigate("result") {
-                                                    popUpTo("loading") { inclusive = true }
+                                                val compReading = viewModel.currentCompatibilityReading.value
+                                                if (compReading != null && compReading.analysisType == "compatibility") {
+                                                    viewModel.activeTab.value = "compatibility"
+                                                    navController.navigate("main_container") {
+                                                        popUpTo("loading") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    navController.navigate("result") {
+                                                        popUpTo("loading") { inclusive = true }
+                                                    }
                                                 }
                                             }
                                         }
