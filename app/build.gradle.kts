@@ -78,6 +78,23 @@ android {
     dependsOn(generateDebugKeystore)
   }
 
+  // Ensure only the universal (full) APK is kept in the output directory
+  tasks.matching { it.name.startsWith("package") && (it.name.endsWith("Debug") || it.name.endsWith("Release")) }.configureEach {
+    doLast {
+      val buildDir = layout.buildDirectory.get().asFile
+      val apkOutputsDir = file("$buildDir/outputs/apk")
+      if (apkOutputsDir.exists()) {
+        apkOutputsDir.walkTopDown().forEach { file ->
+          if (file.isFile && file.extension == "apk" && !file.name.contains("universal")) {
+            if (file.delete()) {
+              logger.lifecycle("Removed non-universal split APK: ${file.name}")
+            }
+          }
+        }
+      }
+    }
+  }
+
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"

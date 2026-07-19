@@ -89,10 +89,16 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val rightPalmPath = MutableStateFlow<String?>(null)
     val rightBackPath = MutableStateFlow<String?>(null)
 
+    val bitmapThumb = MutableStateFlow<Bitmap?>(null)
+    val bitmapEdge = MutableStateFlow<Bitmap?>(null)
+    val thumbPath = MutableStateFlow<String?>(null)
+    val edgePath = MutableStateFlow<String?>(null)
+
     val videoUri = MutableStateFlow<android.net.Uri?>(null)
     val leftVideoUri = MutableStateFlow<android.net.Uri?>(null)
     val rightVideoUri = MutableStateFlow<android.net.Uri?>(null)
     val currentAnalysisTypeState = MutableStateFlow("brief_char")
+    val showInterpretationScreen = MutableStateFlow(false)
 
     // Active navigation tab state
     val activeTab = MutableStateFlow("upload")

@@ -471,28 +471,37 @@ fun MysticSplashScreen(
                 exit = fadeOut(),
                 modifier = Modifier.fillMaxSize()
             ) {
+                // Контейнер с анимацией масштабирования для всей композиции заставки
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .scale(handScale)
+                        .fillMaxSize() // Заполняем весь экран
+                        .scale(handScale), // Применяем плавное масштабирование
+                    contentAlignment = Alignment.Center // Центрируем содержимое
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand)
-                                .crossfade(true)
-                                .build()
-                        ),
-                        contentDescription = "Realistic Mystic Hand",
-                        contentScale = ContentScale.FillBounds, // Stretched to fill the screen bounds so Canvas matches perfectly!
-                        modifier = Modifier.fillMaxSize(),
-                        alpha = imageAlpha
-                    )
-                    
-                    // Canvas overlays exactly in coordinates covering full screen
-                    Canvas(
-                        modifier = Modifier.fillMaxSize()
+                    // Вложенный контейнер с фиксированными пропорциями 9:16 (соответствует картинке руки)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight() // Заполняем максимальную высоту
+                            .aspectRatio(9f / 16f) // Сохраняем пропорции 9:16 для предотвращения искажений руки
                     ) {
+                        // Отрисовываем реалистичное изображение ладони на заставке
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                    .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand) // Подгружаем картинку ладони
+                                    .crossfade(true) // Включаем мягкое перетекание при загрузке
+                                    .build()
+                            ),
+                            contentDescription = "Realistic Mystic Hand", // Описание элемента для доступности
+                            contentScale = ContentScale.FillBounds, // Заполняем область контейнера 9:16 без растяжения и сжатия
+                            modifier = Modifier.fillMaxSize(), // Занимает всё пространство пропорционального контейнера
+                            alpha = imageAlpha // Анимируем появление прозрачности
+                        )
+                        
+                        // Холст для точного рисования вспыхивающих линий и знаков поверх ладони
+                        Canvas(
+                            modifier = Modifier.fillMaxSize() // Холст ложится в точности поверх картинки 1-в-1
+                        ) {
                         val w = size.width
                         val h = size.height
                         val toAndroidColor = { c: Color ->
@@ -575,9 +584,10 @@ fun MysticSplashScreen(
                                 }
                             }
                         }
-                    }
-                }
-            }
+                    } // Конец Canvas
+                    } // Конец пропорционального контейнера 9:16
+                } // Конец внешнего анимированного контейнера заставки
+            } // Конец AnimatedVisibility
 
             // Foreground Layer: Content on top of background hand
             Column(
@@ -2316,10 +2326,7 @@ fun HandSlotCard(
                 }
             }
 
-            // Наложение полупрозрачного контура руки рисуется только тогда, когда фото еще НЕ загружено, чтобы не искажать реальный снимок
-            if (bitmap == null) { // Если изображение пустое (еще не сделано/не загружено)
-                HandStencilCanvas(slotName = slotName, modifier = Modifier.fillMaxSize()) // Отрисовываем контур руки для выравнивания
-            } // Завершаем проверку наличия загруженного изображения
+            // Контуры на превью удалены по запросу пользователя для улучшения внешнего вида
 
         }
 
@@ -2685,7 +2692,7 @@ fun UploadScreen(
     val rightPalmPath by viewModel.rightPalmPath.collectAsState()
     val rightBackPath by viewModel.rightBackPath.collectAsState()
 
-    var showInterpretationScreen by remember { mutableStateOf(false) }
+    val showInterpretationScreen by viewModel.showInterpretationScreen.collectAsState()
 
     val isAnalyzing by viewModel.isAnalyzing.collectAsState()
     val progress by viewModel.analysisProgress.collectAsState()
@@ -3227,7 +3234,7 @@ fun UploadScreen(
                     onClick = {
                         val hasMedia = bitmapLeftPalm != null || bitmapLeftBack != null || bitmapRightPalm != null || bitmapRightBack != null
                         if (hasMedia) {
-                            showInterpretationScreen = true
+                            viewModel.showInterpretationScreen.value = true
                         } else {
                             Toast.makeText(
                                 context,
@@ -3248,96 +3255,59 @@ fun UploadScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start
                 ) {
-                    IconButton(onClick = { showInterpretationScreen = false }) {
+                    IconButton(onClick = { viewModel.showInterpretationScreen.value = false }) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MysticGold)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (currentLang == AppLanguage.RUS) "Интерпретация результатов" else "Interpretation of Results",
-                        style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                    )
+                    Column {
+                        Text(
+                            text = "Интерпритация",
+                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "Выберите тип анализа",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = strings.uploadChooseAnalysisType,
-                    style = MaterialTheme.typography.titleMedium.copy(color = Color.White),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Spacer(modifier = Modifier.height(32.dp))
 
                 val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
 
-                // Brief Character Analysis
+                // Button 1: Краткий анализ (БЕСПЛАТНО!)
                 TriggerAnalysisButton(
-                    label = strings.btnBriefChar,
-                    priceText = strings.freeLabel,
+                    label = "Краткий анализ",
+                    priceText = "(БЕСПЛАТНО!)",
                     onClick = {
-                        viewModel.currentAnalysisTypeState.value = "brief_char"
+                        viewModel.currentAnalysisTypeState.value = "brief"
                         viewModel.runPalmAnalysis(
                             bitmaps = bitmaps,
                             videoUri = null,
-                            analysisType = "brief_char",
+                            analysisType = "brief",
                             leftPalmPath = leftPalmPath,
                             leftBackPath = leftBackPath,
                             rightPalmPath = rightPalmPath,
                             rightBackPath = rightBackPath,
                             onCompleted = {
-                                showInterpretationScreen = false
+                                viewModel.showInterpretationScreen.value = false
                                 onNavigateToLoading()
                             }
                         )
                     }
                 )
 
-                // Full Character Analysis
-                TriggerAnalysisButton(
-                    label = strings.btnFullChar,
-                    priceText = "150 ₽",
-                    onClick = {
-                        viewModel.checkFeatureUnlocked("full_char") { unlocked ->
-                            viewModel.currentAnalysisTypeState.value = "full_char"
-                            if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                                showInterpretationScreen = false
-                                onNavigateToVideoScan()
-                            } else {
-                                onNavigateToBilling()
-                            }
-                        }
-                    }
-                )
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Brief Life Path Analysis
+                // Button 2: Полный анализ (Стоимость - 200 р.)
                 TriggerAnalysisButton(
-                    label = strings.btnBriefPath,
-                    priceText = strings.freeLabel,
+                    label = "Полный анализ",
+                    priceText = "Стоимость - 200 р.",
                     onClick = {
-                        viewModel.currentAnalysisTypeState.value = "brief_path"
-                        viewModel.runPalmAnalysis(
-                            bitmaps = bitmaps,
-                            videoUri = null,
-                            analysisType = "brief_path",
-                            leftPalmPath = leftPalmPath,
-                            leftBackPath = leftBackPath,
-                            rightPalmPath = rightPalmPath,
-                            rightBackPath = rightBackPath,
-                            onCompleted = {
-                                showInterpretationScreen = false
-                                onNavigateToLoading()
-                            }
-                        )
-                    }
-                )
-
-                // Full Life Path Analysis
-                TriggerAnalysisButton(
-                    label = strings.btnFullPath,
-                    priceText = "150 ₽",
-                    onClick = {
-                        viewModel.checkFeatureUnlocked("full_path") { unlocked ->
-                            viewModel.currentAnalysisTypeState.value = "full_path"
+                        viewModel.checkFeatureUnlocked("full") { unlocked ->
+                            viewModel.currentAnalysisTypeState.value = "full"
                             if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) {
-                                showInterpretationScreen = false
+                                viewModel.showInterpretationScreen.value = false
                                 onNavigateToVideoScan()
                             } else {
                                 onNavigateToBilling()
@@ -3449,49 +3419,44 @@ fun TriggerAnalysisButton(
     priceText: String,
     onClick: () -> Unit
 ) {
-    val isFree = priceText.contains("Free", ignoreCase = true) || 
-                 priceText.contains("Бесплатно", ignoreCase = true) ||
-                 priceText.contains("Без оплаты", ignoreCase = true)
+    val isFree = priceText.contains("БЕСПЛАТНО", ignoreCase = true) || 
+                 priceText.contains("Free", ignoreCase = true) ||
+                 priceText.contains("Бесплатно", ignoreCase = true)
 
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isFree) Color(0xFF141210) else MysticGold
+            containerColor = if (isFree) Color(0xFF1E1C18) else MysticGold
         ),
-        border = if (isFree) BorderStroke(1.dp, MysticGold.copy(0.2f)) else null,
+        border = BorderStroke(1.2.dp, if (isFree) MysticGold.copy(0.4f) else MysticGold),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 8.dp)
             .clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge.copy(
+                style = MaterialTheme.typography.titleMedium.copy(
                     color = if (isFree) Color.White else Color.Black,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = Modifier.weight(1f)
-            )
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isFree) MysticGold.copy(0.15f) else Color.Black.copy(0.15f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.padding(start = 12.dp)
-            ) {
-                Text(
-                    text = priceText,
-                    color = if (isFree) MysticGold else Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    fontSize = 18.sp
                 )
-            }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = priceText,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = if (isFree) MysticGold else Color.Black.copy(0.8f),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            )
         }
     }
 }
@@ -4058,6 +4023,69 @@ fun TtsVoiceController(
     }
 }
 
+fun buildLeftHandAnnotatedString(
+    report: com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport,
+    spokenWordRange: Pair<Int, Int>?
+): AnnotatedString {
+    return buildAnnotatedString {
+        fun appendHeader(text: String) {
+            withStyle(SpanStyle(color = MysticGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+                append(text)
+            }
+            append("\n")
+        }
+        
+        fun appendBody(text: String) {
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(text)
+            }
+            append("\n\n")
+        }
+        
+        appendHeader("Левая рука (Врожденный потенциал)")
+        appendBody(if (report.leftHand.isNotBlank()) report.leftHand else "Анализ левой ладони недоступен.")
+        
+        if (report.overallPortrait.isNotBlank()) {
+            appendHeader("Общий портрет личности")
+            appendBody(report.overallPortrait)
+        }
+        
+        if (report.handType.isNotBlank()) {
+            appendHeader("Тип ладони")
+            appendBody(report.handType)
+        }
+    }
+}
+
+fun buildRightHandAnnotatedString(
+    report: com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport,
+    spokenWordRange: Pair<Int, Int>?
+): AnnotatedString {
+    return buildAnnotatedString {
+        fun appendHeader(text: String) {
+            withStyle(SpanStyle(color = MysticGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+                append(text)
+            }
+            append("\n")
+        }
+        
+        fun appendBody(text: String) {
+            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                append(text)
+            }
+            append("\n\n")
+        }
+        
+        appendHeader("Правая рука (Приобретенные качества)")
+        appendBody(if (report.rightHand.isNotBlank()) report.rightHand else "Анализ правой ладони недоступен.")
+        
+        if (report.recommendations.isNotBlank()) {
+            appendHeader("Рекомендации и предостережения")
+            appendBody(report.recommendations)
+        }
+    }
+}
+
 @Composable
 fun ResultsScreen(
     viewModel: PalmistViewModel,
@@ -4072,32 +4100,21 @@ fun ResultsScreen(
     val reading by viewModel.currentReading.collectAsState()
     val billingState by viewModel.billingState.collectAsState()
 
-    var activeTab by remember { mutableStateOf("report") } // "report" or "map"
-
-    var linesOffsetX by remember { mutableStateOf(0f) }
-    var linesOffsetY by remember { mutableStateOf(0f) }
-    var linesScale by remember { mutableStateOf(1f) }
-    var linesRotation by remember { mutableStateOf(0f) }
-    var imageRotation by remember { mutableStateOf(0f) }
-    var isAdjustmentPanelOpen by remember { mutableStateOf(false) }
+    var activeTab by remember { mutableStateOf("left") } // "left" or "right"
 
     // Parse JSON
     val palmistReport = remember(reading) {
         reading?.let {
             try {
                 val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport::class.java).fromJson(it.resultJson)
+                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport::class.java).fromJson(it.resultJson ?: "")
             } catch (e: Exception) {
                 null
             }
         }
     }
 
-    // Interactive lines map dialog state
-    var selectedLineInfo by remember { mutableStateOf<com.aistudio.hiromant.kxsrwa.data.remote.PalmLineAnalysis?>(null) }
-
     // TTS configurations from central ViewModel state
-    val ttsEnabled by viewModel.ttsEnabled.collectAsState()
     val ttsGenderState by viewModel.ttsGender.collectAsState()
     val ttsVoiceIndex by viewModel.ttsVoiceIndex.collectAsState()
     val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
@@ -4106,18 +4123,13 @@ fun ResultsScreen(
     var tts: TextToSpeech? by remember { mutableStateOf(null) }
     var isPlayingTts by remember { mutableStateOf(false) }
     var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var activeLineName by remember { mutableStateOf<String?>(null) }
     var ttsOffset by remember { mutableStateOf(0) }
-
-    val lineReadingBlocks = remember(palmistReport) {
-        palmistReport?.lines ?: emptyList()
-    }
 
     val scope = rememberCoroutineScope()
 
     // Selectable Text Field states
-    var reportTextState by remember { mutableStateOf(TextFieldValue()) }
-    var mapTextState by remember { mutableStateOf(TextFieldValue()) }
+    var leftHandTextState by remember { mutableStateOf(TextFieldValue()) }
+    var rightHandTextState by remember { mutableStateOf(TextFieldValue()) }
 
     // Initialize Android TTS
     DisposableEffect(Unit) {
@@ -4208,33 +4220,28 @@ fun ResultsScreen(
         }
     }
 
-    val lineRanges = remember { mutableStateMapOf<String, IntRange>() }
-
-    val reportAnnotatedString = remember(palmistReport, strings, spokenWordRange) {
+    val leftHandAnnotatedString = remember(palmistReport, spokenWordRange) {
         if (palmistReport != null) {
-            buildReportAnnotatedString(palmistReport, strings, spokenWordRange)
+            buildLeftHandAnnotatedString(palmistReport, spokenWordRange)
         } else {
             AnnotatedString("")
         }
     }
 
-    val mapAnnotatedString = remember(palmistReport, spokenWordRange) {
+    val rightHandAnnotatedString = remember(palmistReport, spokenWordRange) {
         if (palmistReport != null) {
-            buildLinesAnnotatedString(palmistReport.lines, spokenWordRange) { calculatedRanges ->
-                lineRanges.clear()
-                lineRanges.putAll(calculatedRanges)
-            }
+            buildRightHandAnnotatedString(palmistReport, spokenWordRange)
         } else {
             AnnotatedString("")
         }
     }
 
-    LaunchedEffect(reportAnnotatedString) {
-        reportTextState = reportTextState.copy(annotatedString = reportAnnotatedString)
+    LaunchedEffect(leftHandAnnotatedString) {
+        leftHandTextState = leftHandTextState.copy(annotatedString = leftHandAnnotatedString)
     }
 
-    LaunchedEffect(mapAnnotatedString) {
-        mapTextState = mapTextState.copy(annotatedString = mapAnnotatedString)
+    LaunchedEffect(rightHandAnnotatedString) {
+        rightHandTextState = rightHandTextState.copy(annotatedString = rightHandAnnotatedString)
     }
 
     DisposableEffect(tts) {
@@ -4248,7 +4255,6 @@ fun ResultsScreen(
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     isPlayingTts = false
                     spokenWordRange = null
-                    activeLineName = null
                 }
             }
             override fun onError(utteranceId: String?) {
@@ -4261,16 +4267,6 @@ fun ResultsScreen(
                     val absStart = start + ttsOffset
                     val absEnd = end + ttsOffset
                     spokenWordRange = Pair(absStart, absEnd)
-                    
-                    if (activeTab == "map") {
-                        val activeLine = lineReadingBlocks.find { line ->
-                            val range = lineRanges[line.name]
-                            range != null && absStart in range
-                        }
-                        if (activeLine != null) {
-                            activeLineName = activeLine.name
-                        }
-                    }
                 }
             }
         })
@@ -4304,104 +4300,68 @@ fun ResultsScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            val profile by viewModel.userProfile.collectAsState()
-            val userName = profile?.name?.trim()?.ifBlank { null } ?: (if (currentLang == AppLanguage.RUS) "Искатель" else "Seeker")
-            val analysisType = reading?.analysisType ?: ""
-
-            val (mainTitle, subTitleInParentheses) = remember(analysisType, userName, currentLang) {
-                when (analysisType) {
-                    "brief_char" -> {
-                        val title = if (currentLang == AppLanguage.RUS) {
-                            "Характер и Качества $userName"
-                        } else {
-                            "Character and Qualities of $userName"
-                        }
-                        val sub = if (currentLang == AppLanguage.RUS) "(краткий анализ)" else "(brief analysis)"
-                        Pair(title, sub)
-                    }
-                    "full_char" -> {
-                        val title = if (currentLang == AppLanguage.RUS) {
-                            "Характер и Качества $userName"
-                        } else {
-                            "Character and Qualities of $userName"
-                        }
-                        val sub = if (currentLang == AppLanguage.RUS) "(полный анализ)" else "(full analysis)"
-                        Pair(title, sub)
-                    }
-                    "brief_path" -> {
-                        val title = if (currentLang == AppLanguage.RUS) {
-                            "Жизненный путь $userName"
-                        } else {
-                            "Life Path of $userName"
-                        }
-                        val sub = if (currentLang == AppLanguage.RUS) "(краткий анализ)" else "(brief analysis)"
-                        Pair(title, sub)
-                    }
-                    "full_path" -> {
-                        val title = if (currentLang == AppLanguage.RUS) {
-                            "Жизненный путь $userName"
-                        } else {
-                            "Life Path of $userName"
-                        }
-                        val sub = if (currentLang == AppLanguage.RUS) "(полный анализ)" else "(full analysis)"
-                        Pair(title, sub)
-                    }
-                    else -> {
-                        Pair(strings.resTitle, "")
-                    }
-                }
-            }
-
-            Column(
+            // Header Row with Back Arrow and Title
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp, horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = mainTitle,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        color = MysticGold,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    ),
-                    textAlign = TextAlign.Center
-                )
-                if (subTitleInParentheses.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MysticGold
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = subTitleInParentheses,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MysticBronze,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp
-                        ),
-                        textAlign = TextAlign.Center
+                        text = "Результат Анализа",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MysticGold,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                    )
+                    Text(
+                        text = "Интегральный анализ левой и правой ладоней",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
                     )
                 }
             }
 
-            // Segmented Tab Controls
+            // Segmented Tab Controls (Left Hand / Right Hand)
             TabRow(
-                selectedTabIndex = if (activeTab == "report") 0 else 1,
+                selectedTabIndex = if (activeTab == "left") 0 else 1,
                 containerColor = Color.Transparent,
                 contentColor = MysticGold,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[if (activeTab == "report") 0 else 1]),
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[if (activeTab == "left") 0 else 1]),
                         color = MysticGold
                     )
                 }
             ) {
                 Tab(
-                    selected = activeTab == "report",
-                    onClick = { activeTab = "report" },
-                    text = { Text(strings.resTabReport, style = MaterialTheme.typography.labelLarge) }
+                    selected = activeTab == "left",
+                    onClick = { activeTab = "left" },
+                    text = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 6.dp)) {
+                            Text("Левая рука", style = MaterialTheme.typography.labelLarge)
+                            Text("Данность от рождения", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
                 )
                 Tab(
-                    selected = activeTab == "map",
-                    onClick = { activeTab = "map" },
-                    text = { Text(strings.resTabLinesMap, style = MaterialTheme.typography.labelLarge) }
+                    selected = activeTab == "right",
+                    onClick = { activeTab = "right" },
+                    text = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 6.dp)) {
+                            Text("Правая рука", style = MaterialTheme.typography.labelLarge)
+                            Text("Приобретенная судьба", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
                 )
             }
 
@@ -4429,569 +4389,124 @@ fun ResultsScreen(
                     )
                 }
             } else if (palmistReport != null) {
-                if (activeTab == "report") {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        SelectableInterpretationText(
-                            value = reportTextState,
-                            onValueChange = { reportTextState = it },
-                            modifier = Modifier.fillMaxSize(),
-                            spokenWordRange = spokenWordRange,
-                            onSpeakSelected = { selectedText ->
-                                tts?.stop()
-                                applyTtsSettings()
-                                ttsOffset = reportTextState.selection.start
-                                val params = android.os.Bundle().apply {
-                                    putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
-                                }
-                                tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
-                                isPlayingTts = true
-                            },
-                            onReadFromCursor = { cursorIndex ->
-                                speakTextFromIndex(reportTextState.text, cursorIndex)
-                            },
-                            bottomContent = {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 24.dp, bottom = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Text(
-                                        text = "PREMIUM SERVICES:",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    
-                                    MysticButton(
-                                        text = strings.resBtnBuy10,
-                                        onClick = {
-                                            viewModel.simulateBuySubscription()
-                                            Toast.makeText(context, "Purchase Successful! 10 readings credited.", Toast.LENGTH_SHORT).show()
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    
-                                    MysticButton(
-                                        text = strings.btnClose,
-                                        onClick = onClose,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        isSecondary = false
-                                    )
-
-                                    MysticButton(
-                                        text = strings.resExportPdf,
-                                        onClick = {
-                                            Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
-                                        },
-                                        isSecondary = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    
-                                    MysticButton(
-                                        text = strings.resBtnBuyCompat,
-                                        onClick = onNavigateToCompatibility,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        isSecondary = true
-                                    )
-                                }
-                            }
-                        )
-                        
-                        TtsVoiceController(
-                            isPlaying = isPlayingTts,
-                            onPlayToggle = {
-                                if (isPlayingTts) {
-                                    tts?.stop()
-                                    isPlayingTts = false
-                                    spokenWordRange = null
-                                } else {
-                                    speakTextFromIndex(reportTextState.text, 0)
-                                }
-                            },
-                            rate = ttsRateState,
-                            onRateChange = { newRate ->
-                                viewModel.changeTtsSpeechRate(newRate)
-                                tts?.setSpeechRate(newRate)
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(reportTextState.text, currentWordStart)
-                                }
-                            },
-                            gender = ttsGenderState,
-                            onGenderChange = { newGender ->
-                                viewModel.changeTtsGender(newGender)
-                                applyTtsSettings()
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(reportTextState.text, currentWordStart)
-                                }
-                            },
-                            maleVoices = maleVoicesList,
-                            femaleVoices = femaleVoicesList,
-                            selectedVoice = selectedVoice,
-                            onVoiceSelected = { voice ->
-                                val index = if (ttsGenderState == "Female") {
-                                    femaleVoicesList.indexOf(voice)
-                                } else {
-                                    maleVoicesList.indexOf(voice)
-                                }
-                                if (index >= 0) {
-                                    viewModel.changeTtsVoiceIndex(index)
-                                }
-                                applyTtsSettings()
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(reportTextState.text, currentWordStart)
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(16.dp)
-                        )
-                    }
-                } else {
-                    Column(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .background(Color.Black),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val painter = rememberAsyncImagePainter(
-                                model = reading?.leftPalmPath ?: reading?.rightPalmPath ?: reading?.leftBackPath ?: reading?.rightBackPath
-                            )
-                            Image(
-                                painter = painter,
-                                contentDescription = "Hand Photo",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .rotate(imageRotation),
-                                contentScale = ContentScale.Fit
-                            )
-                            
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val w = size.width // Получаем ширину области рисования в пикселях
-                                val h = size.height // Получаем высоту области рисования в пикселях
-                                
-                                withTransform({
-                                    this.translate(linesOffsetX, linesOffsetY)
-                                    this.scale(linesScale, linesScale, center)
-                                    this.rotate(linesRotation, center)
-                                }) {
-                                    // Определяем, левая ли это ладонь или тыльная правая сторона (большой палец справа)
-                                    val isLeftPalm = reading?.leftPalmPath != null
-                                    val isRightBack = reading?.rightBackPath != null
-                                    val thumbOnRight = isLeftPalm || isRightBack
-
-                                    // Вспомогательные функции для расчета пропорциональных координат (0.0 - 1.0) в пиксели
-                                    fun getX(f: Float): Float {
-                                        // Если большой палец должен быть справа, рисуем как есть, иначе зеркально отражаем по горизонтали
-                                        return if (thumbOnRight) w * f else w * (1.0f - f)
-                                    }
-                                    fun getY(f: Float): Float {
-                                        // Возвращаем координату Y, умноженную на общую высоту холста
-                                        return h * f
-                                    }
-
-                                    // --- ЛИНИЯ СЕРДЦА ---
-                                    val isHeartActive = activeLineName?.let { it.contains("Серд") || it.contains("Heart") } ?: false
-                                    val heartPath = Path().apply {
-                                        moveTo(getX(0.23f), getY(0.49f)) // Начало под мизинцем на ребре ладони
-                                        quadraticTo(getX(0.42f), getY(0.46f), getX(0.47f), getY(0.41f)) // Плавный изгиб к верхним пальцам
-                                    }
-                                    drawPath(
-                                        path = heartPath,
-                                        color = if (isHeartActive) LineHeartColor else LineHeartColor.copy(alpha = 0.2f),
-                                        style = Stroke(
-                                            width = (if (isHeartActive) 14.dp else 6.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-                                    
-                                    // Левое ответвление вилки сердца
-                                    val heartFork1 = Path().apply {
-                                        moveTo(getX(0.47f), getY(0.41f))
-                                        quadraticTo(getX(0.49f), getY(0.39f), getX(0.52f), getY(0.38f))
-                                    }
-                                    drawPath(
-                                        path = heartFork1,
-                                        color = if (isHeartActive) LineHeartColor.copy(alpha = 0.85f) else LineHeartColor.copy(alpha = 0.15f),
-                                        style = Stroke(
-                                            width = (if (isHeartActive) 10.dp else 4.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-
-                                    // Правое ответвление вилки сердца
-                                    val heartFork2 = Path().apply {
-                                        moveTo(getX(0.47f), getY(0.41f))
-                                        quadraticTo(getX(0.45f), getY(0.42f), getX(0.43f), getY(0.43f))
-                                    }
-                                    drawPath(
-                                        path = heartFork2,
-                                        color = if (isHeartActive) LineHeartColor.copy(alpha = 0.85f) else LineHeartColor.copy(alpha = 0.15f),
-                                        style = Stroke(
-                                            width = (if (isHeartActive) 10.dp else 4.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-                                    
-                                    // --- ЛИНИЯ ГОЛОВЫ / УМА ---
-                                    val isHeadActive = activeLineName?.let { it.contains("Голо") || it.contains("Ум") || it.contains("Head") } ?: false
-                                    val headPath = Path().apply {
-                                        moveTo(getX(0.58f), getY(0.46f)) // Исток у ребра большого пальца
-                                        quadraticTo(getX(0.44f), getY(0.54f), getX(0.28f), getY(0.62f)) // Диагональный спуск к холму Луны
-                                    }
-                                    drawPath(
-                                        path = headPath,
-                                        color = if (isHeadActive) LineHeadColor else LineHeadColor.copy(alpha = 0.2f),
-                                        style = Stroke(
-                                            width = (if (isHeadActive) 14.dp else 6.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-                                    
-                                    // --- ЛИНИЯ ЖИЗНИ ---
-                                    val isLifeActive = activeLineName?.let { it.contains("Жизн") || it.contains("Life") } ?: false
-                                    val lifePath = Path().apply {
-                                        moveTo(getX(0.58f), getY(0.46f)) // Начало между большим и указательным пальцами
-                                        quadraticTo(getX(0.50f), getY(0.64f), getX(0.48f), getY(0.90f)) // Полукруглое огибание холма Венеры к запястью
-                                    }
-                                    drawPath(
-                                        path = lifePath,
-                                        color = if (isLifeActive) LineLifeColor else LineLifeColor.copy(alpha = 0.2f),
-                                        style = Stroke(
-                                            width = (if (isLifeActive) 14.dp else 6.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-                                    
-                                    // --- ЛИНИЯ СУДЬБЫ ---
-                                    val isDestinyActive = activeLineName?.let { it.contains("Суд") || it.contains("Dest") } ?: false
-                                    val destinyPath = Path().apply {
-                                        moveTo(getX(0.48f), getY(0.91f)) // Исток от основания запястья
-                                        quadraticTo(getX(0.47f), getY(0.65f), getX(0.44f), getY(0.40f)) // Прямой вертикальный подъем к холму Сатурна
-                                    }
-                                    drawPath(
-                                        path = destinyPath,
-                                        color = if (isDestinyActive) LineDestinyColor else LineDestinyColor.copy(alpha = 0.2f),
-                                        style = Stroke(
-                                            width = (if (isDestinyActive) 12.dp else 4.dp).toPx(),
-                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                                        )
-                                    )
-                                }
-                            }
-
-                            // Interactive Alignment panel
-                            if (isAdjustmentPanelOpen) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .background(Color.Black.copy(alpha = 0.85f))
-                                        .padding(12.dp)
-                                ) {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = if (currentLang == AppLanguage.RUS) "Настройка линий и фото" else "Adjust Lines & Photo",
-                                            style = MaterialTheme.typography.titleSmall.copy(color = MysticGold, fontWeight = FontWeight.Bold)
-                                        )
-                                        
-                                        // Photo rotation button
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Повернуть фото на 90°" else "Rotate Photo by 90°",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.White)
-                                            )
-                                            IconButton(
-                                                onClick = { imageRotation = (imageRotation + 90f) % 360f }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Cached,
-                                                    contentDescription = "Rotate Photo",
-                                                    tint = MysticGold
-                                                )
-                                            }
-                                        }
-                                        
-                                        // Slider 1: Scale Lines
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Размер: " else "Scale: ",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
-                                                modifier = Modifier.width(60.dp)
-                                            )
-                                            Slider(
-                                                value = linesScale,
-                                                onValueChange = { linesScale = it },
-                                                valueRange = 0.5f..2.0f,
-                                                colors = SliderDefaults.colors(
-                                                    thumbColor = MysticGold,
-                                                    activeTrackColor = MysticGold,
-                                                    inactiveTrackColor = Color.DarkGray
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        
-                                        // Slider 2: Rotate Lines
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Наклон: " else "Rotate: ",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
-                                                modifier = Modifier.width(60.dp)
-                                            )
-                                            Slider(
-                                                value = linesRotation,
-                                                onValueChange = { linesRotation = it },
-                                                valueRange = -90f..90f,
-                                                colors = SliderDefaults.colors(
-                                                    thumbColor = MysticGold,
-                                                    activeTrackColor = MysticGold,
-                                                    inactiveTrackColor = Color.DarkGray
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        
-                                        // Slider 3: Move Horizontal (Offset X)
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Сдвиг X: " else "Shift X: ",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
-                                                modifier = Modifier.width(60.dp)
-                                            )
-                                            Slider(
-                                                value = linesOffsetX,
-                                                onValueChange = { linesOffsetX = it },
-                                                valueRange = -300f..300f,
-                                                colors = SliderDefaults.colors(
-                                                    thumbColor = MysticGold,
-                                                    activeTrackColor = MysticGold,
-                                                    inactiveTrackColor = Color.DarkGray
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        
-                                        // Slider 4: Move Vertical (Offset Y)
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = if (currentLang == AppLanguage.RUS) "Сдвиг Y: " else "Shift Y: ",
-                                                style = MaterialTheme.typography.bodySmall.copy(color = Color.LightGray),
-                                                modifier = Modifier.width(60.dp)
-                                            )
-                                            Slider(
-                                                value = linesOffsetY,
-                                                onValueChange = { linesOffsetY = it },
-                                                valueRange = -300f..300f,
-                                                colors = SliderDefaults.colors(
-                                                    thumbColor = MysticGold,
-                                                    activeTrackColor = MysticGold,
-                                                    inactiveTrackColor = Color.DarkGray
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                        
-                                        // Row for Reset and Close Buttons
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    linesOffsetX = 0f
-                                                    linesOffsetY = 0f
-                                                    linesScale = 1f
-                                                    linesRotation = 0f
-                                                    imageRotation = 0f
-                                                },
-                                                border = BorderStroke(1.dp, Color.Gray),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Text(if (currentLang == AppLanguage.RUS) "Сбросить" else "Reset")
-                                            }
-                                            
-                                            Button(
-                                                onClick = { isAdjustmentPanelOpen = false },
-                                                colors = ButtonDefaults.buttonColors(containerColor = MysticGold, contentColor = Color.Black),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Text(if (currentLang == AppLanguage.RUS) "Готово" else "Done")
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                // Settings adjustment trigger icon
-                                IconButton(
-                                    onClick = { isAdjustmentPanelOpen = true },
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(12.dp)
-                                        .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Tune,
-                                        contentDescription = "Adjust Lines",
-                                        tint = MysticGold
-                                    )
-                                }
-                            }
-                        }
-                        
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .background(MysticDarkBackground)
-                        ) {
-                            SelectableInterpretationText(
-                                value = mapTextState,
-                                onValueChange = { mapTextState = it },
-                                modifier = Modifier.fillMaxSize(),
-                                spokenWordRange = spokenWordRange,
-                                onSpeakSelected = { selectedText ->
-                                    tts?.stop()
-                                    applyTtsSettings()
-                                    ttsOffset = mapTextState.selection.start
-                                    val params = android.os.Bundle().apply {
-                                        putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
-                                    }
-                                    tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
-                                    isPlayingTts = true
-                                },
-                                onReadFromCursor = { cursorIndex ->
-                                    speakTextFromIndex(mapTextState.text, cursorIndex)
-                                }
-                            )
-                            
-                            TtsVoiceController(
-                                isPlaying = isPlayingTts,
-                                onPlayToggle = {
-                                    if (isPlayingTts) {
-                                        tts?.stop()
-                                        isPlayingTts = false
-                                        spokenWordRange = null
-                                        activeLineName = null
-                                    } else {
-                                        speakTextFromIndex(mapTextState.text, 0)
-                                    }
-                                },
-                                rate = ttsRateState,
-                                onRateChange = { newRate ->
-                                    viewModel.changeTtsSpeechRate(newRate)
-                                    tts?.setSpeechRate(newRate)
-                                    if (isPlayingTts) {
-                                        val currentWordStart = spokenWordRange?.first ?: 0
-                                        speakTextFromIndex(mapTextState.text, currentWordStart)
-                                    }
-                                },
-                                gender = ttsGenderState,
-                                onGenderChange = { newGender ->
-                                    viewModel.changeTtsGender(newGender)
-                                    applyTtsSettings()
-                                    if (isPlayingTts) {
-                                        val currentWordStart = spokenWordRange?.first ?: 0
-                                        speakTextFromIndex(mapTextState.text, currentWordStart)
-                                    }
-                                },
-                                maleVoices = maleVoicesList,
-                                femaleVoices = femaleVoicesList,
-                                selectedVoice = selectedVoice,
-                                onVoiceSelected = { voice ->
-                                    val index = if (ttsGenderState == "Female") {
-                                        femaleVoicesList.indexOf(voice)
-                                    } else {
-                                        maleVoicesList.indexOf(voice)
-                                    }
-                                    if (index >= 0) {
-                                        viewModel.changeTtsVoiceIndex(index)
-                                    }
-                                    applyTtsSettings()
-                                    if (isPlayingTts) {
-                                        val currentWordStart = spokenWordRange?.first ?: 0
-                                        speakTextFromIndex(mapTextState.text, currentWordStart)
-                                    }
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(16.dp)
-                            )
-                        }
+                val currentTextState = if (activeTab == "left") leftHandTextState else rightHandTextState
+                val onTextStateChange: (TextFieldValue) -> Unit = { newValue ->
+                    if (activeTab == "left") {
+                        leftHandTextState = newValue
+                    } else {
+                        rightHandTextState = newValue
                     }
                 }
-            }
-        }
 
-        // Selected line information pop-up Dialog
-        selectedLineInfo?.let { line ->
-            Dialog(onDismissRequest = { selectedLineInfo = null }) {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MysticDarkSurface),
-                    border = BorderStroke(1.5.dp, MysticGold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    SelectableInterpretationText(
+                        value = currentTextState,
+                        onValueChange = onTextStateChange,
+                        modifier = Modifier.fillMaxSize(),
+                        spokenWordRange = spokenWordRange,
+                        onSpeakSelected = { selectedText ->
+                            tts?.stop()
+                            applyTtsSettings()
+                            ttsOffset = currentTextState.selection.start
+                            val params = android.os.Bundle().apply {
+                                putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "selection")
+                            }
+                            tts?.speak(selectedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "selection")
+                            isPlayingTts = true
+                        },
+                        onReadFromCursor = { cursorIndex ->
+                            speakTextFromIndex(currentTextState.text, cursorIndex)
+                        },
+                        bottomContent = {
+                            Column(
                                 modifier = Modifier
-                                    .size(16.dp)
-                                    .background(Color(android.graphics.Color.parseColor(line.color)), CircleShape)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = line.name,
-                                style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = line.fullDescription,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                                    .fillMaxWidth()
+                                    .padding(top = 24.dp, bottom = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "ДОПОЛНИТЕЛЬНО:",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze, letterSpacing = 2.sp),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                MysticButton(
+                                    text = "Закрыть отчет",
+                                    onClick = onClose,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    isSecondary = false
+                                )
 
-                        line.keyTakeaways.forEach { takeaway ->
-                            Row(modifier = Modifier.padding(vertical = 2.dp)) {
-                                Text("•", color = MysticGold, modifier = Modifier.padding(end = 6.dp))
-                                Text(text = takeaway, fontSize = 12.sp, color = Color(0xFFC0C0D0))
+                                MysticButton(
+                                    text = strings.resExportPdf,
+                                    onClick = {
+                                        Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
+                                    },
+                                    isSecondary = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                MysticButton(
+                                    text = "Проверить совместимость",
+                                    onClick = onNavigateToCompatibility,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    isSecondary = true
+                                )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-                        MysticButton(
-                            text = "ОК",
-                            onClick = { selectedLineInfo = null },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    )
+                    
+                    TtsVoiceController(
+                        isPlaying = isPlayingTts,
+                        onPlayToggle = {
+                            if (isPlayingTts) {
+                                tts?.stop()
+                                isPlayingTts = false
+                                spokenWordRange = null
+                            } else {
+                                speakTextFromIndex(currentTextState.text, 0)
+                            }
+                        },
+                        rate = ttsRateState,
+                        onRateChange = { newRate ->
+                            viewModel.changeTtsSpeechRate(newRate)
+                            tts?.setSpeechRate(newRate)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        gender = ttsGenderState,
+                        onGenderChange = { newGender ->
+                            viewModel.changeTtsGender(newGender)
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        maleVoices = maleVoicesList,
+                        femaleVoices = femaleVoicesList,
+                        selectedVoice = selectedVoice,
+                        onVoiceSelected = { voice ->
+                            val index = if (ttsGenderState == "Female") {
+                                femaleVoicesList.indexOf(voice)
+                            } else {
+                                maleVoicesList.indexOf(voice)
+                            }
+                            if (index >= 0) {
+                                viewModel.changeTtsVoiceIndex(index)
+                            }
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(16.dp)
+                    )
                 }
             }
         }
@@ -7400,11 +6915,31 @@ fun BillingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(24.dp)
+                .padding(10.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            MysticHeader(strings.billDialogTitle)
-            MysticSubtitle(strings.billDialogChoosePay)
+            Text(
+                text = "Выбор способа оплаты",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = MysticGold,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+            Text(
+                text = "(Полный Анализ)",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 2.dp)
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
 

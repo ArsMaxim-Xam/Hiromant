@@ -428,6 +428,118 @@ class PalmistRepository(
             """.trimIndent() // Очищаем отступы и возвращаем промпт для платной судьбы
         }
 
+        // Override prompt text for Left/Right hand analysis structure as requested by the user
+        val actualPromptText = if (!isFull) {
+            """
+                Please perform a BRIEF, FREE chiromancy analysis.
+                My profile data:
+                - Name: ${profile.name}
+                - Gender: ${profile.gender}
+                - Age: ${profile.age} years
+                - Height: ${profile.height} cm
+                - Dominant Hand: ${profile.dominantHand} (Remember: for ${profile.dominantHand}, active life is on this hand, birth potentials on the other).
+                
+                Please evaluate the shape of the hand, finger proportions, major lines (Life, Heart, Head, Destiny), planetary mounts, and signs shown in the photos.
+                
+                IMPORTANT STRUCTURE REQUIREMENTS:
+                - leftHand: 1. Анализ Левой руки (врожденные качества, изначальный потенциал судьбы у правши, врожденный характер и особенности развития).
+                - rightHand: 2. Анализ Правой руки (приобретенные качества, активный жизненный путь, развитие личности, реализованные события).
+                - This brief analysis must be concise but accurate, approximately 50-70% of the length of a full detailed analysis (about 1-2 paragraphs each).
+                - Provide overallPortrait, handType, recommendations, lines, mounts, and signs.
+                
+                Provide the response strictly in ${if (isRussian) "Russian (русский)" else "English"}.
+                The response MUST be a single valid JSON object following this format:
+                {
+                  "overallPortrait": "Summary portrait.",
+                  "handType": "Type of hand.",
+                  "leftHand": "Detailed analysis of the left hand.",
+                  "rightHand": "Detailed analysis of the right hand.",
+                  "characterQualities": "",
+                  "lifePathEvents": "",
+                  "lifeSituationsInfluence": "",
+                  "marriageChildren": "",
+                  "recommendations": "Actionable guidelines and advice.",
+                  "lines": [
+                    {
+                      "name": "Line Name",
+                      "color": "Hex color code",
+                      "shortDescription": "One line summary",
+                      "fullDescription": "Detailed reading.",
+                      "keyTakeaways": ["takeaway 1", "takeaway 2"]
+                    }
+                  ],
+                  "mounts": [
+                    {
+                      "name": "Mount Name",
+                      "active": true,
+                      "description": "Short reading"
+                    }
+                  ],
+                  "signs": [
+                    {
+                      "name": "Sign Name",
+                      "description": "Reading",
+                      "location": "Location"
+                    }
+                  ]
+                }
+            """.trimIndent()
+        } else {
+            """
+                Please perform a FULL, DETAILED, PAID chiromancy analysis.
+                My profile data:
+                - Name: ${profile.name}
+                - Gender: ${profile.gender}
+                - Age: ${profile.age} years
+                - Height: ${profile.height} cm
+                - Dominant Hand: ${profile.dominantHand} (Remember: for ${profile.dominantHand}, active life is on this hand, birth potentials on the other).
+                
+                In addition to the primary hand photos, close-up photos of the thumb and palm edge (ребро ладони), as well as details from 1-minute videos are provided. Please analyze all of them exhaustively.
+                
+                IMPORTANT STRUCTURE REQUIREMENTS:
+                - leftHand: 1. Анализ Левой руки (врожденные склонности, изначальный потенциал судьбы, характер) - максимально подробно, глубоко и развернуто (3-4 полноценных абзаца).
+                - rightHand: 2. Анализ Правой руки (приобретенные качества, активный жизненный путь, развитие личности, реализованные события) - максимально подробно, глубоко и развернуто (3-4 полноценных абзаца).
+                - Provide overallPortrait, handType, recommendations, lines, mounts, and signs in extreme detail.
+                
+                Provide the response strictly in ${if (isRussian) "Russian (русский)" else "English"}.
+                The response MUST be a single valid JSON object following this format:
+                {
+                  "overallPortrait": "Comprehensive, rich summary portrait of character and life path.",
+                  "handType": "Type of hand.",
+                  "leftHand": "Detailed, deep analysis of the left hand.",
+                  "rightHand": "Detailed, deep analysis of the right hand.",
+                  "characterQualities": "",
+                  "lifePathEvents": "",
+                  "lifeSituationsInfluence": "",
+                  "marriageChildren": "",
+                  "recommendations": "Highly actionable guidelines and warnings.",
+                  "lines": [
+                    {
+                      "name": "Line Name",
+                      "color": "Hex color code",
+                      "shortDescription": "One line summary",
+                      "fullDescription": "Detailed reading.",
+                      "keyTakeaways": ["takeaway 1", "takeaway 2"]
+                    }
+                  ],
+                  "mounts": [
+                    {
+                      "name": "Mount Name",
+                      "active": true,
+                      "description": "Short reading"
+                    }
+                  ],
+                  "signs": [
+                    {
+                      "name": "Sign Name",
+                      "description": "Reading",
+                      "location": "Location"
+                    }
+                  ]
+                }
+            """.trimIndent()
+        }
+
         val apiKey = BuildConfig.GEMINI_API_KEY
         val maskedKey = if (apiKey.isEmpty()) "[EMPTY]" else {
             val len = apiKey.length
@@ -441,9 +553,9 @@ class PalmistRepository(
 
         if (hasValidKey) {
             try {
-                AppLogger.i("PalmistRepository", "Initiating Gemini request. Preparing parts. Prompt text length: ${promptText.length}")
+                AppLogger.i("PalmistRepository", "Initiating Gemini request. Preparing parts. Prompt text length: ${actualPromptText.length}")
                 val parts = mutableListOf<Part>()
-                parts.add(Part(text = promptText))
+                parts.add(Part(text = actualPromptText))
 
                 // Attach up to 4 images to limit token usage and remain highly stable
                 bitmaps.take(4).forEachIndexed { index, bitmap ->
