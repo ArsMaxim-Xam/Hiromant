@@ -289,35 +289,8 @@ class MainActivity : ComponentActivity() {
                         val activeTab by viewModel.activeTab.collectAsState()
 
                         Scaffold(
-                            topBar = {
-                                val showTopBar = remember(currentRoute) {
-                                    currentRoute in listOf("main_container", "result", "billing", "settings", "loading", "video_scan")
-                                }
-                                if (showTopBar) {
-                                    val billingStateVal by viewModel.billingState.collectAsState()
-                                    val count = billingStateVal?.remainingAnalyses ?: 0
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(Color(0xFF0F0E17))
-                                            .statusBarsPadding()
-                                            .border(width = 1.dp, color = MysticBronze.copy(0.15f), shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                                            .padding(vertical = 12.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = if (currentLang == AppLanguage.RUS) 
-                                                "Доступно полных анализов: $count" 
-                                            else "Available full analyses: $count",
-                                            style = MaterialTheme.typography.titleSmall.copy(
-                                                color = MysticGold,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp
-                                            )
-                                        )
-                                    }
-                                }
-                            },
+                            // 1. Убираем верхнюю панель с количеством анализов по требованию пользователя
+                            topBar = {},
                             bottomBar = {
                                 if (showBottomBar) {
                                     Row(
@@ -340,7 +313,6 @@ class MainActivity : ComponentActivity() {
                                             Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
                                             Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
                                             Triple("user_cabinet", if (currentLang == AppLanguage.RUS) "Кабинет" else "Cabinet", if (activeTab == "user_cabinet") Icons.Filled.Person else Icons.Outlined.Person),
-                                            Triple("reading", if (currentLang == AppLanguage.RUS) "Чтение" else "Speech", if (activeTab == "reading") Icons.Filled.RecordVoiceOver else Icons.Outlined.RecordVoiceOver),
                                             Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
                                             Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
                                         )
@@ -370,12 +342,38 @@ class MainActivity : ComponentActivity() {
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
-                                                Icon(
-                                                    imageVector = icon,
-                                                    contentDescription = null,
-                                                    tint = if (isSelected) MysticGold else Color.Gray,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
+                                                // Контейнер для иконки с поддержкой бейджа
+                                                Box(
+                                                    contentAlignment = Alignment.TopEnd
+                                                ) {
+                                                    Icon(
+                                                        imageVector = icon,
+                                                        contentDescription = null,
+                                                        tint = if (isSelected) MysticGold else Color.Gray,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                    
+                                                    // Рисуем цифру количества анализов на значке пользователя (Кабинет)
+                                                    if (tabId == "user_cabinet") {
+                                                        val billingStateVal by viewModel.billingState.collectAsState() // Получаем состояние биллинга
+                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Извлекаем количество анализов
+                                                        if (count > 0) { // Если доступно больше 0 анализов, рисуем бейдж
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .offset(x = 6.dp, y = (-6).dp) // Смещаем бейдж в правый верхний угол иконки
+                                                                    .background(Color.Red, shape = RoundedCornerShape(50)) // Красный скругленный фон
+                                                                    .padding(horizontal = 4.dp, vertical = 1.dp) // Отступы вокруг текста цифры
+                                                            ) {
+                                                                Text(
+                                                                    text = count.toString(), // Выводим число анализов
+                                                                    color = Color.White, // Белый цвет текста
+                                                                    fontSize = 7.sp, // Компактный размер шрифта для бейджа
+                                                                    fontWeight = FontWeight.Bold // Жирный шрифт для читаемости
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
                                                     text = label,
@@ -595,9 +593,6 @@ fun MainContainerScreen(
             "user_cabinet" -> UserCabinetScreen(
                 viewModel = viewModel,
                 onNavigateToResult = onNavigateToLoading
-            )
-            "reading" -> ReadingConfigScreen(
-                viewModel = viewModel
             )
             "settings" -> SettingsScreen(
                 viewModel = viewModel,
