@@ -6,13 +6,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Using elegant system serif typography for a mystic and classical feel
+// Использование изысканного шрифта с засечками (Serif) для создания классического мистического стиля книг заклинаний
 val CinzelDecorativeFamily = FontFamily.Serif
 
+// Традиционный шрифт с засечками для заголовков отчетов
 val CinzelFamily = FontFamily.Serif
 
 val Typography = Typography(
-    // Headers (Decorative with Cinzel Decorative)
+    // Крупные заголовки (декоративный стиль с засечками)
     displayLarge = TextStyle(
         fontFamily = CinzelDecorativeFamily,
         fontWeight = FontWeight.Bold,
@@ -42,7 +43,7 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     ),
 
-    // Body Text (Readability with Serif)
+    // Основной текст (максимальное удобство чтения с засечками в духе старинных книг)
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Serif,
         fontWeight = FontWeight.Normal,
@@ -58,7 +59,7 @@ val Typography = Typography(
         letterSpacing = 0.25.sp
     ),
 
-    // Interface labels (Modern Roboto style Sans-Serif)
+    // Подписи элементов интерфейса и кнопок (современный гротеск Sans-Serif для четкости и эргономики)
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,

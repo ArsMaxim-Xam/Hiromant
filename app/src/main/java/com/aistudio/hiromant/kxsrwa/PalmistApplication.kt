@@ -15,55 +15,57 @@ import java.io.StringWriter
 
 class PalmistApplication : Application() {
 
+    // Свойство базы данных Room с отложенной инициализацией
     lateinit var database: PalmistDatabase
-        private set
+        private set // Закрытый сеттер извне класса
 
+    // Свойство репозитория для доступа к БД и ИИ-сервису
     lateinit var repository: PalmistRepository
-        private set
+        private set // Закрытый сеттер извне класса
 
     override fun onCreate() {
-        super.onCreate()
+        super.onCreate() // Вызов родительского метода инициализации
         
-        // Initialize AppLogger first
+        // Инициализация кастомного регистратора логов AppLogger на старте приложения
         AppLogger.init(this)
-        AppLogger.i("PalmistApplication", "Application onCreate triggered. Version code/name from gradle compiled.")
+        AppLogger.i("PalmistApplication", "Запуск onCreate приложения. Загружены настройки компиляции.")
         
-        // Setup robust global uncaught exception handler
+        // Настройка глобального обработчика непредвиденных сбоев (сбои/краши приложения)
         val oldHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
-                val sw = StringWriter()
-                val pw = PrintWriter(sw)
-                throwable.printStackTrace(pw)
-                val stackTrace = sw.toString()
+                val sw = StringWriter() // Буфер для записи стека ошибки
+                val pw = PrintWriter(sw) // Поток записи
+                throwable.printStackTrace(pw) // Сброс трейса ошибки в буфер
+                val stackTrace = sw.toString() // Преобразование в строку
                 
-                // Write to AppLogger
-                AppLogger.e("UncaughtCrash", "Crash in thread ${thread.name}: ${throwable.message}", throwable)
+                // Запись лога фатального сбоя в AppLogger
+                AppLogger.e("UncaughtCrash", "Сбой в потоке ${thread.name}: ${throwable.message}", throwable)
                 
-                // Use commit() to write to shared preferences synchronously before the app terminates
+                // Синхронное сохранение лога сбоя в SharedPreferences перед падением процесса
                 val sharedPrefs = getSharedPreferences("palmist_prefs", Context.MODE_PRIVATE)
                 sharedPrefs.edit().putString("last_crash_log", stackTrace).commit()
                 
-                // Write to crash.log file in external directory for offline access
+                // Запись отчета о падении во внешний файл crash.log для оффлайн анализа разработчиками
                 val logDir = getExternalFilesDir(null)
                 if (logDir != null && (logDir.exists() || logDir.mkdirs())) {
                     val logFile = File(logDir, "crash.log")
-                    val writer = FileWriter(logFile, true)
-                    writer.write("\n--- Uncaught Crash at ${System.currentTimeMillis()} ---\n")
+                    val writer = FileWriter(logFile, true) // Открытие файла в режиме добавления строк
+                    writer.write("\n--- Фатальный сбой на ${System.currentTimeMillis()} ---\n")
                     writer.write(stackTrace)
-                    writer.write("\n--- End of crash ---\n\n")
-                    writer.flush()
-                    writer.close()
+                    writer.write("\n--- Конец трейса сбоя ---\n\n")
+                    writer.flush() // Сброс буфера в файл
+                    writer.close() // Закрытие писателя
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                e.printStackTrace() // Печать внутренней ошибки обработки краша в стандартный поток
             }
             
-            // Let the standard OS crash dialog take over
+            // Передача управления стандартному системному обработчику сбоев ОС Android
             oldHandler?.uncaughtException(thread, throwable)
         }
 
-        // Миграция со 2 на 3 версию базы данных для добавления таблицы истории платежей (сохраняет старые данные)
+        // Объект миграции со 2 на 3 версию базы данных Room для добавления таблицы истории платежей (сохраняет старые данные)
         val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Создаем таблицу истории платежей, если она еще не создана
@@ -81,36 +83,38 @@ class PalmistApplication : Application() {
         }
 
         try {
-            AppLogger.i("PalmistApplication", "Building PalmistDatabase instance...")
+            AppLogger.i("PalmistApplication", "Инициализация экземпляра PalmistDatabase...")
+            // Сборка инстанса базы данных Room с поддержкой миграции и откатом к деструктивной схеме
             database = Room.databaseBuilder(
                 applicationContext,
                 PalmistDatabase::class.java,
                 "palmist_database"
             )
-            .addMigrations(MIGRATION_2_3)
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_2_3) // Регистрация объекта миграции
+            .fallbackToDestructiveMigration() // Резервное восстановление при критическом несовпадении схем
             .build()
-            AppLogger.i("PalmistApplication", "PalmistDatabase successfully built.")
+            AppLogger.i("PalmistApplication", "База данных PalmistDatabase успешно собрана.")
 
-            AppLogger.i("PalmistApplication", "Building PalmistRepository instance...")
+            AppLogger.i("PalmistApplication", "Инициализация экземпляра PalmistRepository...")
+            // Создание единственного экземпляра репозитория
             repository = PalmistRepository(applicationContext, database.palmistDao())
-            AppLogger.i("PalmistApplication", "PalmistRepository successfully built.")
+            AppLogger.i("PalmistApplication", "Репозиторий PalmistRepository успешно собран.")
         } catch (e: Exception) {
-            AppLogger.e("PalmistApplication", "Failed to build DB or Repository", e)
+            AppLogger.e("PalmistApplication", "Ошибка при сборке БД или Репозитория", e)
             e.printStackTrace()
         }
 
-        // Initialize default billing state if empty, with safety try-catch
+        // Инициализация начального состояния биллинга в фоне (запуск первого набора бесплатных сеансов)
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch {
+        GlobalScope.launch { // Использование глобальной области для независимой инициализации
             try {
-                if (::repository.isInitialized) {
-                    AppLogger.i("PalmistApplication", "Initializing billing state if empty...")
-                    repository.initializeBillingStateIfEmpty()
-                    AppLogger.i("PalmistApplication", "Billing state checked/initialized.")
+                if (::repository.isInitialized) { // Проверка готовности репозитория
+                    AppLogger.i("PalmistApplication", "Проверка и наполнение биллинга по умолчанию...")
+                    repository.initializeBillingStateIfEmpty() // Начисление стартовых лимитов при первом старте
+                    AppLogger.i("PalmistApplication", "Состояние биллинга успешно проинициализировано.")
                 }
             } catch (e: Throwable) {
-                AppLogger.e("PalmistApplication", "Billing state initialization failed", e)
+                AppLogger.e("PalmistApplication", "Инициализация состояния биллинга завершилась сбоем", e)
                 e.printStackTrace()
             }
         }

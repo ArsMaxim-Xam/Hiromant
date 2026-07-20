@@ -1,183 +1,185 @@
 package com.aistudio.hiromant.kxsrwa.ui.language
 
+// Перечисление доступных языков интерфейса приложения «Хиромант»
 enum class AppLanguage(val code: String, val label: String) {
-    RUS("RU", "🇷🇺 Русский (RUS)"),
-    ENG("EN", "🇬🇧 English (ENG)")
+    RUS("RU", "🇷🇺 Русский (RUS)"), // Русский язык
+    ENG("EN", "🇬🇧 English (ENG)")  // Английский язык
 }
 
+// Класс данных, содержащий все локализуемые строки для многоязычного интерфейса приложения
 data class PalmistStrings(
-    // Bottom Navigation
-    val navScan: String,
-    val navCompat: String,
-    val navHistory: String,
-    val navAbout: String,
+    // Кнопки нижней навигационной панели (Bottom Navigation)
+    val navScan: String,     // Кнопка перехода к сканированию ладони
+    val navCompat: String,   // Кнопка перехода к расчету совместимости партнеров
+    val navHistory: String,  // Кнопка перехода к архиву прошлых сеансов
+    val navAbout: String,    // Кнопка перехода к справочной информации
 
-    // App general
-    val appName: String,
-    val skip: String,
-    val next: String,
-    val cancel: String,
-    val save: String,
-    val loading: String,
-    val empty: String,
-    val priceRub: String,
+    // Общесистемные строковые ресурсы приложения
+    val appName: String,     // Название приложения на экране
+    val skip: String,        // Кнопка «Пропустить»
+    val next: String,        // Кнопка «Далее»
+    val cancel: String,      // Кнопка «Отмена»
+    val save: String,        // Кнопка «Сохранить»
+    val loading: String,     // Индикатор загрузки данных
+    val empty: String,       // Пустое состояние
+    val priceRub: String,    // Валютный символ рубля или доллара
 
-    // Language Screen
-    val langSelectTitle: String,
-    val langSelectSubtitle: String,
-    val langContinue: String,
+    // Экран выбора языка (Language Screen)
+    val langSelectTitle: String,     // Заголовок экрана выбора языка
+    val langSelectSubtitle: String,  // Подзаголовок с разъяснением системного языка
+    val langContinue: String,        // Кнопка продолжения после выбора языка
 
-    // Splash Screen
-    val splashMysticScroll: String,
-    val splashTapToSkip: String,
-    val splashLogoSubtitle: String,
+    // Приветственный экран заставки (Splash Screen)
+    val splashMysticScroll: String,  // Текст анимации разворачивания свитка
+    val splashTapToSkip: String,     // Подсказка для пропуска заставки по тапу
+    val splashLogoSubtitle: String,  // Мистический слоган под логотипом
 
-    // Auth Screen
-    val authTitle: String,
-    val authSubtitle: String,
-    val authEmailPhonePlaceholder: String,
-    val authPasswordPlaceholder: String,
-    val authSmsEmailCodePlaceholder: String,
-    val authRegisterBtn: String,
-    val authSkipBtn: String,
-    val authSendCodeBtn: String,
-    val authErrorInvalid: String,
-    val authEmailPhoneError: String,
-    val authPasswordError: String,
+    // Экран авторизации и регистрации пользователя (Auth Screen)
+    val authTitle: String,                  // Заголовок формы входа/регистрации
+    val authSubtitle: String,               // Описание преимуществ личного профиля
+    val authEmailPhonePlaceholder: String,  // Поле ввода почты или телефона
+    val authPasswordPlaceholder: String,    // Поле ввода пароля аккаунта
+    val authSmsEmailCodePlaceholder: String,// Поле ввода проверочного кода из SMS/почты
+    val authRegisterBtn: String,            // Кнопка запуска регистрации
+    val authSkipBtn: String,                // Кнопка гостевого входа без регистрации
+    val authSendCodeBtn: String,            // Кнопка отправки кода подтверждения
+    val authErrorInvalid: String,           // Текст ошибки некорректных учетных данных
+    val authEmailPhoneError: String,        // Ошибка валидации формата почты/телефона
+    val authPasswordError: String,          // Ошибка валидации минимальной длины пароля
 
-    // Profile Screen
-    val profileTitle: String,
-    val profileSubtitle: String,
-    val profileNameLabel: String,
-    val profileNameError: String,
-    val profileGenderLabel: String,
-    val profileGenderMale: String,
-    val profileGenderFemale: String,
-    val profileGenderNone: String,
-    val profileAgeLabel: String,
-    val profileHeightLabel: String,
-    val profileHandLabel: String,
-    val profileHandLeft: String,
-    val profileHandRight: String,
-    val profileHandDescLeft: String,
-    val profileHandDescRight: String,
+    // Экран ввода физиологического профиля (Profile Screen)
+    val profileTitle: String,         // Заголовок экрана ввода персональных данных
+    val profileSubtitle: String,      // Подзаголовок о значении возраста и пола в хиромантии
+    val profileNameLabel: String,     // Название поля ввода имени
+    val profileNameError: String,     // Ошибка валидации длины имени
+    val profileGenderLabel: String,   // Лейбл выбора гендера
+    val profileGenderMale: String,    // Вариант «Мужской»
+    val profileGenderFemale: String,  // Вариант «Женский»
+    val profileGenderNone: String,    // Вариант «Не указывать»
+    val profileAgeLabel: String,      // Поле выбора года рождения
+    val profileHeightLabel: String,   // Поле ввода роста в сантиметрах
+    val profileHandLabel: String,     // Лейбл выбора ведущей руки
+    val profileHandLeft: String,      // Вариант ведущей руки «Левша»
+    val profileHandRight: String,     // Вариант ведущей руки «Правша»
+    val profileHandDescLeft: String,  // Подробное разъяснение для левшей
+    val profileHandDescRight: String, // Подробное разъяснение для правшей
 
-    // Upload Screen
-    val uploadTitle: String,
-    val uploadGuideHeader: String,
-    val uploadGuideText: String,
-    val uploadPhotoSection: String,
-    val uploadVideoSection: String,
-    val uploadTakePhoto: String,
-    val uploadGallery: String,
-    val uploadRecordVideo: String,
-    val uploadLoadVideo: String,
-    val uploadVideoHint: String,
-    val uploadPreviewPhoto: String,
-    val uploadPreviewVideo: String,
-    val uploadChooseAnalysisType: String,
+    // Экран фотографирования и загрузки материалов (Upload Screen)
+    val uploadTitle: String,              // Заголовок экрана загрузки файлов ладони
+    val uploadGuideHeader: String,        // Заголовок памятки для качественной съемки
+    val uploadGuideText: String,          // Подробные правила (освещение, фон, пальцы)
+    val uploadPhotoSection: String,       // Секция загрузки фотоснимков ладони
+    val uploadVideoSection: String,       // Секция записи короткого видео руки
+    val uploadTakePhoto: String,          // Кнопка «Сделать фото» через камеру
+    val uploadGallery: String,            // Кнопка загрузки фото из галереи устройства
+    val uploadRecordVideo: String,        // Кнопка включения видеозаписи
+    val uploadLoadVideo: String,         // Кнопка выбора готового видео из памяти
+    val uploadVideoHint: String,          // Подсказка с инструкцией по съемке видео
+    val uploadPreviewPhoto: String,       // Превью успешно загруженного снимка
+    val uploadPreviewVideo: String,       // Превью записанного видеофайла
+    val uploadChooseAnalysisType: String, // Заголовок выбора тарифа интерпретации
 
-    // Analysis Buttons
-    val btnBriefChar: String,
-    val btnFullChar: String,
-    val btnBriefPath: String,
-    val btnFullPath: String,
-    val freeLabel: String,
-    val btnClose: String,
+    // Кнопки запуска различных видов анализа в меню тарифов (Analysis Buttons)
+    val btnBriefChar: String,  // Кнопка «Краткий анализ характера»
+    val btnFullChar: String,   // Кнопка «Полный анализ характера»
+    val btnBriefPath: String,  // Кнопка «Краткий анализ жизненного пути»
+    val btnFullPath: String,   // Кнопка «Полный анализ жизненного пути»
+    val freeLabel: String,     // Метка «Бесплатно»
+    val btnClose: String,      // Кнопка закрытия модального окна выбора тарифа
 
-    // Loading / Processing Screen
-    val loadAnalyzeLines: String,
-    val loadStudyMounts: String,
-    val loadReadSigns: String,
-    val loadGenPredictions: String,
-    val loadMysticTitle: String,
-    val loadProgressText: String,
+    // Экран прогресса анализа и генерации результатов (Loading / Processing Screen)
+    val loadAnalyzeLines: String,   // Шаг разметки линий на ладони
+    val loadStudyMounts: String,    // Шаг вычисления планетарных бугров
+    val loadReadSigns: String,      // Шаг поиска скрытых знаков
+    val loadGenPredictions: String, // Шаг составления ИИ предсказаний
+    val loadMysticTitle: String,    // Верхний заголовок экрана медитации-загрузки
+    val loadProgressText: String,   // Медитативный текст прогресса
 
-    // Results Screen
-    val resTitle: String,
-    val resTabReport: String,
-    val resTabLinesMap: String,
-    val resOverallPortrait: String,
-    val resHandType: String,
-    val resLinesHeader: String,
-    val resMountsHeader: String,
-    val resSignsHeader: String,
-    val resMarriageChildren: String,
-    val resLifeEvents: String,
-    val resPredictions: String,
-    val resRecommendations: String,
-    val resInheritedPotentials: String,
-    val resAcquiredTraits: String,
-    val resCharacterQualities: String,
-    val resAudioTitle: String,
-    val resVoiceMale: String,
-    val resVoiceFemale: String,
-    val resVoiceSpeed: String,
-    val resExportPdf: String,
-    val resExportSuccess: String,
-    val resBtnBuy10: String,
-    val resBtnBuyCompat: String,
+    // Экран просмотра отчетов анализа ладони (Results Screen)
+    val resTitle: String,              // Заголовок экрана результатов анализа
+    val resTabReport: String,          // Вкладка «Текстовый отчет»
+    val resTabLinesMap: String,        // Вкладка «Карта линий ладони»
+    val resOverallPortrait: String,    // Раздел общего психологического портрета
+    val resHandType: String,           // Тип архетипа ладони (Земля, Воздух, Вода, Огонь)
+    val resLinesHeader: String,        // Подзаголовок основных линий
+    val resMountsHeader: String,       // Подзаголовок планетарных холмов
+    val resSignsHeader: String,        // Подзаголовок сакральных символов ладони
+    val resMarriageChildren: String,   // Раздел анализа любви, брака и детей (Пункт 6)
+    val resLifeEvents: String,         // Раздел анализа ключевых вех судьбы (Пункт 4)
+    val resPredictions: String,        // Раздел анализа внешних сил и будущего (Пункт 5)
+    val resRecommendations: String,    // Раздел духовных рекомендаций хироманта
+    val resInheritedPotentials: String,// Раздел потенциалов левой руки (Пункт 1)
+    val resAcquiredTraits: String,     // Раздел достижений правой руки (Пункт 2)
+    val resCharacterQualities: String, // Раздел качеств характера человека (Пункт 3)
+    val resAudioTitle: String,         // Текст озвучки отчета синтезатором речи (TTS)
+    val resVoiceMale: String,          // Мужской голос синтеза речи
+    val resVoiceFemale: String,        // Женский голос синтеза речи
+    val resVoiceSpeed: String,         // Регулировка скорости чтения отчета
+    val resExportPdf: String,          // Кнопка экспорта отчета в PDF-документ
+    val resExportSuccess: String,      // Уведомление об успешном создании PDF
+    val resBtnBuy10: String,           // Предложение покупки пакета анализов
+    val resBtnBuyCompat: String,       // Предложение покупки совместимости с партнером
 
-    // Compatibility Screen
-    val compatTitle: String,
-    val compatSubtitle: String,
-    val compatUploadSelf: String,
-    val compatUploadPartner: String,
-    val compatAnalyzeBtn: String,
-    val compatPercentLabel: String,
-    val compatCombinedTitle: String,
-    val compatStrongTitle: String,
-    val compatWeakTitle: String,
-    val compatEmotional: String,
-    val compatIntellectual: String,
-    val compatFinancial: String,
+    // Экран вычисления синастрии и совместимости (Compatibility Screen)
+    val compatTitle: String,          // Заголовок экрана совместимости
+    val compatSubtitle: String,       // Подзаголовок о сравнении планетарных холмов и сердечных линий
+    val compatUploadSelf: String,     // Слот для загрузки своей руки
+    val compatUploadPartner: String,  // Слот для загрузки руки возлюбленного/партнера
+    val compatAnalyzeBtn: String,     // Кнопка «Начать расчет»
+    val compatPercentLabel: String,    // Отображение процента взаимного притяжения
+    val compatCombinedTitle: String,  // Общий анализ отношений
+    val compatStrongTitle: String,    // Раздел гармонии и сильных качеств пары
+    val compatWeakTitle: String,      // Раздел трений, барьеров и духовных разногласий
+    val compatEmotional: String,      // Степень эмоциональной гармонии
+    val compatIntellectual: String,   // Степень интеллектуального единства
+    val compatFinancial: String,      // Степень финансового благополучия союза
 
-    // History Screen
-    val histTitle: String,
-    val histSubtitle: String,
-    val histNoRecords: String,
-    val histClearHistory: String,
+    // Экран архива и истории проведенных сканирований (History Screen)
+    val histTitle: String,        // Заголовок списка истории анализов
+    val histSubtitle: String,     // Подзаголовок списка истории
+    val histNoRecords: String,    // Заглушка, если история сканирований пуста
+    val histClearHistory: String, // Кнопка полной очистки базы данных истории
 
-    // About & FAQ Screen
-    val aboutTitle: String,
-    val aboutTabInfo: String,
-    val aboutTabFaq: String,
-    val aboutTabContacts: String,
-    val aboutHistoryPalmist: String,
-    val aboutHistoryText: String,
-    val aboutTheoryLines: String,
-    val aboutTheoryText: String,
-    val aboutSupportBtn: String,
-    val aboutDonateTitle: String,
-    val aboutDonateDesc: String,
-    val aboutEmailSupport: String,
-    val aboutPrivacyPolicy: String,
-    val aboutSupportSuccess: String,
-    val appVersionLabel: String,
+    // Экран информации о хиромантии и поддержки разработчиков (About & FAQ Screen)
+    val aboutTitle: String,           // Заголовок информационного экрана
+    val aboutTabInfo: String,        // Вкладка с теорией хиромантии
+    val aboutTabFaq: String,          // Вкладка с частыми вопросами (FAQ)
+    val aboutTabContacts: String,     // Вкладка с контактами поддержки
+    val aboutHistoryPalmist: String,  // Заголовок исторической справки
+    val aboutHistoryText: String,     // Текст об истории развития науки хиромантии
+    val aboutTheoryLines: String,     // Заголовок интерактивной карты руки
+    val aboutTheoryText: String,      // Разъяснение значений каждой из линий
+    val aboutSupportBtn: String,      // Кнопка поддержки проекта донатом
+    val aboutDonateTitle: String,    // Заголовок всплывающего окна доната
+    val aboutDonateDesc: String,     // Описание для взноса в пользу развития ИИ
+    val aboutEmailSupport: String,    // Адрес электронной почты разработчиков
+    val aboutPrivacyPolicy: String,   // Ссылка на соглашение о конфиденциальности данных
+    val aboutSupportSuccess: String,  // Текст благодарности при поддержке
+    val appVersionLabel: String,      // Текстовая метка версии сборки
 
-    // Settings Screen
-    val settTitle: String,
-    val settLanguage: String,
-    val settSubStatus: String,
-    val settSubActive: String,
-    val settSubInactive: String,
-    val settResetApp: String,
-    val settDeleteAcc: String,
+    // Экран общих настроек приложения (Settings Screen)
+    val settTitle: String,        // Заголовок экрана настроек
+    val settLanguage: String,     // Меню переключения локализации приложения
+    val settSubStatus: String,    // Отображение уровня подписки пользователя
+    val settSubActive: String,    // Индикатор активной премиум подписки
+    val settSubInactive: String,  // Индикатор базового бесплатного доступа
+    val settResetApp: String,     // Кнопка очистки всех кэш-файлов и сброса
+    val settDeleteAcc: String,    // Кнопка полного удаления личной учетной записи
 
-    // Billing Dialogs
-    val billDialogTitle: String,
-    val billDialogChoosePay: String,
-    val billDialogYooKassa: String,
-    val billDialogGooglePlay: String,
-    val billDialogCardNum: String,
-    val billDialogSuccess: String,
-    val billDialogFail: String,
+    // Окна оплаты премиум контента и подписок (Billing Dialogs)
+    val billDialogTitle: String,      // Заголовок платежного окна
+    val billDialogChoosePay: String,  // Подсказка выбора провайдера платежей
+    val billDialogYooKassa: String,  // Кнопка оплаты через ЮKassa
+    val billDialogGooglePlay: String, // Кнопка оплаты через Google Billing
+    val billDialogCardNum: String,    // Поле ввода номера банковской карты
+    val billDialogSuccess: String,    // Оповещение об успешном платеже
+    val billDialogFail: String,       // Оповещение об отказе транзакции
 
-    // Hand Slots
-    val slotLeftPalm: String,
-    val slotLeftBack: String,
-    val slotRightPalm: String,
-    val slotRightBack: String
+    // Названия физиологических слотов ладоней (Hand Slots)
+    val slotLeftPalm: String,   // Название слота «Левая ладонь»
+    val slotLeftBack: String,   // Название слота «Тыл левой руки»
+    val slotRightPalm: String,  // Название слота «Правая ладонь»
+    val slotRightBack: String   // Название слота «Тыл правой руки»
 )
 
 object LocalizedStrings {
@@ -307,7 +309,7 @@ object LocalizedStrings {
         aboutTabFaq = "Частые вопросы",
         aboutTabContacts = "Поддержка",
         aboutHistoryPalmist = "История Хиромантии",
-        aboutHistoryText = "Хиромантия (от греч. cheir — рука и manteia — гадание) — одна из древнейших систем предсказания, зародившаяся в Древней Индии, Китае и Египте. Великие умы древности, включая Аристотеля и Гиппократа, изучали линии рук для оценки характера и здоровья человека.",
+        aboutHistoryText = "Хиромантия (от греч. cheir — рука и manteia — анализ) — одна из древнейших систем предсказания, зародившаяся в Древней Индии, Китае и Египте. Великие умы древности, включая Аристотеля и Гиппократа, изучали линии рук для оценки характера и здоровья человека.",
         aboutTheoryLines = "Карта вашей ладони",
         aboutTheoryText = "Линия Жизни отражает витальность, силу и энергию.\nЛиния Сердца раскрывает эмоциональность и способность любить.\nЛиния Головы символизирует интеллект и тип мышления.\nЛиния Судьбы указывает на карьерный путь и внешние влияния.",
         aboutSupportBtn = "Поддержать разработку",
@@ -499,10 +501,11 @@ object LocalizedStrings {
         slotRightBack = "Back of Right Hand"
     )
 
+    // Функция для получения набора строк локализации на основе выбранного языка
     fun get(lang: AppLanguage): PalmistStrings {
         return when (lang) {
-            AppLanguage.RUS -> ruStrings
-            AppLanguage.ENG -> enStrings
+            AppLanguage.RUS -> ruStrings // Возвращаем русскоязычную локализацию
+            AppLanguage.ENG -> enStrings // Возвращаем англоязычную локализацию
         }
     }
 }

@@ -3,16 +3,18 @@ package com.aistudio.hiromant.kxsrwa.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
+// Кастомный абстрактный класс базы данных Room, объединяющий все сущности и предоставляющий DAO
 @Database(
     entities = [
-        ReadingEntity::class,
-        UserProfileEntity::class,
-        BillingStateEntity::class,
-        PaymentHistoryEntity::class
+        ReadingEntity::class, // Таблица результатов сеансов анализа
+        UserProfileEntity::class, // Таблица настроек и параметров профиля искателя
+        BillingStateEntity::class, // Таблица баланса анализов и подписок
+        PaymentHistoryEntity::class // Таблица истории транзакций и бонусов
     ],
-    version = 4,
-    exportSchema = false
+    version = 4, // Текущая версия схемы БД
+    exportSchema = false // Отключение экспорта схемы БД в json-файл при компиляции
 )
 abstract class PalmistDatabase : RoomDatabase() {
+    // Метод получения интерфейса DAO доступа к таблицам
     abstract fun palmistDao(): PalmistDao
 }

@@ -69,150 +69,163 @@ import java.io.FileWriter
 import java.io.PrintWriter
 import java.io.StringWriter
 
+// Главная активность приложения «Хиромант», управляющая жизненным циклом и навигацией в Compose
 class MainActivity : ComponentActivity() {
 
+    // Внедрение общей ViewModel для работы со всеми экранами приложения через делегат viewModels()
     private val viewModel: PalmistViewModel by viewModels()
 
+    // Срабатывает при изменении фокуса окна (например, при сворачивании или возврате в приложение)
     override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
+        super.onWindowFocusChanged(hasFocus) // Вызов базовой реализации активности
+        if (hasFocus) { // Если окно получило фокус ввода
             try {
+                // Получение контроллера системных инсетов для принудительного показа статус-бара и навигации
                 val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-                windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+                windowInsetsController.show(WindowInsetsCompat.Type.systemBars()) // Отображение системных панелей
             } catch (e: Exception) {
-                Log.e("MainActivity", "Failed to show system bars on focus change: ${e.message}")
+                // Логирование ошибок при попытке работы с системным интерфейсом
+                Log.e("MainActivity", "Не удалось отобразить системные панели при изменении фокуса: ${e.message}")
             }
         }
     }
 
+    // Точка входа в активность при создании экрана
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        super.onCreate(savedInstanceState) // Вызов базового метода onCreate
+        enableEdgeToEdge() // Активация полноэкранного режима отрисовки (Edge-to-Edge)
 
         try {
+            // Показ системных статус-баров и навигационных кнопок устройства
             val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to show system bars: ${e.message}")
+            // Ошибка при инициализации Edge-to-Edge отображения
+            Log.e("MainActivity", "Ошибка при настройке Edge-to-Edge: ${e.message}")
         }
 
-        // Request notification permission dynamically for Android 13+
+        // Запрос динамического разрешения на отправку уведомлений для Android 13+ (API 33)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS // Выбор нужного системного разрешения
             if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                // Запуск системного диалога запроса прав у пользователя
                 requestPermissions(arrayOf(permission), 101)
             }
         }
 
-        // Check if there was a previous crash, and display a helpful diagnostic screen if so
+        // Проверка наличия сохраненных логов падения из предыдущей сессии работы приложения
         val sharedPrefs = getSharedPreferences("palmist_prefs", Context.MODE_PRIVATE)
-        val lastCrash = sharedPrefs.getString("last_crash_log", null)
+        val lastCrash = sharedPrefs.getString("last_crash_log", null) // Чтение последнего зарегистрированного краша
 
-        if (lastCrash != null) {
+        if (lastCrash != null) { // Если приложение упало в прошлый раз, открываем защитный экран диагностики
             setContent {
                 MaterialTheme(
                     colorScheme = darkColorScheme(
-                        primary = Color(0xFFD4AF37),
-                        background = Color(0xFF0C0C14),
-                        surface = Color(0xFF141420)
+                        primary = Color(0xFFD4AF37), // Фирменный золотой акцент
+                        background = Color(0xFF0C0C14), // Глубокий темный фон
+                        surface = Color(0xFF141420) // Темный цвет карточек
                     )
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF0C0C14))
-                            .padding(24.dp)
-                            .statusBarsPadding()
-                            .navigationBarsPadding(),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize() // На весь экран
+                            .background(Color(0xFF0C0C14)) // Окраска фона
+                            .padding(24.dp) // Внутренние отступы безопасности
+                            .statusBarsPadding() // Отступ сверху под статус-бар
+                            .navigationBarsPadding(), // Отступ снизу под системные кнопки
+                        contentAlignment = Alignment.Center // Центрирование контента
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxSize()
+                            horizontalAlignment = Alignment.CenterHorizontally, // Выравнивание по горизонтали по центру
+                            verticalArrangement = Arrangement.Center, // Выравнивание по вертикали по центру
+                            modifier = Modifier.fillMaxSize() // Заполнение всего пространства колонкой
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = Color(0xFFCF6679),
-                                modifier = Modifier.size(64.dp)
+                                imageVector = Icons.Default.Warning, // Иконка предупреждения об ошибке
+                                contentDescription = null, // Описание отсутствует
+                                tint = Color(0xFFCF6679), // Красный цвет ошибки
+                                modifier = Modifier.size(64.dp) // Размер иконки 64dp
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp)) // Пробел между элементами
                             Text(
-                                text = "Произошел сбой приложения",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
+                                text = "Произошел сбой приложения", // Заголовок ошибки
+                                style = MaterialTheme.typography.titleLarge, // Крупный шрифт
+                                color = Color.White, // Белый цвет текста
+                                textAlign = TextAlign.Center // Выравнивание по центру
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp)) // Отступ
                             Text(
-                                text = "Скопируйте текст ошибки ниже и пришлите его нам для исправления:",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center
+                                text = "Скопируйте текст ошибки ниже и пришлите его нам для исправления:", // Пояснение для пользователя
+                                style = MaterialTheme.typography.bodyMedium, // Средний шрифт текста
+                                color = Color.Gray, // Серый цвет текста
+                                textAlign = TextAlign.Center // Текст по центру
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp)) // Отступ
                             
-                            // Scrollable text area for the crash log
+                            // Скроллируемая область для вывода полного стектрейса ошибки (crash log)
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .background(Color.Black.copy(0.3f), RoundedCornerShape(8.dp))
-                                    .border(1.dp, Color.Gray.copy(0.3f), RoundedCornerShape(8.dp))
-                                    .padding(12.dp)
-                                    .verticalScroll(rememberScrollState())
+                                    .weight(1f) // Занимает всё доступное вертикальное пространство
+                                    .fillMaxWidth() // Растягивается на всю ширину
+                                    .background(Color.Black.copy(0.3f), RoundedCornerShape(8.dp)) // Полупрозрачный черный фон со скруглением
+                                    .border(1.dp, Color.Gray.copy(0.3f), RoundedCornerShape(8.dp)) // Серая рамка
+                                    .padding(12.dp) // Внутренний отступ текста от краев рамки
+                                    .verticalScroll(rememberScrollState()) // Добавление вертикального скролла
                             ) {
                                 Text(
-                                    text = lastCrash,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 11.sp,
-                                    color = Color(0xFFCF6679)
+                                    text = lastCrash, // Вывод текста краш-лога
+                                    fontFamily = FontFamily.Monospace, // Моноширинный шрифт для кода ошибки
+                                    fontSize = 11.sp, // Небольшой размер шрифта
+                                    color = Color(0xFFCF6679) // Выделение текста ошибки красным оттенком
                                 )
                             }
                             
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp)) // Отступ
                             
-                            val context = LocalContext.current
+                            val context = LocalContext.current // Получение текущего Android-контекста
                             
+                            // Кнопка для отправки отчета по электронной почте разработчику
                             Button(
                                 onClick = {
                                     try {
+                                        // Попытка запуска почтового интента
                                         val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-                                            data = android.net.Uri.parse("mailto:")
-                                            putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("ArsMaxim@gmail.com"))
-                                            putExtra(android.content.Intent.EXTRA_SUBJECT, "Crash Report: Palmist App")
-                                            putExtra(android.content.Intent.EXTRA_TEXT, lastCrash)
+                                            data = android.net.Uri.parse("mailto:") // Схема почты
+                                            putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("ArsMaxim@gmail.com")) // Адрес разработчика
+                                            putExtra(android.content.Intent.EXTRA_SUBJECT, "Crash Report: Palmist App") // Тема письма
+                                            putExtra(android.content.Intent.EXTRA_TEXT, lastCrash) // Вложение текста лога ошибки
                                         }
-                                        context.startActivity(android.content.Intent.createChooser(intent, "Отправить отчет..."))
+                                        context.startActivity(android.content.Intent.createChooser(intent, "Отправить отчет...")) // Выбор почтового приложения
                                     } catch (ex: Exception) {
                                         try {
+                                            // Резервный способ отправки простым текстовым интентом (если ACTION_SENDTO не поддерживается)
                                             val backupIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                                type = "text/plain"
+                                                type = "text/plain" // Текстовый тип
                                                 putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("ArsMaxim@gmail.com"))
                                                 putExtra(android.content.Intent.EXTRA_SUBJECT, "Crash Report: Palmist App")
                                                 putExtra(android.content.Intent.EXTRA_TEXT, lastCrash)
                                             }
                                             context.startActivity(android.content.Intent.createChooser(backupIntent, "Отправить отчет..."))
                                         } catch (e: Exception) {
+                                            // Вывод сообщения в случае отсутствия почтовых программ на устройстве
                                             Toast.makeText(context, "Не удалось открыть почтовый клиент", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)), // Красная кнопка
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
+                                    .fillMaxWidth() // Растянуть по ширине
+                                    .padding(bottom = 8.dp) // Нижний отступ кнопки
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Email,
+                                    imageVector = Icons.Default.Email, // Иконка письма
                                     contentDescription = null,
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Отправить отчет об ошибке разработчику\n(ArsMaxim@gmail.com)",
+                                    text = "Отправить отчет об ошибке разработчику\n(ArsMaxim@gmail.com)", // Призыв к отправке
                                     textAlign = TextAlign.Center,
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                                     color = Color.White
@@ -220,32 +233,33 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                modifier = Modifier.fillMaxWidth(), // Строка во всю ширину
+                                horizontalArrangement = Arrangement.spacedBy(12.dp) // Расстояние между кнопками 12dp
                             ) {
+                                // Кнопка быстрого копирования текста лога в буфер обмена
                                 Button(
                                     onClick = {
                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         val clip = android.content.ClipData.newPlainText("Crash Log", lastCrash)
-                                        clipboard.setPrimaryClip(clip)
-                                        Toast.makeText(context, "Лог скопирован", Toast.LENGTH_SHORT).show()
+                                        clipboard.setPrimaryClip(clip) // Сохранение в буфер
+                                        Toast.makeText(context, "Лог скопирован", Toast.LENGTH_SHORT).show() // Подтверждение пользователю
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MysticBronze),
-                                    modifier = Modifier.weight(1f)
+                                    colors = ButtonDefaults.buttonColors(containerColor = MysticBronze), // Бронзовая кнопка
+                                    modifier = Modifier.weight(1f) // Занимает половину строки
                                 ) {
                                     Text("Скопировать")
                                 }
                                 
+                                // Кнопка очистки лога краша и повторного перезапуска приложения
                                 Button(
                                     onClick = {
-                                        sharedPrefs.edit().remove("last_crash_log").commit()
-                                        // Relaunch the MainActivity clean
-                                        val intent = intent
-                                        finish()
-                                        startActivity(intent)
+                                        sharedPrefs.edit().remove("last_crash_log").commit() // Удаление флага падения
+                                        val intent = intent // Получение текущего интента запуска
+                                        finish() // Закрытие текущей активности
+                                        startActivity(intent) // Запуск активности заново с чистого листа
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
-                                    modifier = Modifier.weight(1f)
+                                    colors = ButtonDefaults.buttonColors(containerColor = MysticGold), // Золотая кнопка
+                                    modifier = Modifier.weight(1f) // Занимает вторую половину строки
                                 ) {
                                     Text("Сбросить и запустить", color = Color.Black)
                                 }
@@ -254,61 +268,65 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            return
+            return // Завершение выполнения onCreate во избежание отрисовки основного интерфейса поверх экрана сбоя
         }
 
-        // Normal launch path wrapped in a robust catch block
+        // Штатный путь запуска приложения (обернутый в блок try-catch безопасности)
         try {
             setContent {
                 MyApplicationTheme {
-                    val navController = rememberNavController()
-                    val fontScaleValue by viewModel.fontScale.collectAsState()
-                    val density = androidx.compose.ui.platform.LocalDensity.current
+                    val navController = rememberNavController() // Создание контроллера навигации Compose
+                    val fontScaleValue by viewModel.fontScale.collectAsState() // Наблюдение за пользовательским размером шрифта
+                    val density = androidx.compose.ui.platform.LocalDensity.current // Текущая плотность пикселей экрана
+                    // Создание кастомного Density для динамического масштабирования шрифтов по ползунку в настройках
                     val customDensity = remember(density, fontScaleValue) {
                         object : androidx.compose.ui.unit.Density by density {
                             override val fontScale: Float
-                                get() = density.fontScale * fontScaleValue
+                                get() = density.fontScale * fontScaleValue // Корректировка масштаба системного шрифта
                         }
                     }
+                    // Предоставление кастомной плотности шрифтов для всего дерева Compose-интерфейса ниже
                     androidx.compose.runtime.CompositionLocalProvider(
                         androidx.compose.ui.platform.LocalDensity provides customDensity
                     ) {
+                        // Определение стартового экрана навигации: если язык выбран, идем на Сплеш, иначе на экран Языка
                         val startDest = remember {
                             if (viewModel.isLanguageSelected()) "splash" else "language"
                         }
 
-                        val navBackStackEntry by navController.currentBackStackEntryAsState()
-                        val currentRoute = navBackStackEntry?.destination?.route
+                        val navBackStackEntry by navController.currentBackStackEntryAsState() // Наблюдение за текущим стэком переходов
+                        val currentRoute = navBackStackEntry?.destination?.route // Название текущего маршрута экрана
 
+                        // Определение необходимости показа нижнего меню (Bottom Navigation Bar) на разных экранах
                         val showBottomBar = remember(currentRoute) {
                             currentRoute in listOf("main_container", "result", "billing", "settings")
                         }
 
-                        val currentLang by viewModel.selectedLanguage.collectAsState()
-                        val strings = LocalizedStrings.get(currentLang)
-                        val activeTab by viewModel.activeTab.collectAsState()
+                        val currentLang by viewModel.selectedLanguage.collectAsState() // Получение текущего языка приложения
+                        val strings = LocalizedStrings.get(currentLang) // Загрузка строковых ресурсов для текущего языка
+                        val activeTab by viewModel.activeTab.collectAsState() // Отслеживание текущей активной вкладки в контейнере
 
                         Scaffold(
-                            // 1. Убираем верхнюю панель с количеством анализов по требованию пользователя
-                            topBar = {},
+                            topBar = {}, // Верхняя панель скрыта согласно требованиям лаконичного дизайна
                             bottomBar = {
-                                if (showBottomBar) {
+                                if (showBottomBar) { // Отрисовка нижнего меню навигации, если флаг равен true
                                     Row(
                                         modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MysticDarkSurface)
+                                            .fillMaxWidth() // Во всю ширину экрана
+                                            .background(MysticDarkSurface) // Глубокий темный фон панели меню
                                             .border(
                                                 width = 1.dp,
-                                                color = MysticBronze.copy(0.2f),
+                                                color = MysticBronze.copy(0.2f), // Тонкая бронзовая рамка сверху
                                                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                                             )
-                                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                                            .navigationBarsPadding()
-                                            .height(60.dp)
-                                            .padding(horizontal = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceAround
+                                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)) // Скругление верхних углов меню
+                                            .navigationBarsPadding() // Отступ снизу под системную панель жестов устройства
+                                            .height(60.dp) // Высота нижней панели навигации
+                                            .padding(horizontal = 2.dp), // Горизонтальные отступы внутри меню
+                                        verticalAlignment = Alignment.CenterVertically, // Выравнивание иконок по центру вертикали
+                                        horizontalArrangement = Arrangement.SpaceAround // Равномерное распределение кнопок по ширине
                                     ) {
+                                        // Определение списка вкладок: Идентификатор, Текстовая метка, Иконка (активная/неактивная)
                                         val tabs = listOf(
                                             Triple("upload", strings.navScan, if (activeTab == "upload") Icons.Filled.AutoAwesome else Icons.Outlined.AutoAwesome),
                                             Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
@@ -318,6 +336,7 @@ class MainActivity : ComponentActivity() {
                                         )
 
                                         tabs.forEach { (tabId, label, icon) ->
+                                            // Проверка, является ли данная вкладка выбранной
                                             val isSelected = if (currentRoute == "main_container") activeTab == tabId else {
                                                 if (currentRoute == "settings" && tabId == "settings") true
                                                 else if (currentRoute == "result" && tabId == "upload") true
@@ -325,188 +344,200 @@ class MainActivity : ComponentActivity() {
                                             }
                                             Column(
                                                 modifier = Modifier
-                                                    .weight(1f)
+                                                    .weight(1f) // Каждая вкладка занимает равную долю ширины
                                                     .clickable(
                                                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                                        indication = null,
+                                                        indication = null, // Отключение стандартного серого эффекта нажатия для мистического вида
                                                         onClick = {
-                                                            viewModel.activeTab.value = tabId
+                                                            viewModel.activeTab.value = tabId // Переключение активной вкладки во ViewModel
                                                             if (currentRoute != "main_container") {
+                                                                // Возврат на главный экран-контейнер при нажатии на вкладку из других окон
                                                                 navController.navigate("main_container") {
                                                                     popUpTo("main_container") { inclusive = false }
                                                                 }
                                                             }
                                                         }
                                                     )
-                                                    .padding(vertical = 4.dp),
+                                                    .padding(vertical = 4.dp), // Вертикальные отступы внутри кнопки вкладки
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
-                                                // Контейнер для иконки с поддержкой бейджа
+                                                // Контейнер для иконки с поддержкой динамического красного бейджа количества анализов
                                                 Box(
                                                     contentAlignment = Alignment.TopEnd
                                                 ) {
                                                     Icon(
-                                                        imageVector = icon,
-                                                        contentDescription = null,
-                                                        tint = if (isSelected) MysticGold else Color.Gray,
-                                                        modifier = Modifier.size(18.dp)
+                                                        imageVector = icon, // Системная иконка Material Design
+                                                        contentDescription = null, // Игнорируется для скринридеров
+                                                        tint = if (isSelected) MysticGold else Color.Gray, // Золотая подсветка активного пункта
+                                                        modifier = Modifier.size(18.dp) // Компактный размер иконки
                                                     )
                                                     
-                                                    // Рисуем цифру количества анализов на значке пользователя (Кабинет)
+                                                    // Отрисовка круглого бейджа с балансом сеансов над вкладкой «Кабинет» пользователя
                                                     if (tabId == "user_cabinet") {
-                                                        val billingStateVal by viewModel.billingState.collectAsState() // Получаем состояние биллинга
-                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Извлекаем количество анализов
-                                                        if (count > 0) { // Если доступно больше 0 анализов, рисуем бейдж
+                                                        val billingStateVal by viewModel.billingState.collectAsState() // Подписка на баланс
+                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Текущий остаток сеансов
+                                                        if (count > 0) { // Отрисовываем бейдж только при наличии доступных балансов
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .offset(x = 6.dp, y = (-6).dp) // Смещаем бейдж в правый верхний угол иконки
-                                                                    .background(Color.Red, shape = RoundedCornerShape(50)) // Красный скругленный фон
-                                                                    .padding(horizontal = 4.dp, vertical = 1.dp) // Отступы вокруг текста цифры
+                                                                    .offset(x = 6.dp, y = (-6).dp) // Сдвиг на правый верхний угол иконки
+                                                                    .background(Color.Red, shape = RoundedCornerShape(50)) // Красный круглый фон
+                                                                    .padding(horizontal = 4.dp, vertical = 1.dp) // Минимальные отступы вокруг текста
                                                             ) {
                                                                 Text(
-                                                                    text = count.toString(), // Выводим число анализов
-                                                                    color = Color.White, // Белый цвет текста
-                                                                    fontSize = 7.sp, // Компактный размер шрифта для бейджа
-                                                                    fontWeight = FontWeight.Bold // Жирный шрифт для читаемости
+                                                                    text = count.toString(), // Выводим число оставшихся сеансов
+                                                                    color = Color.White, // Белый цвет текста цифры
+                                                                    fontSize = 7.sp, // Миниатюрный размер
+                                                                    fontWeight = FontWeight.Bold // Жирное начертание для читаемости
                                                                 )
                                                             }
                                                         }
                                                     }
                                                 }
-                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Spacer(modifier = Modifier.height(2.dp)) // Отступ между иконкой и надписью
                                                 Text(
-                                                    text = label,
-                                                    fontSize = 8.sp,
-                                                    color = if (isSelected) MysticGold else Color.Gray,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
+                                                    text = label, // Название пункта меню
+                                                    fontSize = 8.sp, // Очень компактный размер текста под иконкой
+                                                    color = if (isSelected) MysticGold else Color.Gray, // Золотая подсветка активной подписи
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, // Жирный шрифт для активного пункта
+                                                    maxLines = 1, // В одну строку
+                                                    overflow = TextOverflow.Ellipsis // Сжатие при переполнении
                                                 )
                                             }
                                         }
                                     }
                                 }
                             },
-                            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                            contentWindowInsets = WindowInsets(0, 0, 0, 0), // Устранение лишних дефолтных отступов Scaffold
                             modifier = Modifier.fillMaxSize()
                         ) { innerPadding ->
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(MysticDarkBackground)
-                                    .padding(innerPadding)
+                                    .fillMaxSize() // На весь экран
+                                    .background(MysticDarkBackground) // Установка фирменного фона под всеми экранами
+                                    .padding(innerPadding) // Уважение безопасных областей Scaffold
                             ) {
+                                // Конфигурация NavHost: Хост навигации, управляющий всеми экранами в приложении
                                 NavHost(
                                     navController = navController,
-                                    startDestination = startDest,
+                                    startDestination = startDest, // Установка вычисленного стартового маршрута
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    // 1. Language selector
+                                    // 1. Экран выбора языка интерфейса при первом запуске
                                     composable("language") {
                                         LanguageSelectionScreen(
                                             viewModel = viewModel,
                                             onNavigateToSplash = {
                                                 val isAlreadySelected = viewModel.isLanguageSelected()
-                                                viewModel.markLanguageSelected()
+                                                viewModel.markLanguageSelected() // Сохранение факта выбора языка в настройки
                                                 if (isAlreadySelected) {
-                                                    navController.popBackStack()
+                                                    navController.popBackStack() // Если меняли в настройках, просто возвращаемся
                                                 } else {
+                                                    // Если это первый выбор, идем на Сплеш-заставку
                                                     navController.navigate("splash") {
-                                                        popUpTo("language") { inclusive = true }
+                                                        popUpTo("language") { inclusive = true } // Удаление экрана языка из стэка
                                                     }
                                                 }
                                             }
                                         )
                                     }
 
-                                    // 2. Parchment splash animation
+                                    // 2. Сплеш-экран с анимацией разворачивания пергамента и проявлением логотипа
                                     composable("splash") {
                                         MysticSplashScreen(
                                             viewModel = viewModel,
                                             onNavigateNext = {
                                                 val profile = viewModel.userProfile.value
                                                 if (profile != null && profile.name.isNotBlank()) {
+                                                    // Если профиль заполнен, переходим на главный экран сканирования ладони
                                                     navController.navigate("main_container") {
-                                                        popUpTo("splash") { inclusive = true }
+                                                        popUpTo("splash") { inclusive = true } // Стираем Сплеш из истории переходов
                                                     }
                                                 } else {
+                                                    // Если профиля нет (первый вход), открываем экран ввода данных пользователя
                                                     navController.navigate("profile") {
-                                                        popUpTo("splash") { inclusive = true }
+                                                        popUpTo("splash") { inclusive = true } // Стираем Сплеш из истории
                                                     }
                                                 }
                                             }
                                         )
                                     }
 
-                                    // 4. Profile Details Form
+                                    // 3. Экран заполнения анкеты профиля (имя, пол, возраст, рост, доминантная рука)
                                     composable("profile") {
                                         ProfileScreen(
                                             viewModel = viewModel,
                                             onNavigateNext = {
+                                                // После заполнения переходим на главный дашборд
                                                 navController.navigate("main_container") {
-                                                    popUpTo("profile") { inclusive = true }
+                                                    popUpTo("profile") { inclusive = true } // Удаление экрана ввода анкеты из стэка
                                                 }
                                             }
                                         )
                                     }
 
-                                    // 5. Main dashboard with bottom navigation bar tabs
+                                    // 4. Главный контейнер со вкладками (Сканирование ладоней, Совместимость, Кабинет, Настройки, О приложении)
                                     composable("main_container") {
                                         MainContainerScreen(
                                             viewModel = viewModel,
-                                            onNavigateToLoading = { navController.navigate("loading") },
-                                            onNavigateToBilling = { navController.navigate("billing") },
-                                            onNavigateToLanguage = { navController.navigate("language") },
-                                            onNavigateToVideoScan = { navController.navigate("video_scan") }
+                                            onNavigateToLoading = { navController.navigate("loading") }, // Переход на экран ИИ-расчетов
+                                            onNavigateToBilling = { navController.navigate("billing") }, // Переход на экран покупки баланса
+                                            onNavigateToLanguage = { navController.navigate("language") }, // Смена языка
+                                            onNavigateToVideoScan = { navController.navigate("video_scan") } // Переход к записи видео ладоней
                                         )
                                     }
 
-                                    // 10. Post-payment video recording screen
+                                    // 5. Экран записи короткого видео движения рук (дополнительная разблокировка анализа)
                                     composable("video_scan") {
                                         PostPaymentVideoScreen(
                                             viewModel = viewModel,
                                             onNavigateToLoading = {
+                                                // Переход на экран загрузки ИИ-анализа после успешной записи
                                                 navController.navigate("loading") {
-                                                    popUpTo("video_scan") { inclusive = true }
+                                                    popUpTo("video_scan") { inclusive = true } // Удаление экрана записи видео
                                                 }
                                             },
-                                            onNavigateBack = { navController.popBackStack() }
+                                            onNavigateBack = { navController.popBackStack() } // Кнопка назад
                                         )
                                     }
 
-                                    // 6. Progressive loader screen
+                                    // 6. Прогрессивный экран загрузки и отправки промптов с мистическими предсказаниями в реальном времени
                                     composable("loading") {
-                                        val isAnalyzing by viewModel.isAnalyzing.collectAsState()
+                                        val isAnalyzing by viewModel.isAnalyzing.collectAsState() // Флаг работы генерации ИИ
                                         
                                         LaunchedEffect(isAnalyzing) {
-                                            if (!isAnalyzing) {
+                                            if (!isAnalyzing) { // Как только ИИ закончил анализ ладони
                                                 val compReading = viewModel.currentCompatibilityReading.value
                                                 if (compReading != null && compReading.analysisType == "compatibility") {
+                                                    // Если рассчитывали совместимость, переходим во вкладку Совместимости
                                                     viewModel.activeTab.value = "compatibility"
                                                     navController.navigate("main_container") {
-                                                        popUpTo("loading") { inclusive = true }
+                                                        popUpTo("loading") { inclusive = true } // Закрываем экран загрузки
                                                     }
                                                 } else {
+                                                    // Если делали обычный анализ ладони, переходим на экран результатов
                                                     navController.navigate("result") {
-                                                        popUpTo("loading") { inclusive = true }
+                                                        popUpTo("loading") { inclusive = true } // Закрываем экран загрузки
                                                     }
                                                 }
                                             }
                                         }
 
+                                        // Отображение анимированного мистического лоадера с фазами луны
                                         MysticLoadingScreen(viewModel = viewModel)
                                     }
 
-                                    // 7. Analysis Report Display + interactive palm map
+                                    // 7. Экран результатов ИИ-анализа ладони с подробным интерактивным атласом линий
                                     composable("result") {
                                         ResultsScreen(
                                             viewModel = viewModel,
                                             onNavigateToCompatibility = {
+                                                // Навигация на главный контейнер (на вкладку совместимости)
                                                 navController.navigate("main_container")
                                             },
-                                            onNavigateToBilling = { navController.navigate("billing") },
+                                            onNavigateToBilling = { navController.navigate("billing") }, // Открыть магазин баланса
                                             onClose = {
+                                                // Возврат на главный экран сканирования
                                                 navController.navigate("main_container") {
                                                     popUpTo("main_container") { inclusive = true }
                                                 }
@@ -514,20 +545,20 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
 
-                                    // 8. Payment panel (Yandex Pay / YooKassa / Play billing)
+                                    // 8. Экран биллинга / магазина покупок (ЮKassa/ЮMoney СБП, Google Play Billing)
                                     composable("billing") {
                                         BillingScreen(
                                             viewModel = viewModel,
-                                            onNavigateBack = { navController.popBackStack() }
+                                            onNavigateBack = { navController.popBackStack() } // Закрытие экрана
                                         )
                                     }
 
-                                    // 9. Settings screen
+                                    // 9. Экран настроек приложения (смена языка, размер шрифта, очистка истории, логирование)
                                     composable("settings") {
                                         SettingsScreen(
                                             viewModel = viewModel,
-                                            onNavigateToLanguage = { navController.navigate("language") },
-                                            onNavigateBack = { navController.popBackStack() }
+                                            onNavigateToLanguage = { navController.navigate("language") }, // Смена языка
+                                            onNavigateBack = { navController.popBackStack() } // Выход из настроек
                                         )
                                     }
                                 }
@@ -537,40 +568,43 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } catch (e: Throwable) {
-            // Log any early runtime crash to a file
-            logException(e)
+            // Перехват любых критических ошибок на этапе инициализации приложения
+            logException(e) // Запись стектрейса ошибки в локальный файл crash.log
             val logFile = File(getExternalFilesDir(null), "crash.log")
             Toast.makeText(
                 this,
                 "Ошибка запуска: ${e.message}\nЛог записан в ${logFile.absolutePath}",
                 Toast.LENGTH_LONG
-            ).show()
-            throw e
+            ).show() // Показ уведомления пользователю
+            throw e // Проброс ошибки дальше в ОС для корректного завершения процесса
         }
     }
 
+    // Вспомогательный метод для подробного логирования сбоев во внешний текстовый файл
     private fun logException(e: Throwable) {
         try {
-            val logDir = getExternalFilesDir(null)
+            val logDir = getExternalFilesDir(null) // Путь к внешней папке файлов приложения
             if (logDir != null && (logDir.exists() || logDir.mkdirs())) {
-                val logFile = File(logDir, "crash.log")
-                val writer = FileWriter(logFile, true)
+                val logFile = File(logDir, "crash.log") // Создание или открытие файла crash.log
+                val writer = FileWriter(logFile, true) // Открытие потока записи в режиме дозаписи в конец файла
                 val sw = StringWriter()
                 val pw = PrintWriter(sw)
-                e.printStackTrace(pw)
-                writer.write("\n--- Crash at ${System.currentTimeMillis()} ---\n")
-                writer.write(sw.toString())
-                writer.write("\n--- End of crash ---\n\n")
-                writer.flush()
-                writer.close()
+                e.printStackTrace(pw) // Чтение трассировки стека ошибки в строку
+                writer.write("\n--- Сбой в системе: ${System.currentTimeMillis()} ---\n") // Время возникновения ошибки
+                writer.write(sw.toString()) // Текст стектрейса
+                writer.write("\n--- Конец блока сбоя ---\n\n")
+                writer.flush() // Запись данных из буфера на диск
+                writer.close() // Закрытие потока
             }
         } catch (ex: Exception) {
-            Log.e("MainActivity", "Не удалось записать лог", ex)
+            // Безопасный перехват ошибок записи лога краша во избежание бесконечного цикла падений
+            Log.e("MainActivity", "Не удалось записать лог падения в файл", ex)
         }
     }
 }
 
 
+// Компонуемый контейнер, динамически переключающий экраны вкладок в зависимости от выбранной вкладки Bottom Bar
 @Composable
 fun MainContainerScreen(
     viewModel: PalmistViewModel,
@@ -579,13 +613,14 @@ fun MainContainerScreen(
     onNavigateToLanguage: () -> Unit,
     onNavigateToVideoScan: () -> Unit
 ) {
-    val activeTab by viewModel.activeTab.collectAsState()
+    val activeTab by viewModel.activeTab.collectAsState() // Подписка на изменение активной вкладки
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(MysticDarkBackground)
+            .fillMaxSize() // На весь экран
+            .background(MysticDarkBackground) // Темный мистический фон
     ) {
+        // Условный выбор отображаемого экрана в зависимости от выбранного tabId
         when (activeTab) {
             "upload" -> UploadScreen(
                 viewModel = viewModel,
@@ -600,14 +635,14 @@ fun MainContainerScreen(
             )
             "user_cabinet" -> UserCabinetScreen(
                 viewModel = viewModel,
-                onNavigateToResult = onNavigateToLoading
+                onNavigateToResult = onNavigateToLoading // Переход к сохраненному результату в кабинете
             )
             "settings" -> SettingsScreen(
                 viewModel = viewModel,
                 onNavigateToLanguage = onNavigateToLanguage,
-                onNavigateBack = { viewModel.activeTab.value = "upload" }
+                onNavigateBack = { viewModel.activeTab.value = "upload" } // По умолчанию возвращаемся на сканирование
             )
-            "about" -> AboutScreen(viewModel = viewModel)
+            "about" -> AboutScreen(viewModel = viewModel) // Описание приложения, методологии и школ хиромантии
         }
     }
 }

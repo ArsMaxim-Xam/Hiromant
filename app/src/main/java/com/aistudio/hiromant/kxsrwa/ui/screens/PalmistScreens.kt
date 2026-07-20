@@ -82,7 +82,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 
-const val PALMIST_PROJECT_SUPPORT_TEXT = "Программа Хиромант, анализирует снимки Ваших рук, с помощью ИИ/AI Gemeni... Анализ может быть не совсем верным... Gemeni имеет гораздо более широкий спектр применения. Мы работаем, над созданием специализированной Нейросети (ИИ) Хиромант. Поддержите проект и качество анализа, значительно улучшится в будующих версиях программы Хоромант."
+const val PALMIST_PROJECT_SUPPORT_TEXT = """Анализ выполнен с помощью AI Gemini. 
+Результат может быть не идеальным.
+Мы создаём собственную нейросеть «Хиромант» 
+— поддержите проект, чтобы сделать его точнее.
+Спасибо, что Вы с нами!"""
 
 fun configureTtsVoice(
     tts: TextToSpeech?,
@@ -316,127 +320,130 @@ fun MysticSplashScreen(
         val flash = mutableStateOf(1f)
     }
 
-    val elements = remember { // Запоминаем список анимированных элементов между рекомпозициями
-        listOf( // Создаем список, содержащий линии ладони и планетарные холмы
-            // --- ЛИНИИ ЛАДОНИ (LINE) ---
-            AnimatedElementState( // Определяем состояние для Линии Жизни
-                id = "life_line", // Уникальный идентификатор Линии Жизни
-                type = HandElementType.LINE, // Тип элемента - Линия
-                name = "Life Line", // Английское наименование для внутренней логики
-                color = Color(0xFFFF4D4D), // Насыщенный кораллово-красный цвет для Линии Жизни
-                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, идеально описывающие анатомический изгиб холма Венеры
-                    Pair(0.58f, 0.46f), // Начальная точка между большим и указательным пальцами
-                    Pair(0.54f, 0.54f), // Точка плавного спуска вдоль внутренней стороны ладони
-                    Pair(0.50f, 0.64f), // Середина дуги, огибающей холм Венеры
-                    Pair(0.48f, 0.77f), // Нижняя часть дуги, уходящая к запястью
-                    Pair(0.48f, 0.90f)  // Финальная точка у самого основания запястья
-                ) // Завершаем список точек для Линии Жизни
-            ), // Завершаем описание Линии Жизни
-            AnimatedElementState( // Определяем состояние для Линии Головы (Ума)
-                id = "head_line", // Уникальный идентификатор Линии Головы
-                type = HandElementType.LINE, // Тип элемента - Линия
-                name = "Head Line", // Английское наименование для внутренней логики
-                color = Color(0xFF00BFFF), // Яркий глубокий голубой цвет для Линии Головы
-                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, идеально описывающие диагональный спуск Линии Ума
-                    Pair(0.58f, 0.46f), // Исток Линии Головы у ребра большого пальца
-                    Pair(0.50f, 0.50f), // Прохождение под средним пальцем
-                    Pair(0.44f, 0.54f), // Прохождение под безымянным пальцем
-                    Pair(0.36f, 0.58f), // Плавный наклон к холму Луны
-                    Pair(0.28f, 0.62f)  // Финальная точка Линии Головы на холме Луны
-                ) // Завершаем список точек для Линии Головы
-            ), // Завершаем описание Линии Головы
-            AnimatedElementState( // Определяем состояние для Линии Сердца
-                id = "heart_line", // Уникальный идентификатор Линии Сердца
-                type = HandElementType.LINE, // Тип элемента - Линия
-                name = "Heart Line", // Английское наименование для внутренней логики
-                color = Color(0xFFFF1493), // Яркий розовый цвет для Линии Сердца
-                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, описывающие красивую дугу под пальцами
-                    Pair(0.23f, 0.49f), // Начало под мизинцем на ребре ладони
-                    Pair(0.32f, 0.47f), // Плавный прогиб под безымянным пальцем
-                    Pair(0.42f, 0.46f), // Прохождение под средним пальцем
-                    Pair(0.47f, 0.41f)  // Изгиб вверх к холму Юпитера у указательного пальца
-                ) // Завершаем список точек для Линии Сердца
-            ), // Завершаем описание Линии Сердца
-            AnimatedElementState( // Определяем состояние для Линии Судьбы
-                id = "destiny_line", // Уникальный идентификатор Линии Судьбы
-                type = HandElementType.LINE, // Тип элемента - Линия
-                name = "Destiny Line", // Английское наименование для внутренней логики
-                color = Color(0xFFDA70D6), // Нежный орхидеево-фиолетовый цвет для Линии Судьбы
-                points = listOf( // Координаты точек (X, Y) от 0.0 до 1.0, описывающие вертикальное восхождение судьбы
-                    Pair(0.48f, 0.91f), // Исток у самого основания запястья
-                    Pair(0.47f, 0.78f), // Подъем по центральной нижней части ладони
-                    Pair(0.47f, 0.65f), // Прохождение через середину ладони
-                    Pair(0.45f, 0.52f), // Пересечение Линии Головы
-                    Pair(0.44f, 0.40f)  // Устремление к холму Сатурна под средним пальцем
-                ) // Завершаем список точек для Линии Судьбы
-            ), // Завершаем описание Линии Судьбы
-            // --- ПЛАНЕТАРНЫЕ ХОЛМЫ И ИХ СИМВОЛЫ (MOUNT) ---
-            AnimatedElementState( // Холм Юпитера (под указательным пальцем)
-                id = "mount_jupiter", // Идентификатор холма Юпитера
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Jupiter", // Наименование для внутренней логики
-                color = Color(0xFF9370DB), // Благородный фиолетовый цвет Юпитера
-                symbol = "♃", // Древний астрологический символ Юпитера
-                position = Pair(0.54f, 0.38f) // Анатомическое положение холма под указательным пальцем
-            ), // Завершаем описание холма Юпитера
-            AnimatedElementState( // Холм Сатурна (под средним пальцем)
-                id = "mount_saturn", // Идентификатор холма Сатурна
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Saturn", // Наименование для внутренней логики
-                color = Color(0xFFFFD700), // Золотой королевский цвет Сатурна
-                symbol = "♄", // Древний астрологический символ Сатурна
-                position = Pair(0.425f, 0.36f) // Анатомическое положение холма под средним пальцем
-            ), // Завершаем описание холма Сатурна
-            AnimatedElementState( // Холм Аполлона / Солнца (под безымянным пальцем)
-                id = "mount_apollo", // Идентификатор холма Аполлона
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Apollo", // Наименование для внутренней логики
-                color = Color(0xFFFF8C00), // Солнечный оранжевый цвет Аполлона
-                symbol = "☉", // Древний астрологический символ Солнца
-                position = Pair(0.32f, 0.38f) // Анатомическое положение холма под безымянным пальцем
-            ), // Завершаем описание холма Аполлона
-            AnimatedElementState( // Холм Меркурия (под мизинцем)
-                id = "mount_mercury", // Идентификатор холма Меркурия
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Mercury", // Наименование для внутренней логики
-                color = Color(0xFF00FA9A), // Изумрудно-зеленый цвет Меркурия
-                symbol = "☿", // Древний астрологический символ Меркурия
-                position = Pair(0.235f, 0.44f) // Анатомическое положение холма под мизинцем
-            ), // Завершаем описание холма Меркурия
-            AnimatedElementState( // Холм Венеры (крупное основание большого пальца)
-                id = "mount_venus", // Идентификатор холма Венеры
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Venus", // Наименование для внутренней логики
-                color = Color(0xFFFF69B4), // Нежно-розовый чувственный цвет Венеры
-                symbol = "♀", // Древний астрологический символ Венеры
-                position = Pair(0.68f, 0.74f) // Анатомическое положение холма у основания большого пальца
-            ), // Завершаем описание холма Венеры
-            AnimatedElementState( // Нижний Марс (внутренний холм войны, между большим и указательным)
-                id = "mount_mars_lower", // Идентификатор Нижнего Марса
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Lower Mars", // Наименование для внутренней логики
-                color = Color(0xFFFF0000), // Огненно-красный воинственный цвет Марса
-                symbol = "♂", // Древний астрологический символ Марса (щит и копье)
-                position = Pair(0.59f, 0.51f) // Анатомическое положение у основания складки большого пальца
-            ), // Завершаем описание Нижнего Марса
-            AnimatedElementState( //  Верхний Марс (внешний холм мужества и пассивной обороны)
-                id = "mount_mars_upper", // Идентификатор Верхнего Марса
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Upper Mars", // Наименование для внутренней логики
-                color = Color(0xFFFF4500), // Красно-оранжевый цвет Верхнего Марса
-                symbol = "♂", // Древний астрологический символ Марса
-                position = Pair(0.27f, 0.55f) // Анатомическое положение на внешнем ребре ладони под Линией Сердца
-            ), // Завершаем описание Верхнего Марса
-            AnimatedElementState( // Холм Луны (нижняя внешняя часть ладони)
-                id = "mount_moon", // Идентификатор холма Луны
-                type = HandElementType.MOUNT, // Тип элемента - Холм
-                name = "Mount of Moon", // Наименование для внутренней логики
-                color = Color(0xFFE6E6FA), // Мистический лавандовый цвет Луны
-                symbol = "☽", // Древний астрологический символ Луны
-                position = Pair(0.30f, 0.75f) // Анатомическое положение на внешнем нижнем ребре ладони
-            ) // Завершаем описание холма Луны
-        ) // Завершаем создание списка элементов
-    }
+    val elements = remember { // Сохраняем список всех интерактивных элементов ладони в памяти Jetpack Compose
+        listOf( // Инициализируем коллекцию анимированных элементов (линий ладони и холмов)
+            // --- КАТЕГОРИЯ: ГЛАВНЫЕ ЛИНИИ ЛАДОНИ ---
+            AnimatedElementState( // Инициализируем объект состояния для Линии Жизни
+                id = "life_line", // Задаем уникальный строковый идентификатор Линии Жизни
+                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
+                name = "Life Line", // Внутреннее наименование линии на английском языке
+                color = Color(0xFFFF4D4D), // Присваиваем линии жизни теплый красный цвет ауры
+                points = listOf( // Задаем упорядоченные точки координат для плавного изгиба линии
+                    Pair(0.58f, 0.46f), // Начальная точка у складки между большим и указательным пальцами
+                    Pair(0.62f, 0.52f), // Вторая точка изгиба, плавно уходящая вправо вдоль холма Венеры
+                    Pair(0.66f, 0.58f), // Третья точка, описывающая верхний правый контур холма Венеры
+                    Pair(0.69f, 0.65f), // Четвертая точка, проходящая по дальней правой выпуклости ладони
+                    Pair(0.68f, 0.74f), // Пятая точка у нижнего края правого полушария холма Венеры
+                    Pair(0.63f, 0.81f), // Шестая точка, плавно загибающаяся к центру основания ладони
+                    Pair(0.55f, 0.86f), // Седьмая точка, спускающаяся по направлению к запястью
+                    Pair(0.48f, 0.89f)  // Финальная точка у границы розетты запястья
+                ) // Завершаем описание списка точек для построения кривой Линии Жизни
+            ), // Завершаем инициализацию объекта состояния Линии Жизни
+            AnimatedElementState( // Инициализируем объект состояния для Линии Головы (Ума)
+                id = "head_line", // Задаем уникальный строковый идентификатор Линии Головы
+                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
+                name = "Head Line", // Внутреннее наименование линии на английском языке
+                color = Color(0xFF00BFFF), // Присваиваем линии ума холодный сине-голубой цвет логики
+                points = listOf( // Задаем упорядоченные точки координат для прохождения линии ума
+                    Pair(0.58f, 0.46f), // Начальная точка у ребра ладони над большим пальцем
+                    Pair(0.51f, 0.50f), // Вторая точка, проходящая под пальцем Сатурна
+                    Pair(0.44f, 0.54f), // Третья точка, пересекающая середину ладони под пальцем Солнца
+                    Pair(0.36f, 0.58f), // Четвертая точка, плавно наклоняющаяся вниз к холму Луны
+                    Pair(0.28f, 0.61f)  // Финальная точка на холме Луны на левом ребре ладони
+                ) // Завершаем описание списка точек для построения кривой Линии Головы
+            ), // Завершаем инициализацию объекта состояния Линии Головы
+            AnimatedElementState( // Инициализируем объект состояния для Линии Сердца
+                id = "heart_line", // Задаем уникальный строковый идентификатор Линии Сердца
+                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
+                name = "Heart Line", // Внутреннее наименование линии на английском языке
+                color = Color(0xFFFF1493), // Присваиваем линии сердца яркий чувственный розовый цвет
+                points = listOf( // Задаем упорядоченные точки координат для прохождения линии сердца
+                    Pair(0.23f, 0.49f), // Начальная точка на ребре ладони непосредственно под мизинцем
+                    Pair(0.32f, 0.47f), // Вторая точка, идущая горизонтально под безымянным пальцем
+                    Pair(0.42f, 0.45f), // Третья точка, проходящая под основанием среднего пальца
+                    Pair(0.50f, 0.41f)  // Финальная точка, изгибающаяся вверх к холму Юпитера
+                ) // Завершаем описание списка точек для построения кривой Линии Сердца
+            ), // Завершаем инициализацию объекта состояния Линии Сердца
+            AnimatedElementState( // Инициализируем объект состояния для Линии Судьбы
+                id = "destiny_line", // Задаем уникальный строковый идентификатор Линии Судьбы
+                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
+                name = "Destiny Line", // Внутреннее наименование линии на английском языке
+                color = Color(0xFFDA70D6), // Присваиваем линии судьбы мистический орхидеевый фиолетовый цвет
+                points = listOf( // Задаем упорядоченные точки координат для прохождения линии судьбы
+                    Pair(0.48f, 0.88f), // Начальная точка у самого основания запястья (у розетты)
+                    Pair(0.47f, 0.75f), // Вторая точка, поднимающаяся вверх по центру низа ладони
+                    Pair(0.46f, 0.60f), // Третья точка, проходящая ровно по середине ладони
+                    Pair(0.45f, 0.48f), // Четвертая точка, пересекающая центральную равнину Марса
+                    Pair(0.44f, 0.42f)  // Финальная точка, устремленная к холму Сатурна (среднему пальцу)
+                ) // Завершаем описание списка точек для построения кривой Линии Судьбы
+            ), // Завершаем инициализацию объекта состояния Линии Судьбы
+            // --- КАТЕГОРИЯ: ПЛАНЕТАРНЫЕ ХОЛМЫ И ИХ АСТРОЛОГИЧЕСКИЕ ЗНАКИ ---
+            AnimatedElementState( // Инициализируем объект состояния для Холма Юпитера
+                id = "mount_jupiter", // Указываем идентификатор холма Юпитера
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Jupiter", // Английское наименование холма для внутренней логики
+                color = Color(0xFF9370DB), // Задаем холму благородный лавандово-фиолетовый цвет Юпитера
+                symbol = "♃", // Присваиваем холму древний астрологический символ Юпитера
+                position = Pair(0.58f, 0.38f) // Точные координаты (X, Y) расположения холма под указательным пальцем
+            ), // Завершаем инициализацию объекта состояния холма Юпитера
+            AnimatedElementState( // Инициализируем объект состояния для Холма Сатурна
+                id = "mount_saturn", // Указываем идентификатор холма Сатурна
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Saturn", // Английское наименование холма для внутренней логики
+                color = Color(0xFFFFD700), // Задаем холму королевский золотой цвет планеты Сатурн
+                symbol = "♄", // Присваиваем холму древний астрологический символ Сатурна
+                position = Pair(0.48f, 0.36f) // Точные координаты (X, Y) расположения холма под средним пальцем
+            ), // Завершаем инициализацию объекта состояния холма Сатурна
+            AnimatedElementState( // Инициализируем объект состояния для Холма Аполлона (Солнца)
+                id = "mount_apollo", // Указываем идентификатор холма Аполлона
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Apollo", // Английское наименование холма для внутренней логики
+                color = Color(0xFFFF8C00), // Задаем холму теплый солнечный оранжевый цвет Аполлона
+                symbol = "☉", // Присваиваем холму древний астрологический символ Солнца
+                position = Pair(0.36f, 0.38f) // Точные координаты (X, Y) расположения холма под безымянным пальцем
+            ), // Завершаем инициализацию объекта состояния холма Аполлона
+            AnimatedElementState( // Инициализируем объект состояния для Холма Меркурия
+                id = "mount_mercury", // Указываем идентификатор холма Меркурия
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Mercury", // Английское наименование холма для внутренней логики
+                color = Color(0xFF00FA9A), // Задаем холму изумрудно-зеленый цвет планеты Меркурий
+                symbol = "☿", // Присваиваем холму древний астрологический символ Меркурия
+                position = Pair(0.24f, 0.42f) // Точные координаты (X, Y) расположения холма под мизинцем
+            ), // Завершаем инициализацию объекта состояния холма Меркурия
+            AnimatedElementState( // Инициализируем объект состояния для Холма Венеры
+                id = "mount_venus", // Указываем идентификатор холма Венеры
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Venus", // Английское наименование холма для внутренней логики
+                color = Color(0xFFFF69B4), // Задаем холму нежно-розовый романтический цвет Венеры
+                symbol = "♀", // Присваиваем холму древний астрологический символ Венеры
+                position = Pair(0.67f, 0.69f) // Точные координаты (X, Y) расположения на крупном холме большого пальца
+            ), // Завершаем инициализацию объекта состояния холма Венеры
+            AnimatedElementState( // Инициализируем объект состояния для Нижнего Марса
+                id = "mount_mars_lower", // Указываем идентификатор холма Нижнего Марса
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Lower Mars", // Английское наименование холма для внутренней логики
+                color = Color(0xFFFF0000), // Задаем холму импульсивный огненно-красный цвет активности Марса
+                symbol = "♂", // Присваиваем холму древний астрологический символ Марса
+                position = Pair(0.59f, 0.51f) // Точные координаты (X, Y) холма у основания складки большого пальца
+            ), // Завершаем инициализацию объекта состояния холма Нижнего Марса
+            AnimatedElementState( // Инициализируем объект состояния для  Верхнего Марса
+                id = "mount_mars_upper", // Указываем идентификатор холма Верхнего Марса
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Upper Mars", // Английское наименование холма для внутренней логики
+                color = Color(0xFFFF4500), // Задаем холму красно-оранжевый защитный цвет обороны Марса
+                symbol = "♂", // Присваиваем холму древний астрологический символ Марса
+                position = Pair(0.27f, 0.55f) // Точные координаты (X, Y) холма на внешнем ребре ладони под линией сердца
+            ), // Завершаем инициализацию объекта состояния холма Верхнего Марса
+            AnimatedElementState( // Инициализируем объект состояния для Холма Луны
+                id = "mount_moon", // Указываем идентификатор холма Луны
+                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
+                name = "Mount of Moon", // Английское наименование холма для внутренней логики
+                color = Color(0xFFE6E6FA), // Задаем холму таинственный лавандовый цвет интуиции Луны
+                symbol = "☽", // Присваиваем холму древний астрологический символ Луны
+                position = Pair(0.30f, 0.72f) // Точные координаты (X, Y) расположения на внешнем нижнем ребре ладони
+            ) // Завершаем инициализацию объекта состояния холма Луны
+        ) // Завершаем формирование списка всех анимированных элементов заставки
+    } // Завершаем выполнение блока remember для кэширования списка
 
     val imageAlpha by animateFloatAsState(
         targetValue = if (showSymbols) 1f else 0f,
@@ -3524,32 +3531,61 @@ fun UploadScreen(
         }
     }
 
+    // Проверяем, активен ли в данный момент флаг отображения диалога встроенной камеры приложения
     if (showInAppCamera) {
+        // Рендерим кастомный компонент диалога камеры InAppCameraDialog
         InAppCameraDialog(
+            // Передаем имя текущего активного слота для съемки (например, left_palm) или значение по умолчанию
             slotName = activeSlot ?: "palm_photo",
+            // Передаем текущий язык интерфейса (русский или английский)
             currentLang = currentLang,
+            // Определяем лямбда-коллбэк, который вызывается при успешном захвате кадра камерой
             onPhotoCaptured = { bitmap ->
+                // Используем оператор when для обработки результатов в зависимости от того, какой слот снимался
                 when (activeSlot) {
+                    // Обработка снимка для левой ладони
                     "left_palm" -> {
+                        // Обновляем состояние в ViewModel, сохраняя полученный Bitmap объект левой ладони
                         viewModel.bitmapLeftPalm.value = bitmap
-                        viewModel.leftPalmPath.value = "in_app_camera"
+                        // Сохраняем снимок в стандартную галерею Android и получаем его системный URI адрес
+                        val savedUri = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGalleryAndGetUri(context, bitmap, "LeftPalm")
+                        // Записываем строковое представление полученного Uri в ViewModel для последующего сохранения в базу данных
+                        viewModel.leftPalmPath.value = savedUri?.toString() ?: "in_app_camera"
                     }
+                    // Обработка снимка для тыльной стороны левой руки
                     "left_back" -> {
+                        // Сохраняем объект Bitmap тыльной стороны левой руки в соответствующее поле ViewModel
                         viewModel.bitmapLeftBack.value = bitmap
-                        viewModel.leftBackPath.value = "in_app_camera"
+                        // Автоматически экспортируем созданный снимок в галерею смартфона и извлекаем его Uri
+                        val savedUri = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGalleryAndGetUri(context, bitmap, "LeftBack")
+                        // Сохраняем полученный Uri в виде строки во ViewModel для надежной записи в БД Room
+                        viewModel.leftBackPath.value = savedUri?.toString() ?: "in_app_camera"
                     }
+                    // Обработка снимка для правой ладони
                     "right_palm" -> {
+                        // Обновляем состояние Bitmap правой ладони во ViewModel
                         viewModel.bitmapRightPalm.value = bitmap
-                        viewModel.rightPalmPath.value = "in_app_camera"
+                        // Сохраняем растровые данные правой ладони в галерею и генерируем уникальный Uri
+                        val savedUri = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGalleryAndGetUri(context, bitmap, "RightPalm")
+                        // Связываем локальный Uri изображения с полем пути во ViewModel для синхронизации с базой данных
+                        viewModel.rightPalmPath.value = savedUri?.toString() ?: "in_app_camera"
                     }
+                    // Обработка снимка для тыльной стороны правой руки
                     "right_back" -> {
+                        // Помещаем полученный Bitmap тыльной стороны правой руки в реактивное состояние ViewModel
                         viewModel.bitmapRightBack.value = bitmap
-                        viewModel.rightBackPath.value = "in_app_camera"
+                        // Экспортируем снимок тыльной стороны правой руки в галерею телефона с получением Uri
+                        val savedUri = com.aistudio.hiromant.kxsrwa.utils.BitmapUtils.saveBitmapToGalleryAndGetUri(context, bitmap, "RightBack")
+                        // Записываем финальный путь (Uri) в соответствующее свойство во ViewModel для Room
+                        viewModel.rightBackPath.value = savedUri?.toString() ?: "in_app_camera"
                     }
                 }
+                // Закрываем окно диалога камеры после успешной фиксации кадра и сохранения данных
                 showInAppCamera = false
             },
+            // Коллбэк для отмены съемки и закрытия диалогового окна камеры без сохранения
             onDismiss = {
+                // Выключаем отображение диалогового окна камеры
                 showInAppCamera = false
             }
         )
@@ -3982,6 +4018,114 @@ fun SelectableInterpretationText(
     }
 }
 
+// Компонент для визуализации расхода токенов Gemini API в красивом мистическом стиле
+@Composable
+fun TokenUsageCard(
+    promptTokens: Int?, // Входящие токены (запрос пользователя и картинки)
+    candidatesTokens: Int?, // Исходящие токены (ответ ИИ)
+    totalTokens: Int?, // Общее количество потраченных токенов за сессию
+    modifier: Modifier = Modifier // Модификатор разметки
+) {
+    if (totalTokens == null || totalTokens == 0) return // Если данных о токенах нет, ничего не рендерим
+
+    Card( // Создаем карточку в стиле Material 3
+        colors = CardDefaults.cardColors( // Задаем цвета карточки
+            containerColor = Color(0xFF1E1C24), // Глубокий тёмно-фиолетовый фон
+            contentColor = Color.White // Белый цвет для основного содержимого
+        ),
+        shape = RoundedCornerShape(12.dp), // Скругляем углы карточки на 12dp
+        border = BorderStroke(1.dp, MysticGold.copy(alpha = 0.3f)), // Создаем золотистую рамку с прозрачностью
+        modifier = modifier // Применяем внешний модификатор
+            .fillMaxWidth() // Растягиваем карточку на всю доступную ширину
+            .padding(vertical = 16.dp) // Добавляем аккуратные вертикальные отступы сверху и снизу
+    ) { // Начало содержимого карточки
+        Column( // Размещаем элементы вертикально в один столбец
+            modifier = Modifier // Настраиваем внутренние отступы
+                .fillMaxWidth() // Растягиваем колонку по ширине
+                .padding(16.dp) // Внутренний паддинг карточки в 16dp
+        ) { // Начало столбца
+            Row( // Размещаем иконку и заголовок в одну строку
+                verticalAlignment = Alignment.CenterVertically, // Выравниваем по центру по вертикали
+                modifier = Modifier.fillMaxWidth() // Занимаем всю ширину
+            ) { // Начало строки заголовка
+                Icon( // Иконка системной информации
+                    imageVector = Icons.Default.Info, // Используем стандартную круглую инфо-иконку
+                    contentDescription = "Информация о токенах", // Доступное описание для VoiceOver/TalkBack
+                    tint = MysticGold, // Наш фирменный мистический золотой цвет для иконки
+                    modifier = Modifier.size(20.dp) // Размер иконки 20x20dp
+                ) // Конец иконки
+                Spacer(modifier = Modifier.width(8.dp)) // Небольшой отступ между иконкой и текстом
+                Text( // Заголовок блока токенов
+                    text = "Расход токенов Gemini ИИ", // Текст заголовка
+                    style = MaterialTheme.typography.titleMedium.copy( // Настройка стиля текста
+                        color = MysticGold, // Золотистый цвет заголовка
+                        fontWeight = FontWeight.Bold, // Жирное начертание
+                        fontFamily = FontFamily.Serif // Шрифт с засечками для стиля
+                    ) // Конец стиля
+                ) // Конец элемента Text
+            } // Конец строки заголовка
+            
+            Spacer(modifier = Modifier.height(12.dp)) // Отступ перед строками детализации
+            
+            Row( // Строка детализации для входящих токенов запроса
+                horizontalArrangement = Arrangement.SpaceBetween, // Распределяем текст и число по краям
+                modifier = Modifier.fillMaxWidth() // Занимаем всю ширину
+            ) { // Начало строки
+                Text( // Текст "Запрос"
+                    text = "Запрос (входящие):", // Описание поля
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.7f)) // Белый текст с прозрачностью 70%
+                ) // Конец текста
+                Text( // Число токенов запроса
+                    text = "${promptTokens ?: 0}", // Отображаем количество или 0, если null
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontWeight = FontWeight.Bold) // Контрастный белый жирный шрифт
+                ) // Конец текста
+            } // Конец строки
+            
+            Spacer(modifier = Modifier.height(6.dp)) // Небольшой вертикальный разделительный интервал в 6dp
+            
+            Row( // Строка детализации для исходящих токенов ответа
+                horizontalArrangement = Arrangement.SpaceBetween, // Распределяем по краям
+                modifier = Modifier.fillMaxWidth() // Занимаем всю ширину
+            ) { // Начало строки
+                Text( // Текст "Ответ"
+                    text = "Ответ (исходящие):", // Описание поля
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.7f)) // Белый текст с 70% прозрачностью
+                ) // Конец текста
+                Text( // Число токенов ответа
+                    text = "${candidatesTokens ?: 0}", // Отображаем значение или 0
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontWeight = FontWeight.Bold) // Белый жирный шрифт
+                ) // Конец текста
+            } // Конец строки
+            
+            Spacer(modifier = Modifier.height(12.dp)) // Отступ перед горизонтальным разделителем
+            Divider(color = MysticGold.copy(alpha = 0.15f), thickness = 1.dp) // Элегантная тонкая золотистая полоса-разделитель
+            Spacer(modifier = Modifier.height(12.dp)) // Отступ после разделителя
+            
+            Row( // Строка вывода итогового значения
+                horizontalArrangement = Arrangement.SpaceBetween, // Растаскиваем по краям
+                modifier = Modifier.fillMaxWidth(), // Растягиваем на всю ширину
+                verticalAlignment = Alignment.CenterVertically // Центрируем по вертикали
+            ) { // Начало строки
+                Text( // Подпись итогового расхода
+                    text = "Всего израсходовано:", // Текст итога
+                    style = MaterialTheme.typography.bodyLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold) // Крупный золотистый жирный текст
+                ) // Конец текста
+                Text( // Общая сумма токенов
+                    text = "$totalTokens", // Значение суммарного расхода
+                    style = MaterialTheme.typography.bodyLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold) // Крупный золотистый жирный текст
+                ) // Конец текста
+            } // Конец строки
+            
+            Spacer(modifier = Modifier.height(8.dp)) // Интервал перед сноской
+            
+            Text( // Сноска с полезным пояснением для пользователя о лимитах ключа
+                text = "* Оставшиеся токены лимитируются вашим тарифным планом API-ключа Google (Free Tier: 15 RPM).", // Текст пояснения
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp) // Мелкий полупрозрачный серый текст
+            ) // Конец сноски
+        } // Конец столбца
+    } // Конец карточки
+}
+
 @Composable
 fun TtsVoiceController(
     isPlaying: Boolean,
@@ -4330,7 +4474,7 @@ fun ProjectSupportSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         MysticButton(
-            text = if (currentLang == AppLanguage.RUS) "Поддержать проект Хиромант" else "Support the Palmist Project",
+            text = if (currentLang == AppLanguage.RUS) "Поддержать" else "Support",
             onClick = { showSupportDialog = true },
             modifier = Modifier.fillMaxWidth()
         )
@@ -4373,9 +4517,8 @@ fun ProjectSupportSection(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     listOf(
-                        "yoomoney" to "ЮMoney / Карты",
-                        "ozon" to "Ozon Банк (СБП)",
-                        "wb" to "WB Банк (СБП)"
+                        "yoomoney" to if (currentLang == AppLanguage.RUS) "ЮKassa / ЮMoney / Карты" else "YooKassa / YooMoney / Cards",
+                        "google" to if (currentLang == AppLanguage.RUS) "Google Play Billing (ИИ Подписка)" else "Google Play Billing (AI Subscription)"
                     ).forEach { (methodId, label) ->
                         val isSelected = selectedMethod == methodId
                         Row(
@@ -4450,23 +4593,27 @@ fun ProjectSupportSection(
                                     return@MysticButton
                                 }
                                 
-                                try {
-                                    val cleanWallet = "410013630971157"
-                                    val targets = "Hiromant Project Support: $amountVal RUB"
-                                    val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
-                                    val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
-                                            "receiver=$cleanWallet&" +
-                                            "quickpay-form=button&" +
-                                            "targets=$encodedTargets&" +
-                                            "paymentType=AC&" +
-                                            "sum=$amountVal"
-                                    
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                    context.startActivity(intent)
+                                if (selectedMethod == "google") {
                                     showConfirmationDialog = true
-                                } catch (e: Exception) {
-                                    val errorMsg = if (currentLang == AppLanguage.RUS) "Ошибка запуска оплаты: ${e.localizedMessage}" else "Payment launch error: ${e.localizedMessage}"
-                                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                                } else {
+                                    try {
+                                        val cleanWallet = "410013630971157"
+                                        val targets = "Hiromant Project Support: $amountVal RUB"
+                                        val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
+                                        val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
+                                                "receiver=$cleanWallet&" +
+                                                "quickpay-form=button&" +
+                                                "targets=$encodedTargets&" +
+                                                "paymentType=AC&" +
+                                                "sum=$amountVal"
+                                        
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                        context.startActivity(intent)
+                                        showConfirmationDialog = true
+                                    } catch (e: Exception) {
+                                        val errorMsg = if (currentLang == AppLanguage.RUS) "Ошибка запуска оплаты: ${e.localizedMessage}" else "Payment launch error: ${e.localizedMessage}"
+                                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f)
@@ -4479,20 +4626,14 @@ fun ProjectSupportSection(
 
     if (showConfirmationDialog) {
         val dialogTitle = when (selectedMethod) {
-            "ozon" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты Ozon Банк (СБП)" else "Pending Ozon Bank Payment (SBP)"
-            "wb" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты WB Банк (СБП)" else "Pending WB Bank Payment (SBP)"
-            else -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮMoney" else "Pending YooMoney Payment"
+            "google" -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты Google Play Billing" else "Pending Google Play Billing Payment"
+            else -> if (currentLang == AppLanguage.RUS) "Ожидание оплаты ЮKassa/ЮMoney" else "Pending YooMoney Payment"
         }
         val dialogText = when (selectedMethod) {
-            "ozon" -> if (currentLang == AppLanguage.RUS) {
-                "Была инициализирована оплата через Ozon Банк (СБП) на сумму $supportAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для зачисления поддержки и анализов."
+            "google" -> if (currentLang == AppLanguage.RUS) {
+                "Была инициализирована оплата через Google Play Billing на сумму $supportAmount ₽.\n\nНажмите кнопку 'Подтвердить' для зачисления поддержки и получения анализов."
             } else {
-                "Payment of $supportAmount RUB via Ozon Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to claim your support credits."
-            }
-            "wb" -> if (currentLang == AppLanguage.RUS) {
-                "Была инициализирована оплата через WB Банк (СБП) на сумму $supportAmount ₽.\n\nПожалуйста, совершите перевод и нажмите кнопку 'Подтвердить' для зачисления поддержки и анализов."
-            } else {
-                "Payment of $supportAmount RUB via WB Bank (SBP) was initialized.\n\nPlease complete the transfer and click 'Confirm' to claim your support credits."
+                "Payment of $supportAmount RUB via Google Play Billing was initialized.\n\nPlease click 'Confirm' to claim your support credits through Google Play."
             }
             else -> if (currentLang == AppLanguage.RUS) {
                 "Страница перевода была открыта.\n\nПосле завершения перевода вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы получить заслуженные анализы (+1 анализ за каждые 100 рублей)!"
@@ -4619,6 +4760,10 @@ fun ResultsScreen(
     // Selectable Text Field states
     var leftHandTextState by remember { mutableStateOf(TextFieldValue()) }
     var rightHandTextState by remember { mutableStateOf(TextFieldValue()) }
+
+    var userQuestionText by remember { mutableStateOf("") }
+    val followUpLoading by viewModel.followUpLoading.collectAsState()
+    val followUpResponse by viewModel.followUpResponse.collectAsState()
 
     var isTtsReady by remember { mutableStateOf(false) }
 
@@ -4751,6 +4896,16 @@ fun ResultsScreen(
                     isPlayingTts = false
                     spokenWordRange = null
                     lastPlaybackIndex = 0 // Сбрасываем индекс, когда чтение завершено полностью
+                    
+                    if (utteranceId == "reading_text") {
+                        kotlinx.coroutines.delay(5000)
+                        val promoText = PALMIST_PROJECT_SUPPORT_TEXT.replace("\n", " ")
+                        val params = android.os.Bundle().apply {
+                            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "promo_text")
+                        }
+                        tts?.speak(promoText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "promo_text")
+                        isPlayingTts = true
+                    }
                 }
             }
             override fun onError(utteranceId: String?) {
@@ -4937,8 +5092,171 @@ fun ResultsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 24.dp, bottom = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
+                                // Блок интерактивного уточняющего вопроса
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0x0AFFFFFF), RoundedCornerShape(16.dp))
+                                        .border(1.dp, MysticBronze.copy(0.25f), RoundedCornerShape(16.dp))
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        text = "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            color = MysticGold,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                    Text(
+                                        text = "Хотите углубиться в какую-то конкретную область? Задайте мне вопрос о:\n" +
+                                               "• 💼 Карьера и финансы — профессиональный потенциал, денежные потоки\n" +
+                                               "• 💕 Отношения и брак — совместимость, любовная линия, партнерство\n" +
+                                               "• 🧠 Интеллект и таланты — скрытые способности, обучение\n" +
+                                               "• 🏥 Здоровье и энергия — жизненная сила, уязвимые зоны\n" +
+                                               "• 🌟 Карма и предназначение — духовный путь, миссия\n" +
+                                               "• 📅 Временные периоды — прогноз по годам\n" +
+                                               "• 🔍 Конкретная линия или знак — детальный разбор\n" +
+                                               "• Улучшение фото — как сделать идеальные снимки\n\n" +
+                                               "Или напишите свой вопрос — я отвечу на всё!",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = Color.LightGray.copy(0.9f),
+                                            lineHeight = 20.sp
+                                        )
+                                    )
+                                    
+                                    OutlinedTextField(
+                                        value = userQuestionText,
+                                        onValueChange = { userQuestionText = it },
+                                        placeholder = { Text("Задайте свой вопрос...", color = Color.Gray) },
+                                        minLines = 3,
+                                        maxLines = 8,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = MysticGold,
+                                            unfocusedBorderColor = MysticBronze.copy(0.6f),
+                                            cursorColor = MysticGold
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = 100.dp)
+                                    )
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        // Кнопка "Вернуться"
+                                        MysticButton(
+                                            text = "Вернуться",
+                                            onClick = {
+                                                if (followUpResponse != null) {
+                                                    viewModel.clearFollowUp()
+                                                } else {
+                                                    onClose()
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            isSecondary = true
+                                        )
+                                        
+                                        // Кнопка "Отправить"
+                                        MysticButton(
+                                            text = if (followUpLoading) "Отправка..." else "Отправить",
+                                            onClick = {
+                                                if (userQuestionText.isNotBlank() && !followUpLoading) {
+                                                    viewModel.sendFollowUpQuestion(currentTextState.text, userQuestionText)
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            isSecondary = false,
+                                            enabled = userQuestionText.isNotBlank() && !followUpLoading
+                                        )
+                                    }
+                                    
+                                    if (followUpLoading) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = MysticGold)
+                                        }
+                                    }
+                                    
+                                    if (followUpResponse != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Card(
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color(0x11FFFFFF)),
+                                            border = BorderStroke(1.dp, MysticGold.copy(0.4f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(14.dp)) {
+                                                Text(
+                                                    text = "🔮 Ответ Хироманта:",
+                                                    style = MaterialTheme.typography.titleSmall.copy(
+                                                        color = MysticGold,
+                                                        fontWeight = FontWeight.Bold
+                                                    ),
+                                                    modifier = Modifier.padding(bottom = 6.dp)
+                                                )
+                                                Text(
+                                                    text = followUpResponse ?: "",
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        color = Color.White,
+                                                        lineHeight = 22.sp
+                                                    )
+                                                )
+                                                
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            followUpResponse?.let { text ->
+                                                                tts?.stop()
+                                                                applyTtsSettings()
+                                                                val params = android.os.Bundle().apply {
+                                                                    putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "follow_up")
+                                                                }
+                                                                tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "follow_up")
+                                                                isPlayingTts = true
+                                                            }
+                                                        }
+                                                        .padding(vertical = 4.dp, horizontal = 8.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.VolumeUp,
+                                                        contentDescription = "Listen to answer",
+                                                        tint = MysticGold,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "Прослушать ответ",
+                                                        style = MaterialTheme.typography.labelMedium.copy(color = MysticGold)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Визуализируем блок расхода токенов для ИИ-анализа ладони
+                                TokenUsageCard(
+                                    promptTokens = palmistReport?.promptTokens, // Передаем входящие токены промпта
+                                    candidatesTokens = palmistReport?.candidatesTokens, // Передаем исходящие токены генерации
+                                    totalTokens = palmistReport?.totalTokens // Передаем суммарное количество израсходованных токенов
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp)) // Небольшой отступ
+
                                 ProjectSupportSection(viewModel = viewModel)
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -5250,12 +5568,13 @@ fun CompatibilityScreen(
     val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
     val ttsPitchState by viewModel.ttsPitch.collectAsState()
 
-    var isPlayingTts by remember { mutableStateOf(false) }
-    var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var ttsOffset by remember { mutableStateOf(0) }
-    var lastPlaybackIndex by remember { mutableStateOf(0) }
-    var ttsByLocalRef by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) }
-    var isTtsReady by remember { mutableStateOf(false) }
+    var isPlayingTts by remember { mutableStateOf(false) } // Флаг активности воспроизведения синтеза речи
+    var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) } // Координаты текущего произносимого слова
+    var ttsOffset by remember { mutableStateOf(0) } // Смещение в тексте для точной работы подсветки слов
+    var lastPlaybackIndex by remember { mutableStateOf(0) } // Индекс символа, на котором воспроизведение приостановилось
+    var ttsByLocalRef by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) } // Экземпляр Android TextToSpeech
+    var isTtsReady by remember { mutableStateOf(false) } // Флаг готовности синтезатора речи к работе
+    var ttsDelayJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) } // Корутина для отложенного чтения текста поддержки (пауза 5 секунд)
 
     // Initialize Android TTS
     DisposableEffect(Unit) {
@@ -5340,38 +5659,61 @@ fun CompatibilityScreen(
         )
     }
 
-    DisposableEffect(ttsByLocalRef) {
-        ttsByLocalRef?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {
-                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    isPlayingTts = true
-                }
-            }
-            override fun onDone(utteranceId: String?) {
-                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    isPlayingTts = false
-                    spokenWordRange = null
-                    lastPlaybackIndex = 0
-                }
-            }
-            override fun onError(utteranceId: String?) {
-                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    isPlayingTts = false
-                }
-            }
-            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-                scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    val absStart = start + ttsOffset
-                    val absEnd = end + ttsOffset
-                    spokenWordRange = Pair(absStart, absEnd)
-                    lastPlaybackIndex = absStart
-                }
-            }
-        })
-        onDispose {
-            ttsByLocalRef?.setOnUtteranceProgressListener(null)
-        }
-    }
+    DisposableEffect(ttsByLocalRef) { // Эффект жизненного цикла для прослушивания событий синтезатора речи TTS
+        ttsByLocalRef?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() { // Установка слушателя прогресса чтения
+            override fun onStart(utteranceId: String?) { // Метод, вызываемый при старте озвучивания блока текста
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) { // Переключаемся на главный поток для изменения состояния Compose
+                    isPlayingTts = true // Устанавливаем статус проигрывания в true
+                } // Конец корутины главного потока
+            } // Конец метода onStart
+            override fun onDone(utteranceId: String?) { // Метод, вызываемый при успешном окончании чтения блока текста
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) { // Переключаемся на главный поток UI
+                    if (utteranceId == "reading_text") { // Проверяем, завершилось ли чтение основного текста анализа совместимости
+                        isPlayingTts = true // Оставляем флаг воспроизведения активным во время 5-секундного ожидания
+                        spokenWordRange = null // Убираем подсветку слов для основного текста
+                        ttsDelayJob?.cancel() // Отменяем предыдущие задачи отложенного чтения во избежание наложения
+                        ttsDelayJob = scope.launch { // Запускаем корутину отложенного чтения
+                            kotlinx.coroutines.delay(5000) // Выдерживаем точную паузу в 5 секунд (5000 мс) по техническому заданию
+                            val supportText = if (currentLang == AppLanguage.RUS) { // Выбираем текст в зависимости от текущего языка интерфейса
+                                "Анализ выполнен с помощью AI Gemini. Результат может быть не идеальным... Мы создаём собственную нейросеть «Хиромант» — поддержите проект, чтобы сделать его точнее. Спасибо, что Вы с нами!💙" // Русский текст
+                            } else { // Для английского языка
+                                "Analysis completed with the help of AI Gemini. The result may not be perfect... We are building our own neural network \"Palmist\" — support the project to make it more precise. Thank you for being with us!💙" // Английский текст
+                            } // Конец выбора текста
+                            val params = android.os.Bundle().apply { // Создаем параметры для озвучивания
+                                putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "support_text") // Задаем ID для отслеживания чтения текста поддержки
+                            } // Конец настройки параметров
+                            ttsOffset = 0 // Сбрасываем смещение для нового независимого блока текста
+                            ttsByLocalRef?.speak(supportText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "support_text") // Запускаем воспроизведение текста поддержки
+                        } // Конец корутины отложенного чтения
+                    } else if (utteranceId == "support_text") { // Если завершилось чтение текста поддержки
+                        isPlayingTts = false // Сбрасываем флаг воспроизведения
+                        spokenWordRange = null // Сбрасываем подсветку слов
+                        lastPlaybackIndex = 0 // Сбрасываем позицию проигрывания на начало
+                    } // Конец проверки ID текста
+                } // Конец корутины главного потока
+            } // Конец метода onDone
+            override fun onError(utteranceId: String?) { // Метод, вызываемый при возникновении ошибки озвучивания
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) { // Запускаем корутину на главном потоке
+                    isPlayingTts = false // Сбрасываем флаг воспроизведения
+                    ttsDelayJob?.cancel() // Отменяем отложенную задачу озвучивания
+                } // Конец корутины главного потока
+            } // Конец метода onError
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) { // Метод, отслеживающий границы произносимых слов в реальном времени
+                scope.launch(kotlinx.coroutines.Dispatchers.Main) { // Переключаемся на главный поток для обновления подсветки
+                    if (utteranceId == "reading_text") { // Подсвечиваем слова только для основного текста анализа
+                        val absStart = start + ttsOffset // Вычисляем абсолютное начало слова с учетом смещения
+                        val absEnd = end + ttsOffset // Вычисляем абсолютный конец слова с учетом смещения
+                        spokenWordRange = Pair(absStart, absEnd) // Устанавливаем координаты слова для рендеринга
+                        lastPlaybackIndex = absStart // Запоминаем текущую позицию воспроизведения для возможности паузы
+                    } // Конец проверки ID текста
+                } // Конец корутины главного потока
+            } // Конец метода onRangeStart
+        }) // Конец установки слушателя
+        onDispose { // Обработчик уничтожения (Dispose) эффекта
+            ttsByLocalRef?.setOnUtteranceProgressListener(null) // Отвязываем слушатель от TTS для избежания утечек памяти
+            ttsDelayJob?.cancel() // Принудительно завершаем корутину задержки, если пользователь покинул экран
+        } // Конец блока onDispose
+    } // Конец DisposableEffect
 
     fun speakTextFromIndex(text: String, startIndex: Int) {
         if (text.isEmpty()) return
@@ -5443,32 +5785,21 @@ fun CompatibilityScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            // Custom 2-line title for "Совместимость с партнером" to prevent ugly wordwrap
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-            ) {
-                Text(
-                    text = if (currentLang == AppLanguage.RUS) "Совместимость" else "Compatibility",
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        color = MysticGold,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Serif
-                    ),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = if (currentLang == AppLanguage.RUS) "с партнёром" else "with partner",
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        color = MysticGold,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Serif
-                    ),
-                    textAlign = TextAlign.Center
-                )
-            }
+            // Адаптивный заголовок "Совместимость", выводящийся в одну строку по ТЗ
+            Text( // Создаем элемент Текст для отображения названия страницы
+                text = if (currentLang == AppLanguage.RUS) "Совместимость" else "Compatibility", // Локализуем текст в зависимости от выбранного языка в приложении
+                style = MaterialTheme.typography.displayLarge.copy( // Настраиваем стиль крупного заголовка на основе темы Material 3
+                    color = MysticGold, // Устанавливаем мистический золотой цвет текста
+                    fontSize = 32.sp, // Задаем размер шрифта в 32sp для хорошей видимости
+                    fontWeight = FontWeight.Bold, // Устанавливаем жирное начертание шрифта
+                    fontFamily = FontFamily.Serif // Используем шрифт с засечками для подчеркивания эстетики приложения
+                ), // Конец настройки стиля текста
+                textAlign = TextAlign.Center, // Выравниваем заголовок строго по центру экрана
+                maxLines = 1, // Ограничиваем количество строк строго одной во избежание переносов по ТЗ
+                modifier = Modifier // Настраиваем параметры расположения элемента
+                    .fillMaxWidth() // Растягиваем заголовок на всю ширину родительского контейнера
+                    .padding(vertical = 12.dp) // Добавляем аккуратные вертикальные отступы сверху и снизу в 12dp
+            ) // Конец описания элемента Text
             
             MysticSubtitle(strings.compatSubtitle)
 
@@ -5859,8 +6190,14 @@ fun CompatibilityScreen(
                 // --- RESULTS COMPATIBILITY PRESENTATION ---
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val plainTextOfReport = remember(compatReport, partnerName, currentLang) {
-                    buildCompatibilityPlainText(compatReport, partnerName, currentLang)
+                // Определяем имя Личности 1: берем из объекта сохраненного анализа или из активного выбора партнера 1
+                val selfName = compatibilityReading?.name ?: selectedPartner1?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 1" else "Self")
+                // Определяем имя Личности 2: берем из объекта сохраненного анализа, из переменной состояния или из активного выбора партнера 2
+                val actualPartnerName = compatibilityReading?.partnerName ?: partnerName.ifEmpty { selectedPartner2?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 2" else "Partner") }
+
+                // Генерируем полный плоский текст отчета о совместимости, подставляя динамические имена партнеров
+                val plainTextOfReport = remember(compatReport, selfName, actualPartnerName, currentLang) {
+                    buildCompatibilityPlainText(compatReport, selfName, actualPartnerName, currentLang)
                 }
 
                 val annotatedReportText = buildCompatibilityAnnotatedString(
@@ -5923,10 +6260,11 @@ fun CompatibilityScreen(
                         isPlaying = isPlayingTts,
                         onPlayToggle = {
                             if (isPlayingTts) {
-                                ttsByLocalRef?.stop()
-                                isPlayingTts = false
+                                ttsDelayJob?.cancel() // Отменяем отложенную задачу озвучивания поддержки во избежание багов
+                                ttsByLocalRef?.stop() // Останавливаем текущее вещание синтезатора речи
+                                isPlayingTts = false // Сбрасываем статус воспроизведения в false
                             } else {
-                                speakTextFromIndex(plainTextOfReport, lastPlaybackIndex)
+                                speakTextFromIndex(plainTextOfReport, lastPlaybackIndex) // Продолжаем или начинаем чтение с нужной позиции
                             }
                         },
                         rate = ttsRateState,
@@ -5983,6 +6321,15 @@ fun CompatibilityScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp)) // Небольшой интервал
+
+                // Отображаем расход токенов Gemini ИИ для отчета о совместимости
+                TokenUsageCard(
+                    promptTokens = compatReport.promptTokens, // Передаем входящие токены промпта совместимости
+                    candidatesTokens = compatReport.candidatesTokens, // Передаем исходящие токены ответа совместимости
+                    totalTokens = compatReport.totalTokens // Передаем суммарно потраченные токены за совместимость
+                )
+
                 ProjectSupportSection(viewModel = viewModel)
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -5990,11 +6337,12 @@ fun CompatibilityScreen(
                 MysticButton(
                     text = "Заново / Reset",
                     onClick = { 
-                        ttsByLocalRef?.stop()
-                        isPlayingTts = false
-                        spokenWordRange = null
-                        lastPlaybackIndex = 0
-                        viewModel.currentCompatibilityReading.value = null 
+                        ttsDelayJob?.cancel() // Отменяем запущенный таймер отложенного воспроизведения поддержки во избежание накладок
+                        ttsByLocalRef?.stop() // Принудительно прекращаем любое проигрывание звука синтезатором речи
+                        isPlayingTts = false // Возвращаем статус воспроизведения в исходное выключенное положение
+                        spokenWordRange = null // Полностью очищаем подсветку слов на экране
+                        lastPlaybackIndex = 0 // Сбрасываем позицию паузы на самое начало текста
+                        viewModel.currentCompatibilityReading.value = null // Обнуляем состояние текущего отчета во ViewModel для возврата к выбору партнеров
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -8158,60 +8506,75 @@ fun BillingScreen(
             Spacer(modifier = Modifier.weight(1f))
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                MysticButton(
-                    text = strings.cancel,
-                    onClick = onNavigateBack,
-                    isSecondary = true,
-                    modifier = Modifier.weight(1f)
-                )
+            Row( // Создаем горизонтальный контейнер для размещения кнопок управления действиями
+                modifier = Modifier.fillMaxWidth(), // Растягиваем контейнер на всю ширину доступного экрана
+                horizontalArrangement = Arrangement.spacedBy(16.dp) // Настраиваем расстояние в 16dp между кнопками
+            ) { // Начало описания содержимого горизонтальной строки кнопок
+                MysticButton( // Отрисовываем кнопку отмены действия
+                    text = strings.cancel, // Передаем локализованный текст для кнопки отмены из строковых ресурсов
+                    onClick = onNavigateBack, // Назначаем действие возврата на предыдущий экран при нажатии
+                    isSecondary = true, // Указываем, что кнопка является второстепенной по визуальному стилю
+                    modifier = Modifier.weight(1f) // Задаем вес кнопке, чтобы она делила пространство поровну
+                ) // Завершаем описание кнопки отмены
 
-                MysticButton(
-                    text = "ОПЛАТИТЬ",
-                    onClick = {
-                        if (chosenMethod == "google") {
-                            viewModel.simulateBuySubscription()
-                            Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
-                            onNavigateBack()
-                        } else if (chosenMethod == "yookassa") {
-                            try {
-                                val cleanWallet = walletNum.replace(" ", "").trim()
-                                if (cleanWallet.length < 10) {
-                                    Toast.makeText(context, "Пожалуйста, введите номер кошелька", Toast.LENGTH_LONG).show()
-                                    return@MysticButton
-                                }
-                                val amountVal = paymentAmount.trim()
-                                if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) {
-                                    Toast.makeText(context, "Пожалуйста, введите корректную сумму", Toast.LENGTH_LONG).show()
-                                    return@MysticButton
-                                }
+                MysticButton( // Отрисовываем главную кнопку инициации платежа "ОПЛАТИТЬ"
+                    text = "ОПЛАТИТЬ", // Задаем текст кнопки оплаты заглавными буквами
+                    onClick = { // Начало лямбда-выражения для обработки нажатия на кнопку оплаты
+                        if (chosenMethod == "google") { // Проверяем, выбран ли метод оплаты через систему Google Play
+                            viewModel.simulateBuySubscription() // Запускаем симуляцию успешной покупки премиума в ViewModel
+                            Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show() // Показываем тост об успехе
+                            onNavigateBack() // Совершаем переход назад на предыдущий экран приложения
+                        } else if (chosenMethod == "yookassa") { // Иначе, если выбран способ перевода через ЮKassa/ЮMoney
+                            try { // Начинаем блок перехвата исключений при попытке открыть веб-страницу
+                                val cleanWallet = walletNum.replace(" ", "").trim() // Очищаем номер кошелька от пробелов
+                                if (cleanWallet.length < 10) { // Проверяем валидность длины кошелька
+                                    Toast.makeText(context, "Пожалуйста, введите номер кошелька", Toast.LENGTH_LONG).show() // Выводим предупреждение
+                                    return@MysticButton // Прерываем выполнение дальнейшей логики кнопки
+                                } // Завершаем проверку длины кошелька
+                                val amountVal = paymentAmount.trim() // Убираем лишние пробелы из суммы платежа
+                                if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) { // Проверяем корректность суммы
+                                    Toast.makeText(context, "Пожалуйста, введите корректную сумму", Toast.LENGTH_LONG).show() // Выводим предупреждение о некорректной сумме
+                                    return@MysticButton // Прерываем выполнение логики платежа
+                                } // Завершаем валидацию суммы
 
-                                val targets = "Hiromant App Premium Subscription"
-                                val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
-                                val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
-                                        "receiver=$cleanWallet&" +
-                                        "quickpay-form=button&" +
-                                        "targets=$encodedTargets&" +
-                                        "paymentType=AC&" +
-                                        "sum=$amountVal"
+                                val targets = "Hiromant App Premium Subscription" // Задаем назначение платежа для формы ЮMoney
+                                val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8") // Кодируем строку назначения в URL-формат
+                                val url = "https://yoomoney.ru/quickpay/confirm.xml?" + // Строим базовый URL-адрес подтверждения платежа ЮMoney
+                                        "receiver=$cleanWallet&" + // Добавляем кошелек получателя в параметры запроса
+                                        "quickpay-form=button&" + // Задаем формат формы быстрой оплаты в ЮMoney
+                                        "targets=$encodedTargets&" + // Добавляем закодированную цель платежа
+                                        "paymentType=AC&" + // Указываем способ оплаты банковской картой
+                                        "sum=$amountVal" // Передаем введенную пользователем сумму платежа
                                 
-                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                context.startActivity(intent)
-                                showConfirmationDialog = true
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                Toast.makeText(context, "Ошибка открытия: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = chosenMethod != null
-                )
-            }
-            Spacer(modifier = Modifier.height(20.dp))
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)) // Создаем Intent для открытия ссылки в браузере
+                                context.startActivity(intent) // Запускаем активность внешнего системного браузера с формой оплаты
+                                showConfirmationDialog = true // Отображаем диалоговое окно для подтверждения факта перевода
+                            } catch (e: Exception) { // Ловим ошибки, если не удалось открыть ссылку в браузере
+                                e.printStackTrace() // Печатаем трассировку стека возникшего исключения в системный лог
+                                Toast.makeText(context, "Ошибка открытия: ${e.localizedMessage}", Toast.LENGTH_LONG).show() // Сообщаем пользователю об ошибке
+                            } // Завершаем блок обработки исключений
+                        } // Завершаем проверку методов оплаты
+                    }, // Конец обработчика клика на кнопку "ОПЛАТИТЬ"
+                    modifier = Modifier.weight(1f), // Задаем вес кнопке для симметричного деления строки наполовину
+                    enabled = chosenMethod != null // Кнопка активна только в случае, если выбран хотя бы один способ
+                ) // Завершаем описание кнопки оплаты
+            } // Завершаем контейнер строки кнопок
+            Spacer(modifier = Modifier.height(12.dp)) // Добавляем отступ в 12dp под кнопками перед предупреждением о комиссии
+            Text( // Выводим текстовое предупреждение о банковской комиссии в соответствии с требованием
+                text = if (currentLang == AppLanguage.RUS) { // Проверяем, равен ли выбранный язык интерфейса русскому языку
+                    "В разных Банках и Системах оплат, могут взымать разную коммисию...\nОбратите на это внимание!" // Отображаем ТЗ-текст на русском языке
+                } else { // Если выбран отличный от русского язык интерфейса (английский)
+                    "Different banks and payment systems may charge different commissions...\nPlease pay attention to this!" // Отображаем эквивалентный текст на английском языке
+                }, // Завершаем условное выражение выбора языка для предупреждения
+                style = MaterialTheme.typography.bodySmall.copy( // Применяем компактный стиль текста bodySmall
+                    color = Color.Gray.copy(alpha = 0.8f), // Устанавливаем серый цвет для предупреждения, чтобы не отвлекать внимание
+                    textAlign = TextAlign.Center // Выравниваем текст предупреждения по центру для гармоничной симметрии
+                ), // Завершаем настройку шрифтового стиля предупреждения
+                modifier = Modifier // Начинаем конфигурацию модификатора отображения текста
+                    .fillMaxWidth() // Растягиваем текстовое поле на всю доступную ширину для корректного центрирования
+                    .padding(horizontal = 16.dp) // Добавляем горизонтальные отступы по бокам в 16dp
+            ) // Завершаем создание текстового элемента с предупреждением о комиссиях
+            Spacer(modifier = Modifier.height(20.dp)) // Добавляем нижний отступ в 20dp для безопасной области прокрутки
         }
     }
 }
@@ -8541,58 +8904,73 @@ fun YookassaPaymentForm(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                MysticButton(
-                    text = if (currentLang == AppLanguage.RUS) "ОТМЕНА" else "CANCEL",
-                    onClick = onClose,
-                    isSecondary = true,
-                    modifier = Modifier.weight(1f)
-                )
+            Row( // Создаем горизонтальный контейнер для размещения кнопок управления формой оплаты сеанса
+                modifier = Modifier.fillMaxWidth(), // Растягиваем контейнер на всю ширину доступного контейнера
+                horizontalArrangement = Arrangement.spacedBy(12.dp) // Устанавливаем интервал в 12dp между кнопками отмены и подтверждения
+            ) { // Начало описания содержимого горизонтальной строки кнопок
+                MysticButton( // Отрисовываем кнопку отмены процесса оплаты отдельного сеанса
+                    text = if (currentLang == AppLanguage.RUS) "ОТМЕНА" else "CANCEL", // Локализуем текст в зависимости от выбранного языка
+                    onClick = onClose, // Назначаем действие закрытия формы оплаты при клике на отмену
+                    isSecondary = true, // Применяем второстепенный визуальный стиль отображения кнопки
+                    modifier = Modifier.weight(1f) // Задаем вес кнопки, чтобы она занимала половину доступного горизонтального места
+                ) // Завершаем описание кнопки отмены
                 
-                MysticButton(
-                    text = if (currentLang == AppLanguage.RUS) "ОПЛАТИТЬ" else "PAY NOW",
-                    onClick = {
-                        try {
-                            val cleanWallet = walletNum.replace(" ", "").trim()
-                            if (cleanWallet.length < 10) {
-                                Toast.makeText(context, "Пожалуйста, введите корректный номер кошелька ЮMoney", Toast.LENGTH_LONG).show()
-                                return@MysticButton
-                            }
-                            val amountVal = actualAmount.trim()
-                            if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) {
-                                Toast.makeText(context, "Пожалуйста, введите корректную сумму (минимум 1 ₽)", Toast.LENGTH_LONG).show()
-                                return@MysticButton
-                            }
+                MysticButton( // Отрисовываем главную кнопку совершения платежа
+                    text = if (currentLang == AppLanguage.RUS) "ОПЛАТИТЬ" else "PAY NOW", // Задаем локализованный текст кнопки оплаты
+                    onClick = { // Начало лямбда-выражения для обработки нажатия кнопки оплаты сеанса
+                        try { // Начинаем блок перехвата возможных исключений при формировании платежной ссылки
+                            val cleanWallet = walletNum.replace(" ", "").trim() // Очищаем номер кошелька ЮMoney от пробелов
+                            if (cleanWallet.length < 10) { // Проверяем корректность длины кошелька получателя
+                                Toast.makeText(context, "Пожалуйста, введите корректный номер кошелька ЮMoney", Toast.LENGTH_LONG).show() // Показываем тост с ошибкой
+                                return@MysticButton // Прерываем выполнение логики платежа
+                            } // Завершаем проверку кошелька получателя
+                            val amountVal = actualAmount.trim() // Убираем лишние символы пробела из суммы платежа
+                            if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) { // Проверяем валидность введенной суммы
+                                Toast.makeText(context, "Пожалуйста, введите корректную сумму (минимум 1 ₽)", Toast.LENGTH_LONG).show() // Предупреждаем о невалидной сумме
+                                return@MysticButton // Прерываем дальнейшее выполнение функции оплаты
+                            } // Завершаем валидацию суммы платежа
                             
-                            if (selectedMethod == "ozon") {
-                                Toast.makeText(context, "Перенаправление в Ozon Банк по СБП...", Toast.LENGTH_LONG).show()
-                            } else if (selectedMethod == "wb") {
-                                Toast.makeText(context, "Перенаправление в WB Банк по СБП...", Toast.LENGTH_LONG).show()
-                            }
+                            if (selectedMethod == "ozon") { // Если был выбран дополнительный метод оплаты через Ozon Банк
+                                Toast.makeText(context, "Перенаправление в Ozon Банк по СБП...", Toast.LENGTH_LONG).show() // Информируем пользователя о перенаправлении
+                            } else if (selectedMethod == "wb") { // Если был выбран метод оплаты через WB Банк
+                                Toast.makeText(context, "Перенаправление в WB Банк по СБП...", Toast.LENGTH_LONG).show() // Информируем о переходе в Wildberries Банк
+                            } // Завершаем проверку дополнительных банковских систем
 
-                            val targets = "Hiromant App Analysis Decoding: $analysisType"
-                            val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
-                            val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
-                                    "receiver=$cleanWallet&" +
-                                    "quickpay-form=button&" +
-                                    "targets=$encodedTargets&" +
-                                    "paymentType=AC&" +
-                                    "sum=$amountVal"
+                            val targets = "Hiromant App Analysis Decoding: $analysisType" // Указываем понятное назначение платежа для пользователя
+                            val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8") // Кодируем назначение платежа в UTF-8 для безопасной передачи
+                            val url = "https://yoomoney.ru/quickpay/confirm.xml?" + // Строим адрес шлюза быстрых платежей ЮMoney
+                                    "receiver=$cleanWallet&" + // Указываем получателя средств в параметрах запроса
+                                    "quickpay-form=button&" + // Передаем параметр отображения в виде кнопки быстрой оплаты
+                                    "targets=$encodedTargets&" + // Добавляем закодированное описание покупки
+                                    "paymentType=AC&" + // Указываем проведение платежа с помощью банковской карты
+                                    "sum=$amountVal" // Передаем итоговую сумму платежа в рублях
                             
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                            context.startActivity(intent)
-                            showConfirmationDialog = true
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Toast.makeText(context, "Не удалось открыть оплату: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)) // Инициализируем Intent для перехода на внешнюю страницу оплаты
+                            context.startActivity(intent) // Открываем страницу подтверждения транзакции в системном браузере
+                            showConfirmationDialog = true // Активируем показ всплывающего окна подтверждения перевода средств
+                        } catch (e: Exception) { // Ловим ошибки на случай сбоя работы внешнего Intent-браузера
+                            e.printStackTrace() // Печатаем подробную трассировку ошибки в системную консоль
+                            Toast.makeText(context, "Не удалось открыть оплату: ${e.localizedMessage}", Toast.LENGTH_LONG).show() // Показываем тост с описанием ошибки
+                        } // Завершаем блок перехвата исключений
+                    }, // Конец лямбда-выражения обработки кнопки оплаты сеанса
+                    modifier = Modifier.weight(1f) // Задаем вес кнопке для симметричного деления строки наполовину
+                ) // Завершаем описание кнопки оплаты
+            } // Завершаем контейнер строки кнопок
+            Spacer(modifier = Modifier.height(12.dp)) // Добавляем отступ в 12dp под кнопками перед предупреждением о комиссии
+            Text( // Выводим текстовое предупреждение о банковской комиссии под кнопкой
+                text = if (currentLang == AppLanguage.RUS) { // Проверяем язык интерфейса на соответствие русскому языку
+                    "В разных Банках и Системах оплат, могут взымать разную коммисию...\nОбратите на это внимание!" // Выводим точный текст предупреждения по ТЗ
+                } else { // Если выбран английский язык интерфейса
+                    "Different banks and payment systems may charge different commissions...\nPlease pay attention to this!" // Выводим локализованную версию предупреждения
+                }, // Завершаем блок условного выбора языка предупреждения
+                style = MaterialTheme.typography.bodySmall.copy( // Применяем компактный стиль текста bodySmall
+                    color = Color.Gray.copy(alpha = 0.8f), // Задаем серый полупрозрачный цвет для ненавязчивости
+                    textAlign = TextAlign.Center // Выравниваем текст предупреждения по центру
+                ), // Завершаем настройку стиля предупреждения о комиссиях
+                modifier = Modifier // Начинаем конфигурацию модификатора отображения текста
+                    .fillMaxWidth() // Заставляем текст занимать всю доступную ширину для ровного центрирования
+                    .padding(horizontal = 16.dp) // Применяем горизонтальные боковые отступы в 16dp
+            ) // Завершаем создание текстового предупреждения под кнопкой оплаты сеанса
         }
     }
 }
@@ -8920,19 +9298,23 @@ fun VideoSlotCard(
 }
 
 fun buildCompatibilityPlainText(
-    compatReport: com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport,
-    partnerName: String,
-    currentLang: AppLanguage
-): String {
-    val sb = java.lang.StringBuilder()
+    compatReport: com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport, // Передаем структуру отчета совместимости, полученную от ИИ Gemini
+    selfName: String, // Имя первой выбранной личности (для Личность 1)
+    partnerName: String, // Имя второй выбранной личности (для Личность 2)
+    currentLang: AppLanguage // Текущий язык приложения для локализации заголовков
+): String { // Возвращает собранный форматированный плоский текст всего отчета
+    val sb = java.lang.StringBuilder() // Создаем StringBuilder для эффективной конкатенации частей текста
     
+    // Формируем заголовок отчета в зависимости от установленного языка
     sb.append(if (currentLang == AppLanguage.RUS) "ОТЧЕТ О СОВМЕСТИМОСТИ\n\n" else "COMPATIBILITY REPORT\n\n")
     
-    sb.append(if (currentLang == AppLanguage.RUS) "Личность 1:\n" else "Self Style:\n")
-    sb.append(compatReport.partner1Portrait).append("\n\n")
+    // Личность 1: подставляем Имя первой выбранной личности после косой черты / в соответствии с ТЗ
+    sb.append(if (currentLang == AppLanguage.RUS) "Личность 1 / $selfName:\n" else "Self Style / $selfName:\n")
+    sb.append(compatReport.partner1Portrait).append("\n\n") // Добавляем портрет личности 1
     
-    sb.append(if (currentLang == AppLanguage.RUS) "Личность 2 ($partnerName):\n" else "Partner Style ($partnerName):\n")
-    sb.append(compatReport.partner2Portrait).append("\n\n")
+    // Личность 2: убираем скобки и подставляем Имя второй выбранной личности после косой черты / в соответствии с ТЗ
+    sb.append(if (currentLang == AppLanguage.RUS) "Личность 2 / $partnerName:\n" else "Partner Style / $partnerName:\n")
+    sb.append(compatReport.partner2Portrait).append("\n\n") // Добавляем портрет личности 2
     
     sb.append(if (currentLang == AppLanguage.RUS) "Общий анализ:\n" else "Synergy Analysis:\n")
     sb.append(compatReport.combinedAnalysis).append("\n\n")
