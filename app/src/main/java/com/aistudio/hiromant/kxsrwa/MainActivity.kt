@@ -302,9 +302,14 @@ class MainActivity : ComponentActivity() {
                             currentRoute in listOf("main_container", "result", "billing", "settings")
                         }
 
+                        // Подписка на изменение выбранного языка на верхнем уровне
                         val currentLang by viewModel.selectedLanguage.collectAsState() // Получение текущего языка приложения
+                        // Загрузка строковых ресурсов для текущего выбранного языка
                         val strings = LocalizedStrings.get(currentLang) // Загрузка строковых ресурсов для текущего языка
+                        // Подписка на изменение активной вкладки нижнего меню на верхнем уровне
                         val activeTab by viewModel.activeTab.collectAsState() // Отслеживание текущей активной вкладки в контейнере
+                        // Подписка на состояние биллинга на верхнем уровне для корректной работы бейджей в нижнем меню
+                        val billingStateVal by viewModel.billingState.collectAsState() // Получение баланса анализов во избежание сбоев рекомпозиции внутри циклов
 
                         Scaffold(
                             topBar = {}, // Верхняя панель скрыта согласно требованиям лаконичного дизайна
@@ -375,8 +380,8 @@ class MainActivity : ComponentActivity() {
                                                     
                                                     // Отрисовка круглого бейджа с балансом сеансов над вкладкой «Кабинет» пользователя
                                                     if (tabId == "user_cabinet") {
-                                                        val billingStateVal by viewModel.billingState.collectAsState() // Подписка на баланс
-                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Текущий остаток сеансов
+                                                        // Считываем баланс из состояния биллинга, вынесенного на верхний уровень
+                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Получение баланса доступных сеансов ИИ-анализа без вложенных подписок в цикле
                                                         if (count > 0) { // Отрисовываем бейдж только при наличии доступных балансов
                                                             Box(
                                                                 modifier = Modifier
