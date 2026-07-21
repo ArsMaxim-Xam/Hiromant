@@ -412,126 +412,124 @@ fun MysticSplashScreen(
 
     val elements = remember {
         listOf(
-            // --- MAIN PALM LINES (Точно выравненные с фоновым изображением) ---
+            // --- MAIN PALM LINES (Точно отрегулированные под рельеф ладони) ---
             AnimatedElementState(
                 id = "life_line",
                 type = HandElementType.LINE,
                 name = "Life Line",
-                color = Color(0xFFFF0033), // Чистый яркий красный
+                color = Color(0xFFFF0044), // Ультра Яркий Неоновый Красный
                 points = listOf(
-                    Pair(0.58f, 0.46f),
-                    Pair(0.59f, 0.53f),
-                    Pair(0.60f, 0.61f),
-                    Pair(0.59f, 0.69f),
-                    Pair(0.56f, 0.77f),
-                    Pair(0.51f, 0.83f),
-                    Pair(0.46f, 0.87f)
+                    Pair(0.64f, 0.47f),
+                    Pair(0.60f, 0.53f),
+                    Pair(0.56f, 0.59f),
+                    Pair(0.57f, 0.66f),
+                    Pair(0.61f, 0.72f)
                 )
             ),
             AnimatedElementState(
                 id = "head_line",
                 type = HandElementType.LINE,
                 name = "Head Line",
-                color = Color(0xFF00E5FF), // Чистый электрический циан
+                color = Color(0xFF00FFFF), // Электрический Насыщенный Циан
                 points = listOf(
-                    Pair(0.58f, 0.46f),
-                    Pair(0.48f, 0.50f),
-                    Pair(0.38f, 0.54f),
-                    Pair(0.28f, 0.58f),
-                    Pair(0.19f, 0.61f)
+                    Pair(0.64f, 0.47f),
+                    Pair(0.54f, 0.51f),
+                    Pair(0.42f, 0.55f),
+                    Pair(0.31f, 0.59f),
+                    Pair(0.21f, 0.64f)
                 )
             ),
             AnimatedElementState(
                 id = "heart_line",
                 type = HandElementType.LINE,
                 name = "Heart Line",
-                color = Color(0xFFFF007F), // Чистый яркий маджента
+                color = Color(0xFFFF00AA), // Яркий Сочный Маджента
                 points = listOf(
-                    Pair(0.18f, 0.47f),
-                    Pair(0.28f, 0.45f),
-                    Pair(0.38f, 0.43f),
-                    Pair(0.48f, 0.41f),
-                    Pair(0.58f, 0.39f)
+                    Pair(0.18f, 0.51f),
+                    Pair(0.28f, 0.49f),
+                    Pair(0.38f, 0.47f),
+                    Pair(0.49f, 0.44f),
+                    Pair(0.58f, 0.41f),
+                    Pair(0.63f, 0.37f)
                 )
             ),
             AnimatedElementState(
                 id = "destiny_line",
                 type = HandElementType.LINE,
                 name = "Destiny Line",
-                color = Color(0xFFA020F0), // Чистый неон пурпурный
+                color = Color(0xFFB030FF), // Яркий Неоновый Пурпурный
                 points = listOf(
-                    Pair(0.48f, 0.87f),
-                    Pair(0.48f, 0.75f),
-                    Pair(0.47f, 0.62f),
-                    Pair(0.46f, 0.48f),
-                    Pair(0.46f, 0.35f)
+                    Pair(0.47f, 0.69f),
+                    Pair(0.47f, 0.59f),
+                    Pair(0.46f, 0.49f),
+                    Pair(0.46f, 0.40f)
                 )
             ),
 
-            // --- PLANETARY MOUNTS & SYMBOLS (Точные позиционные центры) ---
+            // --- PLANETARY MOUNTS & SYMBOLS (Опущены на фалангу, сочные светящиеся цвета) ---
             AnimatedElementState(
                 id = "mount_jupiter",
                 type = HandElementType.MOUNT,
                 name = "Mount of Jupiter",
-                color = Color(0xFFFFD700), // Королевское золото
+                color = Color(0xFFFFD700), // Яркое Насыщенное Золото
                 symbol = "♃",
-                position = Pair(0.62f, 0.345f)
+                position = Pair(0.62f, 0.395f)
             ),
             AnimatedElementState(
                 id = "mount_saturn",
                 type = HandElementType.MOUNT,
                 name = "Mount of Saturn",
-                color = Color(0xFFE0E6ED), // Серебряно-белый
+                color = Color(0xFFE0E6ED), // Платиновый Светящийся
                 symbol = "♄",
-                position = Pair(0.48f, 0.31f)
+                position = Pair(0.48f, 0.365f)
             ),
             AnimatedElementState(
                 id = "mount_apollo",
                 type = HandElementType.MOUNT,
                 name = "Mount of Apollo",
-                color = Color(0xFFFFA500), // Солнечный оранжевый
+                color = Color(0xFFFF9900), // Сочный Солнечный Оранжевый
                 symbol = "☉",
-                position = Pair(0.33f, 0.335f)
+                position = Pair(0.33f, 0.380f)
             ),
             AnimatedElementState(
                 id = "mount_mercury",
                 type = HandElementType.MOUNT,
                 name = "Mount of Mercury",
-                color = Color(0xFF00FA9A), // Изумрудный циан
+                color = Color(0xFF00FF66), // Яркий Неоновый Изумруд
                 symbol = "☿",
-                position = Pair(0.20f, 0.37f)
+                position = Pair(0.20f, 0.420f)
             ),
             AnimatedElementState(
                 id = "mount_venus",
                 type = HandElementType.MOUNT,
                 name = "Mount of Venus",
-                color = Color(0xFFFF69B4), // Романтический розовый
+                color = Color(0xFFFF3399), // Яркий Романтический Розовый
                 symbol = "♀",
-                position = Pair(0.615f, 0.69f)
+                position = Pair(0.615f, 0.720f)
             ),
             AnimatedElementState(
                 id = "mount_mars_lower",
                 type = HandElementType.MOUNT,
                 name = "Lower Mars",
-                color = Color(0xFFFF3B30), // Багровый
+                color = Color(0xFFFF2222), // Яркий Багровый
                 symbol = "♂",
-                position = Pair(0.59f, 0.44f)
+                position = Pair(0.59f, 0.48f)
             ),
             AnimatedElementState(
                 id = "mount_mars_upper",
                 type = HandElementType.MOUNT,
                 name = "Upper Mars",
-                color = Color(0xFFFF4500), // Огненный оранжевый
+                color = Color(0xFFFF5500), // Огненный Неоновый Оранжевый
                 symbol = "♂",
-                position = Pair(0.21f, 0.52f)
+                position = Pair(0.21f, 0.56f)
             ),
             AnimatedElementState(
                 id = "mount_moon",
                 type = HandElementType.MOUNT,
                 name = "Mount of Moon",
-                color = Color(0xFFFFF066), // Мягкое золото
+                color = Color(0xFFFFF044), // Сочный Лимонно-Золотой
                 symbol = "☽",
-                position = Pair(0.28f, 0.73f)
+                position = Pair(0.33f, 0.67f)
             )
         )
     }
@@ -575,38 +573,47 @@ fun MysticSplashScreen(
         scaleTarget = 1.18f
 
         // Sequence of line and planetary symbol appearances with vibrant color flashes
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "life_line" })
 
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_jupiter" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_saturn" })
 
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "head_line" })
 
-        delay(600)
+        // Display title "ХИРОМАНТ" 0.8s earlier on translucent gray pill card with contour flash
+        titleVisible = true
+        triggerFlash = true
+
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_apollo" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mercury" })
 
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "heart_line" })
 
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_venus" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mars_lower" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_moon" })
 
-        delay(600)
+        delay(400)
         animateElementAppearance(coroutineScope, elements.first { it.id == "destiny_line" })
 
-        // At exactly 5.0 seconds (5000 ms), display title "ХИРОМАНТ" and subtitle "ТАЙНЫ СУДЬБЫ, В ВАШИХ РУКАХ"
-        delay(400)
-        titleVisible = true
-        triggerFlash = true
+        // Launch continuous sequential flashing pulses across all elements
+        coroutineScope.launch {
+            while (true) {
+                for (elem in elements) {
+                    animateElementFlashPulse(coroutineScope, elem)
+                    delay(300)
+                }
+            }
+        }
 
-        // After 6.8 seconds total, auto-navigate if user hasn't tapped skip button
-        delay(1800)
+        // Auto-navigate after splash sequence
+        delay(2200)
         onNavigateNext()
     }
 
@@ -630,7 +637,7 @@ fun MysticSplashScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Canvas for drawing lines and planetary symbols directly on top of the hand
+            // Canvas for drawing lines and planetary symbols directly on top of the hand with vibrant glowing light
             Canvas(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -674,24 +681,35 @@ fun MysticSplashScreen(
                                 }
                             }
 
-                            // 1. Main rich saturated color stroke (sharp, clear & vibrant)
+                            // 1. Wide outer neon glow halo
                             drawPath(
                                 path = path,
-                                color = baseColor.copy(alpha = (op * fl).coerceIn(0f, 1f)),
+                                color = baseColor.copy(alpha = (op * 0.55f * fl).coerceIn(0f, 1f)),
                                 style = Stroke(
-                                    width = 2.5.dp.toPx(),
+                                    width = 10.dp.toPx(),
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                     join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
                             )
 
-                            // 2. Crisp laser bright highlight core
-                            val coreColor = lerpColor(baseColor, Color.White, (fl - 1f).coerceIn(0f, 1f))
+                            // 2. Main rich saturated vibrant line stroke
                             drawPath(
                                 path = path,
-                                color = coreColor.copy(alpha = (op * 0.9f).coerceIn(0f, 1f)),
+                                color = baseColor.copy(alpha = (op * fl).coerceIn(0f, 1f)),
                                 style = Stroke(
-                                    width = 0.8.dp.toPx(),
+                                    width = 4.2.dp.toPx(),
+                                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                                )
+                            )
+
+                            // 3. Crisp white-hot highlight core
+                            val coreColor = lerpColor(baseColor, Color.White, (fl * 0.6f).coerceIn(0f, 1f))
+                            drawPath(
+                                path = path,
+                                color = coreColor.copy(alpha = op.coerceIn(0f, 1f)),
+                                style = Stroke(
+                                    width = 1.6.dp.toPx(),
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                     join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
@@ -700,18 +718,19 @@ fun MysticSplashScreen(
                             val px = element.position.first * w
                             val py = element.position.second * h
 
-                            // Outer subtle glow halo for planetary symbol
+                            // Outer intense glow halo for planetary symbol
                             drawContext.canvas.nativeCanvas.drawText(
                                 element.symbol,
                                 px,
                                 py,
                                 android.graphics.Paint().apply {
-                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.4f * fl).coerceIn(0f, 1f)))
-                                    textSize = 28.dp.toPx()
+                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.7f * fl).coerceIn(0f, 1f)))
+                                    textSize = 36.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL_AND_STROKE
-                                    strokeWidth = 3.dp.toPx()
+                                    strokeWidth = 6.dp.toPx()
+                                    setShadowLayer(18.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
                                 }
                             )
 
@@ -723,11 +742,11 @@ fun MysticSplashScreen(
                                 py,
                                 android.graphics.Paint().apply {
                                     color = toAndroidColor(symbolColor.copy(alpha = op.coerceIn(0f, 1f)))
-                                    textSize = 22.dp.toPx()
+                                    textSize = 30.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL
-                                    setShadowLayer(6.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(Color.White))
                                 }
                             )
                         }
@@ -746,7 +765,7 @@ fun MysticSplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Section: Title & Subtitle appearing at 5th second
+            // Top Section: Title & Subtitle with translucent gray pill card and contour flash
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(top = 16.dp)
@@ -762,7 +781,14 @@ fun MysticSplashScreen(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(Color(0x99282832)) // Полупрозрачный серый фон (pill card)
+                                .border(
+                                    width = 1.8.dp,
+                                    color = lerpColor(MysticGold, Color.White, titleFlashProgress),
+                                    shape = RoundedCornerShape(22.dp)
+                                )
+                                .padding(horizontal = 24.dp, vertical = 12.dp)
                                 .graphicsLayer(
                                     alpha = titleAlpha,
                                     scaleX = titleScale,
@@ -771,18 +797,18 @@ fun MysticSplashScreen(
                         ) {
                             val uppercaseTitle = strings.appName.uppercase()
 
-                            // Outer glow halo text
+                            // Outer glow halo text with contour flash
                             Text(
                                 text = uppercaseTitle,
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     color = Color.Transparent,
                                     fontSize = 38.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Black,
                                     letterSpacing = 5.sp,
                                     shadow = Shadow(
-                                        color = MysticGold.copy(alpha = 0.9f),
+                                        color = lerpColor(MysticGold, Color.White, titleFlashProgress).copy(alpha = 0.95f),
                                         offset = Offset(0f, 0f),
-                                        blurRadius = 45f
+                                        blurRadius = 45f * (1f + titleFlashProgress * 0.5f)
                                     )
                                 ),
                                 maxLines = 1,
@@ -790,14 +816,14 @@ fun MysticSplashScreen(
                                 textAlign = TextAlign.Center
                             )
 
-                            // Main golden inner text with flash effect
-                            val flashColor = lerpColor(MysticGold, Color.White, titleFlashProgress)
+                            // Main golden inner text with contour flash
+                            val flashColor = lerpColor(Color(0xFFFFE066), Color.White, titleFlashProgress)
                             Text(
                                 text = uppercaseTitle,
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     color = flashColor,
                                     fontSize = 38.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Black,
                                     letterSpacing = 5.sp
                                 ),
                                 maxLines = 1,
@@ -852,6 +878,28 @@ fun MysticSplashScreen(
                     )
                 )
             }
+        }
+    }
+}
+
+private fun animateElementFlashPulse(
+    scope: kotlinx.coroutines.CoroutineScope,
+    element: Any
+) {
+    scope.launch {
+        try {
+            val flField = element.javaClass.getDeclaredField("flash")
+            flField.isAccessible = true
+            val flashState = flField.get(element) as androidx.compose.runtime.MutableState<Float>
+            val steps = 8
+            for (i in 1..steps) {
+                val p = i.toFloat() / steps
+                flashState.value = 1f + (if (p < 0.5f) p * 2.5f else (1f - p) * 2.5f)
+                kotlinx.coroutines.delay(20)
+            }
+            flashState.value = 1f
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
