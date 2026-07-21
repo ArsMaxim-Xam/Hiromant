@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
@@ -91,12 +92,145 @@ const val PALMIST_PROJECT_SUPPORT_TEXT = """Анализ выполнен с п�
 fun getLocalizedSupportText(lang: AppLanguage): String {
     // Возвращает локализованный текст поддержки проекта в зависимости от выбранного языка
     return if (lang == AppLanguage.RUS) {
-        "Анализ выполнен с помощью AI Gemini.\nРезультат может быть не идеальным...\nМы создаём собственную нейросеть «Хиромант»\n— поддержите проект, чтобы сделать его точнее.\nСпасибо, что Вы с нами!💙"
+        "Анализ выполнен с помощью AI Gemini.\nРезультат может быть не идеальным...\nМы создаём собственную нейросеть «Хиромант»\n— поддержите проект, чтобы сделать его точнее.\nСпасибо, что Вы с нами!💖"
     } else {
-        "Analysis completed with the help of AI Gemini.\nThe result may not be perfect...\nWe are building our own neural network \"Palmist\"\n— support the project to make it more precise.\nThank you for being with us!💙"
+        "Analysis completed with the help of AI Gemini.\nThe result may not be perfect...\nWe are building our own neural network \"Palmist\"\n— support the project to make it more precise.\nThank you for being with us!💖"
     }
 }
 
+data class CleanedTtsText(
+    val sanitizedText: String,
+    val indexMap: IntArray
+)
+
+fun isTtsIgnoredSymbol(codePoint: Int): Boolean {
+    if (codePoint == 0x2022) return true // Маркер списка '•'
+    val type = Character.getType(codePoint)
+    if (type == Character.OTHER_SYMBOL.toInt() ||
+        type == Character.SURROGATE.toInt() ||
+        type == Character.FORMAT.toInt() ||
+        type == Character.MODIFIER_SYMBOL.toInt()
+    ) return true
+    if (codePoint in 0x2600..0x27BF ||
+        codePoint in 0x1F300..0x1FAFF ||
+        codePoint in 0xFE00..0xFE0F
+    ) return true
+    return false
+}
+
+fun prepareTextForTts(originalText: String): CleanedTtsText {
+    val sb = java.lang.StringBuilder()
+    val mapList = java.util.ArrayList<Int>()
+    var i = 0
+    while (i < originalText.length) {
+        val codePoint = originalText.codePointAt(i)
+        val charCount = Character.charCount(codePoint)
+        val isSymbol = isTtsIgnoredSymbol(codePoint)
+        if (!isSymbol) {
+            for (j in 0 until charCount) {
+                mapList.add(i + j)
+                sb.append(originalText[i + j])
+            }
+        }
+        i += charCount
+    }
+    mapList.add(originalText.length)
+    return CleanedTtsText(sb.toString(), mapList.toIntArray())
+}
+
+// Приведение имени голоса к единому базовому ключу без суффиксов локального/сетевого размещения (-network / -local)
+fun getNormalizedVoiceKey(voiceName: String): String {
+    return voiceName.lowercase(java.util.Locale.US)
+        .replace("-network", "")
+        .replace("-local", "")
+        .replace("_network", "")
+        .replace("_local", "")
+        .trim()
+}
+
+// Проверка принадлежности имени голоса к женскому полу
+fun isFemaleVoiceName(nameLower: String): Boolean {
+    // Если имя содержит маркеры мужских голосов (dfd, dfg, rub, rud, rum), то это не женский голос
+    if (nameLower.contains("dfd") || nameLower.contains("dfg") || nameLower.contains("rub") || nameLower.contains("rud") || nameLower.contains("rum")) {
+        return false
+    }
+    return nameLower.contains("female") || 
+           nameLower.contains("f-local") || 
+           nameLower.contains("f-network") ||
+           nameLower.contains("ruf") || 
+           nameLower.contains("dfc") || 
+           nameLower.contains("dfh") || 
+           nameLower.contains("rua") || 
+           nameLower.contains("ruc") || 
+           nameLower.contains("rue") ||
+           nameLower.contains("ru-ru-a") ||
+           nameLower.contains("ru-ru-c") ||
+           nameLower.contains("ru-ru-e") ||
+           nameLower.contains("-f-") ||
+           nameLower.contains("-f_") ||
+           nameLower.contains("_f_")
+}
+
+// Проверка принадлежности имени голоса к мужскому полу
+fun isMaleVoiceName(nameLower: String): Boolean {
+    // Если имя содержит маркеры женских голосов (dfc, dfh, rua, ruc, rue, ruf), то это не мужской голос
+    if (nameLower.contains("dfc") || nameLower.contains("dfh") || nameLower.contains("rua") || nameLower.contains("ruc") || nameLower.contains("rue") || nameLower.contains("ruf")) {
+        return false
+    }
+    return nameLower.contains("male") || 
+           nameLower.contains("m-local") || 
+           nameLower.contains("m-network") ||
+           nameLower.contains("rum") || 
+           nameLower.contains("dfd") || 
+           nameLower.contains("dfg") || 
+           nameLower.contains("rub") || 
+           nameLower.contains("rud") ||
+           nameLower.contains("ru-ru-b") ||
+           nameLower.contains("ru-ru-d") ||
+           nameLower.contains("-m-") ||
+           nameLower.contains("-m_") ||
+           nameLower.contains("_m_")
+}
+
+// Получение отфильтрованного и дедуплицированного списка голосов для указанного пола
+fun getProcessedVoicesForGender(
+    tts: TextToSpeech?,
+    currentLang: AppLanguage,
+    gender: String
+): List<android.speech.tts.Voice> {
+    if (tts == null) return emptyList()
+    val allVoices = try { tts.voices?.toList() ?: emptyList() } catch (e: Exception) { emptyList() }
+    val langCode = if (currentLang == AppLanguage.RUS) "ru" else "en"
+    val matchingVoices = allVoices.filter { 
+        it.locale.language.equals(langCode, ignoreCase = true) 
+    }
+
+    val filteredByGender = matchingVoices.filter { voice ->
+        val nameLower = voice.name.lowercase(java.util.Locale.US)
+        if (gender == "Female") {
+            isFemaleVoiceName(nameLower)
+        } else {
+            isMaleVoiceName(nameLower)
+        }
+    }
+
+    // Группировка и удаление дубликатов с одинаковым базовым ключом голоса
+    val grouped = filteredByGender.groupBy { getNormalizedVoiceKey(it.name) }
+
+    return grouped.map { (_, voicesInGroup) ->
+        voicesInGroup.firstOrNull { it.name.lowercase(java.util.Locale.US).contains("network") } ?: voicesInGroup.first()
+    }
+}
+
+// Формирование читаемого наименования голоса для выпадающих списков
+fun getCleanVoiceDisplayName(voice: android.speech.tts.Voice, index: Int, gender: String): String {
+    val baseKey = getNormalizedVoiceKey(voice.name)
+    val prefix = if (gender == "Female") "Ж" else "М"
+    val num = index + 1
+    return "Голос $prefix$num ($baseKey)"
+}
+
+// Конфигурирование параметров голосового синтезатора TextToSpeech
 fun configureTtsVoice(
     tts: TextToSpeech?,
     currentLang: AppLanguage,
@@ -108,64 +242,13 @@ fun configureTtsVoice(
     if (tts == null) return
     try {
         tts.setSpeechRate(speechRate)
-        val allVoices = tts.voices?.toList() ?: emptyList()
-        val langCode = if (currentLang == AppLanguage.RUS) "ru" else "en"
-        val matchingVoices = allVoices.filter { 
-            it.locale.language.equals(langCode, ignoreCase = true) 
-        }
-        
-        val femaleVoices = matchingVoices.filter { voice ->
-            val nameLower = voice.name.lowercase(java.util.Locale.US)
-            nameLower.contains("female") || 
-            nameLower.contains("f-local") || 
-            nameLower.contains("ruf") || 
-            nameLower.contains("dfc") || 
-            nameLower.contains("dfh") || 
-            nameLower.contains("rua") || 
-            nameLower.contains("ruc") || 
-            nameLower.contains("rue") ||
-            nameLower.contains("ru-ru-a") ||
-            nameLower.contains("ru-ru-c") ||
-            nameLower.contains("ru-ru-e") ||
-            nameLower.contains("-f-") ||
-            nameLower.contains("-f_") ||
-            nameLower.contains("_f_")
-        }
-
-        val maleVoices = matchingVoices.filter { voice ->
-            val nameLower = voice.name.lowercase(java.util.Locale.US)
-            nameLower.contains("male") || 
-            nameLower.contains("m-local") || 
-            nameLower.contains("rum") || 
-            nameLower.contains("dfd") || 
-            nameLower.contains("dfg") || 
-            nameLower.contains("rub") || 
-            nameLower.contains("rud") ||
-            nameLower.contains("ru-ru-b") ||
-            nameLower.contains("ru-ru-d") ||
-            nameLower.contains("-m-") ||
-            nameLower.contains("-m_") ||
-            nameLower.contains("_m_")
-        }
-        
-        val preferredVoice = if (voiceGender == "Female") {
-            if (femaleVoices.isNotEmpty()) femaleVoices[voiceIndex % femaleVoices.size] else null
-        } else {
-            if (maleVoices.isNotEmpty()) maleVoices[voiceIndex % maleVoices.size] else null
-        }
-        
-        if (preferredVoice != null) {
+        val voicesList = getProcessedVoicesForGender(tts, currentLang, voiceGender)
+        if (voicesList.isNotEmpty()) {
+            val preferredVoice = voicesList[voiceIndex % voicesList.size]
             tts.voice = preferredVoice
         }
-        
-        val basePitch = if (voiceGender == "Female") 1.35f else 0.75f
-        val pitchMultiplier = when (voiceIndex) {
-            0 -> 1.00f
-            1 -> 0.88f
-            2 -> 1.15f
-            else -> 1.00f
-        }
-        tts.setPitch(basePitch * pitchMultiplier * speechPitch)
+        val basePitch = if (voiceGender == "Female") 1.15f else 0.85f
+        tts.setPitch(basePitch * speechPitch)
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -311,10 +394,8 @@ fun MysticSplashScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Animation states
-    var scrollOpened by remember { mutableStateOf(false) }
-    var showSymbols by remember { mutableStateOf(false) }
-    var pulseLines by remember { mutableStateOf(false) }
     var titleVisible by remember { mutableStateOf(false) }
+    var triggerFlash by remember { mutableStateOf(false) }
 
     class AnimatedElementState(
         val id: String,
@@ -329,167 +410,155 @@ fun MysticSplashScreen(
         val flash = mutableStateOf(1f)
     }
 
-    val elements = remember { // Сохраняем список всех интерактивных элементов ладони в памяти Jetpack Compose
-        listOf( // Инициализируем коллекцию анимированных элементов (линий ладони и холмов)
-            // --- КАТЕГОРИЯ: ГЛАВНЫЕ ЛИНИИ ЛАДОНИ ---
-            AnimatedElementState( // Инициализируем объект состояния для Линии Жизни
-                id = "life_line", // Задаем уникальный строковый идентификатор Линии Жизни
-                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
-                name = "Life Line", // Внутреннее наименование линии на английском языке
-                color = Color(0xFFFF4D4D), // Присваиваем линии жизни теплый красный цвет ауры
-                points = listOf( // Задаем упорядоченные точки координат для плавного изгиба линии
-                    Pair(0.58f, 0.46f), // Начальная точка у складки между большим и указательным пальцами
-                    Pair(0.62f, 0.52f), // Вторая точка изгиба, плавно уходящая вправо вдоль холма Венеры
-                    Pair(0.66f, 0.58f), // Третья точка, описывающая верхний правый контур холма Венеры
-                    Pair(0.69f, 0.65f), // Четвертая точка, проходящая по дальней правой выпуклости ладони
-                    Pair(0.68f, 0.74f), // Пятая точка у нижнего края правого полушария холма Венеры
-                    Pair(0.63f, 0.81f), // Шестая точка, плавно загибающаяся к центру основания ладони
-                    Pair(0.55f, 0.86f), // Седьмая точка, спускающаяся по направлению к запястью
-                    Pair(0.48f, 0.89f)  // Финальная точка у границы розетты запястья
-                ) // Завершаем описание списка точек для построения кривой Линии Жизни
-            ), // Завершаем инициализацию объекта состояния Линии Жизни
-            AnimatedElementState( // Инициализируем объект состояния для Линии Головы (Ума)
-                id = "head_line", // Задаем уникальный строковый идентификатор Линии Головы
-                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
-                name = "Head Line", // Внутреннее наименование линии на английском языке
-                color = Color(0xFF00BFFF), // Присваиваем линии ума холодный сине-голубой цвет логики
-                points = listOf( // Задаем упорядоченные точки координат для прохождения линии ума
-                    Pair(0.58f, 0.46f), // Начальная точка у ребра ладони над большим пальцем
-                    Pair(0.51f, 0.50f), // Вторая точка, проходящая под пальцем Сатурна
-                    Pair(0.44f, 0.54f), // Третья точка, пересекающая середину ладони под пальцем Солнца
-                    Pair(0.36f, 0.58f), // Четвертая точка, плавно наклоняющаяся вниз к холму Луны
-                    Pair(0.28f, 0.61f)  // Финальная точка на холме Луны на левом ребре ладони
-                ) // Завершаем описание списка точек для построения кривой Линии Головы
-            ), // Завершаем инициализацию объекта состояния Линии Головы
-            AnimatedElementState( // Инициализируем объект состояния для Линии Сердца
-                id = "heart_line", // Задаем уникальный строковый идентификатор Линии Сердца
-                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
-                name = "Heart Line", // Внутреннее наименование линии на английском языке
-                color = Color(0xFFFF1493), // Присваиваем линии сердца яркий чувственный розовый цвет
-                points = listOf( // Задаем упорядоченные точки координат для прохождения линии сердца
-                    Pair(0.23f, 0.49f), // Начальная точка на ребре ладони непосредственно под мизинцем
-                    Pair(0.32f, 0.47f), // Вторая точка, идущая горизонтально под безымянным пальцем
-                    Pair(0.42f, 0.45f), // Третья точка, проходящая под основанием среднего пальца
-                    Pair(0.50f, 0.41f)  // Финальная точка, изгибающаяся вверх к холму Юпитера
-                ) // Завершаем описание списка точек для построения кривой Линии Сердца
-            ), // Завершаем инициализацию объекта состояния Линии Сердца
-            AnimatedElementState( // Инициализируем объект состояния для Линии Судьбы
-                id = "destiny_line", // Задаем уникальный строковый идентификатор Линии Судьбы
-                type = HandElementType.LINE, // Указываем тип элемента как геометрическую линию ладони
-                name = "Destiny Line", // Внутреннее наименование линии на английском языке
-                color = Color(0xFFDA70D6), // Присваиваем линии судьбы мистический орхидеевый фиолетовый цвет
-                points = listOf( // Задаем упорядоченные точки координат для прохождения линии судьбы
-                    Pair(0.48f, 0.88f), // Начальная точка у самого основания запястья (у розетты)
-                    Pair(0.47f, 0.75f), // Вторая точка, поднимающаяся вверх по центру низа ладони
-                    Pair(0.46f, 0.60f), // Третья точка, проходящая ровно по середине ладони
-                    Pair(0.45f, 0.48f), // Четвертая точка, пересекающая центральную равнину Марса
-                    Pair(0.44f, 0.42f)  // Финальная точка, устремленная к холму Сатурна (среднему пальцу)
-                ) // Завершаем описание списка точек для построения кривой Линии Судьбы
-            ), // Завершаем инициализацию объекта состояния Линии Судьбы
-            // --- КАТЕГОРИЯ: ПЛАНЕТАРНЫЕ ХОЛМЫ И ИХ АСТРОЛОГИЧЕСКИЕ ЗНАКИ ---
-            AnimatedElementState( // Инициализируем объект состояния для Холма Юпитера
-                id = "mount_jupiter", // Указываем идентификатор холма Юпитера
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Jupiter", // Английское наименование холма для внутренней логики
-                color = Color(0xFF9370DB), // Задаем холму благородный лавандово-фиолетовый цвет Юпитера
-                symbol = "♃", // Присваиваем холму древний астрологический символ Юпитера
-                position = Pair(0.58f, 0.38f) // Точные координаты (X, Y) расположения холма под указательным пальцем
-            ), // Завершаем инициализацию объекта состояния холма Юпитера
-            AnimatedElementState( // Инициализируем объект состояния для Холма Сатурна
-                id = "mount_saturn", // Указываем идентификатор холма Сатурна
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Saturn", // Английское наименование холма для внутренней логики
-                color = Color(0xFFFFD700), // Задаем холму королевский золотой цвет планеты Сатурн
-                symbol = "♄", // Присваиваем холму древний астрологический символ Сатурна
-                position = Pair(0.48f, 0.36f) // Точные координаты (X, Y) расположения холма под средним пальцем
-            ), // Завершаем инициализацию объекта состояния холма Сатурна
-            AnimatedElementState( // Инициализируем объект состояния для Холма Аполлона (Солнца)
-                id = "mount_apollo", // Указываем идентификатор холма Аполлона
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Apollo", // Английское наименование холма для внутренней логики
-                color = Color(0xFFFF8C00), // Задаем холму теплый солнечный оранжевый цвет Аполлона
-                symbol = "☉", // Присваиваем холму древний астрологический символ Солнца
-                position = Pair(0.36f, 0.38f) // Точные координаты (X, Y) расположения холма под безымянным пальцем
-            ), // Завершаем инициализацию объекта состояния холма Аполлона
-            AnimatedElementState( // Инициализируем объект состояния для Холма Меркурия
-                id = "mount_mercury", // Указываем идентификатор холма Меркурия
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Mercury", // Английское наименование холма для внутренней логики
-                color = Color(0xFF00FA9A), // Задаем холму изумрудно-зеленый цвет планеты Меркурий
-                symbol = "☿", // Присваиваем холму древний астрологический символ Меркурия
-                position = Pair(0.24f, 0.42f) // Точные координаты (X, Y) расположения холма под мизинцем
-            ), // Завершаем инициализацию объекта состояния холма Меркурия
-            AnimatedElementState( // Инициализируем объект состояния для Холма Венеры
-                id = "mount_venus", // Указываем идентификатор холма Венеры
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Venus", // Английское наименование холма для внутренней логики
-                color = Color(0xFFFF69B4), // Задаем холму нежно-розовый романтический цвет Венеры
-                symbol = "♀", // Присваиваем холму древний астрологический символ Венеры
-                position = Pair(0.67f, 0.69f) // Точные координаты (X, Y) расположения на крупном холме большого пальца
-            ), // Завершаем инициализацию объекта состояния холма Венеры
-            AnimatedElementState( // Инициализируем объект состояния для Нижнего Марса
-                id = "mount_mars_lower", // Указываем идентификатор холма Нижнего Марса
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Lower Mars", // Английское наименование холма для внутренней логики
-                color = Color(0xFFFF0000), // Задаем холму импульсивный огненно-красный цвет активности Марса
-                symbol = "♂", // Присваиваем холму древний астрологический символ Марса
-                position = Pair(0.59f, 0.51f) // Точные координаты (X, Y) холма у основания складки большого пальца
-            ), // Завершаем инициализацию объекта состояния холма Нижнего Марса
-            AnimatedElementState( // Инициализируем объект состояния для  Верхнего Марса
-                id = "mount_mars_upper", // Указываем идентификатор холма Верхнего Марса
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Upper Mars", // Английское наименование холма для внутренней логики
-                color = Color(0xFFFF4500), // Задаем холму красно-оранжевый защитный цвет обороны Марса
-                symbol = "♂", // Присваиваем холму древний астрологический символ Марса
-                position = Pair(0.27f, 0.55f) // Точные координаты (X, Y) холма на внешнем ребре ладони под линией сердца
-            ), // Завершаем инициализацию объекта состояния холма Верхнего Марса
-            AnimatedElementState( // Инициализируем объект состояния для Холма Луны
-                id = "mount_moon", // Указываем идентификатор холма Луны
-                type = HandElementType.MOUNT, // Задаем тип элемента как планетарный холм
-                name = "Mount of Moon", // Английское наименование холма для внутренней логики
-                color = Color(0xFFE6E6FA), // Задаем холму таинственный лавандовый цвет интуиции Луны
-                symbol = "☽", // Присваиваем холму древний астрологический символ Луны
-                position = Pair(0.30f, 0.72f) // Точные координаты (X, Y) расположения на внешнем нижнем ребре ладони
-            ) // Завершаем инициализацию объекта состояния холма Луны
-        ) // Завершаем формирование списка всех анимированных элементов заставки
-    } // Завершаем выполнение блока remember для кэширования списка
+    val elements = remember {
+        listOf(
+            // --- MAIN PALM LINES (Точно выравненные с фоновым изображением) ---
+            AnimatedElementState(
+                id = "life_line",
+                type = HandElementType.LINE,
+                name = "Life Line",
+                color = Color(0xFFFF0033), // Чистый яркий красный
+                points = listOf(
+                    Pair(0.58f, 0.46f),
+                    Pair(0.59f, 0.53f),
+                    Pair(0.60f, 0.61f),
+                    Pair(0.59f, 0.69f),
+                    Pair(0.56f, 0.77f),
+                    Pair(0.51f, 0.83f),
+                    Pair(0.46f, 0.87f)
+                )
+            ),
+            AnimatedElementState(
+                id = "head_line",
+                type = HandElementType.LINE,
+                name = "Head Line",
+                color = Color(0xFF00E5FF), // Чистый электрический циан
+                points = listOf(
+                    Pair(0.58f, 0.46f),
+                    Pair(0.48f, 0.50f),
+                    Pair(0.38f, 0.54f),
+                    Pair(0.28f, 0.58f),
+                    Pair(0.19f, 0.61f)
+                )
+            ),
+            AnimatedElementState(
+                id = "heart_line",
+                type = HandElementType.LINE,
+                name = "Heart Line",
+                color = Color(0xFFFF007F), // Чистый яркий маджента
+                points = listOf(
+                    Pair(0.18f, 0.47f),
+                    Pair(0.28f, 0.45f),
+                    Pair(0.38f, 0.43f),
+                    Pair(0.48f, 0.41f),
+                    Pair(0.58f, 0.39f)
+                )
+            ),
+            AnimatedElementState(
+                id = "destiny_line",
+                type = HandElementType.LINE,
+                name = "Destiny Line",
+                color = Color(0xFFA020F0), // Чистый неон пурпурный
+                points = listOf(
+                    Pair(0.48f, 0.87f),
+                    Pair(0.48f, 0.75f),
+                    Pair(0.47f, 0.62f),
+                    Pair(0.46f, 0.48f),
+                    Pair(0.46f, 0.35f)
+                )
+            ),
 
-    val imageAlpha by animateFloatAsState(
-        targetValue = if (showSymbols) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000),
-        label = "ImageAlpha"
-    )
+            // --- PLANETARY MOUNTS & SYMBOLS (Точные позиционные центры) ---
+            AnimatedElementState(
+                id = "mount_jupiter",
+                type = HandElementType.MOUNT,
+                name = "Mount of Jupiter",
+                color = Color(0xFFFFD700), // Королевское золото
+                symbol = "♃",
+                position = Pair(0.62f, 0.345f)
+            ),
+            AnimatedElementState(
+                id = "mount_saturn",
+                type = HandElementType.MOUNT,
+                name = "Mount of Saturn",
+                color = Color(0xFFE0E6ED), // Серебряно-белый
+                symbol = "♄",
+                position = Pair(0.48f, 0.31f)
+            ),
+            AnimatedElementState(
+                id = "mount_apollo",
+                type = HandElementType.MOUNT,
+                name = "Mount of Apollo",
+                color = Color(0xFFFFA500), // Солнечный оранжевый
+                symbol = "☉",
+                position = Pair(0.33f, 0.335f)
+            ),
+            AnimatedElementState(
+                id = "mount_mercury",
+                type = HandElementType.MOUNT,
+                name = "Mount of Mercury",
+                color = Color(0xFF00FA9A), // Изумрудный циан
+                symbol = "☿",
+                position = Pair(0.20f, 0.37f)
+            ),
+            AnimatedElementState(
+                id = "mount_venus",
+                type = HandElementType.MOUNT,
+                name = "Mount of Venus",
+                color = Color(0xFFFF69B4), // Романтический розовый
+                symbol = "♀",
+                position = Pair(0.615f, 0.69f)
+            ),
+            AnimatedElementState(
+                id = "mount_mars_lower",
+                type = HandElementType.MOUNT,
+                name = "Lower Mars",
+                color = Color(0xFFFF3B30), // Багровый
+                symbol = "♂",
+                position = Pair(0.59f, 0.44f)
+            ),
+            AnimatedElementState(
+                id = "mount_mars_upper",
+                type = HandElementType.MOUNT,
+                name = "Upper Mars",
+                color = Color(0xFFFF4500), // Огненный оранжевый
+                symbol = "♂",
+                position = Pair(0.21f, 0.52f)
+            ),
+            AnimatedElementState(
+                id = "mount_moon",
+                type = HandElementType.MOUNT,
+                name = "Mount of Moon",
+                color = Color(0xFFFFF066), // Мягкое золото
+                symbol = "☽",
+                position = Pair(0.28f, 0.73f)
+            )
+        )
+    }
 
-    var scaleTarget by remember { mutableStateOf(0.75f) }
+    var scaleTarget by remember { mutableStateOf(0.85f) }
     val handScale by animateFloatAsState(
         targetValue = scaleTarget,
-        animationSpec = tween(durationMillis = 7500, easing = androidx.compose.animation.core.EaseOutCubic),
+        animationSpec = tween(durationMillis = 6500, easing = androidx.compose.animation.core.EaseOutCubic),
         label = "HandScale"
     )
 
-    var triggerFlash by remember { mutableStateOf(false) }
     val titleFlashProgress by animateFloatAsState(
-        targetValue = if (triggerFlash) 0f else 1f, // starts at 1f (white flash) and decays to 0f (gold)
+        targetValue = if (triggerFlash) 0f else 1f,
         animationSpec = tween(durationMillis = 1500, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
         label = "TitleFlash"
     )
 
     val titleAlpha by animateFloatAsState(
         targetValue = if (titleVisible) 1f else 0f,
-        animationSpec = tween(1200),
+        animationSpec = tween(1000),
         label = "TitleAlpha"
     )
 
     val titleScale by animateFloatAsState(
-        targetValue = if (titleVisible) 1.05f else 0.82f,
+        targetValue = if (titleVisible) 1.0f else 0.8f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "TitleScale"
-    )
-
-    val titleGlowRadius by animateFloatAsState(
-        targetValue = if (titleVisible) 40f else 0f,
-        animationSpec = tween(2000, delayMillis = 500),
-        label = "TitleGlowRadius"
     )
 
     fun lerpColor(start: Color, end: Color, fraction: Float): Color {
@@ -502,43 +571,42 @@ fun MysticSplashScreen(
     }
 
     LaunchedEffect(Unit) {
-        // Zoom-in hand slowly
-        delay(200)
-        scaleTarget = 1.03f
+        // Start smooth 3D approach animation of the real hand in cosmic space
+        scaleTarget = 1.18f
 
-        // Unfold ancient scroll
-        delay(400)
-        scrollOpened = true
+        // Sequence of line and planetary symbol appearances with vibrant color flashes
         delay(600)
-        showSymbols = true
-        
-        // Let elements light up sequentially
-        elements.forEachIndexed { index, element ->
-            delay(400)
-            coroutineScope.launch {
-                val steps = 15
-                for (i in 1..steps) {
-                    val progress = i.toFloat() / steps
-                    element.opacity.value = progress
-                    if (progress < 0.5f) {
-                        element.flash.value = 1f + (progress * 2f) * 1.5f
-                    } else {
-                        element.flash.value = 2.5f - ((progress - 0.5f) * 2f) * 1.5f
-                    }
-                    delay(16)
-                }
-                element.opacity.value = 1f
-                element.flash.value = 1f
-            }
-        }
-        
-        delay(800)
-        pulseLines = true
+        animateElementAppearance(coroutineScope, elements.first { it.id == "life_line" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_jupiter" })
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_saturn" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "head_line" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_apollo" })
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mercury" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "heart_line" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_venus" })
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mars_lower" })
+        animateElementAppearance(coroutineScope, elements.first { it.id == "mount_moon" })
+
+        delay(600)
+        animateElementAppearance(coroutineScope, elements.first { it.id == "destiny_line" })
+
+        // At exactly 5.0 seconds (5000 ms), display title "ХИРОМАНТ" and subtitle "ТАЙНЫ СУДЬБЫ, В ВАШИХ РУКАХ"
+        delay(400)
         titleVisible = true
         triggerFlash = true
-        
-        // Final presentation before automatic skip
-        delay(2500)
+
+        // After 6.8 seconds total, auto-navigate if user hasn't tapped skip button
+        delay(1800)
         onNavigateNext()
     }
 
@@ -546,297 +614,276 @@ fun MysticSplashScreen(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxSize()
-            .background(MysticDarkBackground)
+            .background(Color(0xFF030308))
     ) {
-        // Full screen container with 8.dp margin (fits "5-10 pixels")
+        // Layer 1: Approaching Real Hand & Cosmic Background covering full screen
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.5.dp, MysticGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                .background(Color(0xFF07070F))
+                .scale(handScale),
+            contentAlignment = Alignment.Center
         ) {
-            // Background Layer: Hand representation scaled to fill the entire box!
-            androidx.compose.animation.AnimatedVisibility(
-                visible = scrollOpened,
-                enter = scaleIn(animationSpec = tween(1200)) + fadeIn(),
-                exit = fadeOut(),
+            Image(
+                painter = painterResource(id = com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand),
+                contentDescription = "Realistic Mystic Hand",
+                contentScale = ContentScale.Crop, // Fits screen to full rectangular Android smartphone dimensions
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Canvas for drawing lines and planetary symbols directly on top of the hand
+            Canvas(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Контейнер с анимацией масштабирования для всей композиции заставки
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize() // Заполняем весь экран
-                        .scale(handScale), // Применяем плавное масштабирование
-                    contentAlignment = Alignment.Center // Центрируем содержимое
-                ) {
-                    // Вложенный контейнер с фиксированными пропорциями 9:16 (соответствует картинке руки)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight() // Заполняем максимальную высоту
-                            .aspectRatio(9f / 16f) // Сохраняем пропорции 9:16 для предотвращения искажений руки
-                    ) {
-                        // Отрисовываем реалистичное изображение ладони на заставке
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                    .data(com.aistudio.hiromant.kxsrwa.R.drawable.img_splash_hand) // Подгружаем картинку ладони
-                                    .crossfade(true) // Включаем мягкое перетекание при загрузке
-                                    .build()
-                            ),
-                            contentDescription = "Realistic Mystic Hand", // Описание элемента для доступности
-                            contentScale = ContentScale.FillBounds, // Заполняем область контейнера 9:16 без растяжения и сжатия
-                            modifier = Modifier.fillMaxSize(), // Занимает всё пространство пропорционального контейнера
-                            alpha = imageAlpha // Анимируем появление прозрачности
-                        )
-                        
-                        // Холст для точного рисования вспыхивающих линий и знаков поверх ладони
-                        Canvas(
-                            modifier = Modifier.fillMaxSize() // Холст ложится в точности поверх картинки 1-в-1
-                        ) {
-                        val w = size.width
-                        val h = size.height
-                        val toAndroidColor = { c: Color ->
-                            android.graphics.Color.argb(
-                                (c.alpha * 255).toInt(),
-                                (c.red * 255).toInt(),
-                                (c.green * 255).toInt(),
-                                (c.blue * 255).toInt()
-                            )
-                        }
+                val w = size.width
+                val h = size.height
+                val toAndroidColor = { c: Color ->
+                    android.graphics.Color.argb(
+                        (c.alpha * 255).toInt(),
+                        (c.red * 255).toInt(),
+                        (c.green * 255).toInt(),
+                        (c.blue * 255).toInt()
+                    )
+                }
 
-                        elements.forEach { element ->
-                            val op = element.opacity.value
-                            val fl = element.flash.value
-                            if (op > 0f) {
-                                val baseColor = element.color
-                                if (element.type == HandElementType.LINE && element.points.isNotEmpty()) {
-                                    val path = Path().apply {
-                                        val first = element.points.first()
-                                        moveTo(first.first * w, first.second * h)
-                                        for (i in 1 until element.points.size) {
-                                            val pt = element.points[i]
-                                            lineTo(pt.first * w, pt.second * h)
-                                        }
+                elements.forEach { element ->
+                    val op = element.opacity.value
+                    val fl = element.flash.value
+                    if (op > 0f) {
+                        val baseColor = element.color
+                        if (element.type == HandElementType.LINE && element.points.isNotEmpty()) {
+                            // Smooth Catmull-Rom style spline path following natural palm crease curves
+                            val path = Path().apply {
+                                val pts = element.points.map { Offset(it.first * w, it.second * h) }
+                                moveTo(pts[0].x, pts[0].y)
+                                if (pts.size == 2) {
+                                    lineTo(pts[1].x, pts[1].y)
+                                } else if (pts.size > 2) {
+                                    for (i in 0 until pts.size - 1) {
+                                        val p0 = if (i > 0) pts[i - 1] else pts[i]
+                                        val p1 = pts[i]
+                                        val p2 = pts[i + 1]
+                                        val p3 = if (i + 2 < pts.size) pts[i + 2] else p2
+
+                                        val cp1x = p1.x + (p2.x - p0.x) * 0.20f
+                                        val cp1y = p1.y + (p2.y - p0.y) * 0.20f
+                                        val cp2x = p2.x - (p3.x - p1.x) * 0.20f
+                                        val cp2y = p2.y - (p3.y - p1.y) * 0.20f
+
+                                        cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
                                     }
-                                    
-                                    // 1. Outer glow
-                                    drawPath(
-                                        path = path,
-                                        color = baseColor.copy(alpha = op * 0.15f * fl),
-                                        style = Stroke(width = 16.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-                                    
-                                    // 2. Medium glow
-                                    drawPath(
-                                        path = path,
-                                        color = baseColor.copy(alpha = op * 0.4f * fl),
-                                        style = Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-                                    
-                                    // 3. Bright core
-                                    drawPath(
-                                        path = path,
-                                        color = Color.White.copy(alpha = op * 0.9f),
-                                        style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    )
-                                } else if (element.type == HandElementType.MOUNT) {
-                                    val px = element.position.first * w
-                                    val py = element.position.second * h
-                                    
-                                    // Draw outer halo
-                                    drawContext.canvas.nativeCanvas.drawText(
-                                        element.symbol,
-                                        px,
-                                        py,
-                                        android.graphics.Paint().apply {
-                                            color = toAndroidColor(baseColor.copy(alpha = op * 0.3f * fl))
-                                            textSize = 36.dp.toPx()
-                                            textAlign = android.graphics.Paint.Align.CENTER
-                                            isAntiAlias = true
-                                            style = android.graphics.Paint.Style.FILL_AND_STROKE
-                                            strokeWidth = 6.dp.toPx()
-                                        }
-                                    )
-                                    
-                                    // Draw core text with shadow
-                                    drawContext.canvas.nativeCanvas.drawText(
-                                        element.symbol,
-                                        px,
-                                        py,
-                                        android.graphics.Paint().apply {
-                                            color = toAndroidColor(Color.White.copy(alpha = op))
-                                            textSize = 24.dp.toPx()
-                                            textAlign = android.graphics.Paint.Align.CENTER
-                                            isAntiAlias = true
-                                            style = android.graphics.Paint.Style.FILL
-                                            setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
-                                        }
-                                    )
                                 }
                             }
-                        }
-                    } // Конец Canvas
-                    } // Конец пропорционального контейнера 9:16
-                } // Конец внешнего анимированного контейнера заставки
-            } // Конец AnimatedVisibility
 
-            // Foreground Layer: Content on top of background hand
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top: Application Logo / Title
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 12.dp)
-                ) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = titleVisible,
-                        enter = fadeIn() + slideInVertically(initialOffsetY = { -30 })
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .graphicsLayer(
-                                        alpha = titleAlpha,
-                                        scaleX = titleScale,
-                                        scaleY = titleScale
-                                    )
-                            ) {
-                                val uppercaseTitle = strings.appName.uppercase()
-                                
-                                // 1. Glow underlay (Creates soft halo glow)
-                                Text(
-                                    text = uppercaseTitle,
-                                    style = MaterialTheme.typography.displayLarge.copy(
-                                        color = Color.Transparent,
-                                        fontSize = 36.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 4.sp,
-                                        shadow = Shadow(
-                                            color = MysticGold.copy(alpha = titleAlpha * 0.9f),
-                                            offset = Offset(0f, 0f),
-                                            blurRadius = titleGlowRadius
-                                        )
-                                    ),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    textAlign = TextAlign.Center
+                            // 1. Main rich saturated color stroke (sharp, clear & vibrant)
+                            drawPath(
+                                path = path,
+                                color = baseColor.copy(alpha = (op * fl).coerceIn(0f, 1f)),
+                                style = Stroke(
+                                    width = 2.5.dp.toPx(),
+                                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                    join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
-                                
-                                // 2. Outer contour / outline layer (Dark backing)
-                                Text(
-                                    text = uppercaseTitle,
-                                    style = MaterialTheme.typography.displayLarge.copy(
-                                        color = Color.Black,
-                                        fontSize = 36.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 4.sp,
-                                        drawStyle = Stroke(
-                                            width = 12f, // thick backing outline
-                                            join = StrokeJoin.Round
-                                        )
-                                    ),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    textAlign = TextAlign.Center
+                            )
+
+                            // 2. Crisp laser bright highlight core
+                            val coreColor = lerpColor(baseColor, Color.White, (fl - 1f).coerceIn(0f, 1f))
+                            drawPath(
+                                path = path,
+                                color = coreColor.copy(alpha = (op * 0.9f).coerceIn(0f, 1f)),
+                                style = Stroke(
+                                    width = 0.8.dp.toPx(),
+                                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                    join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
-                                
-                                // 3. Golden contour / outline layer
-                                Text(
-                                    text = uppercaseTitle,
-                                    style = MaterialTheme.typography.displayLarge.copy(
-                                        color = MysticGold.copy(alpha = 0.85f),
-                                        fontSize = 36.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 4.sp,
-                                        drawStyle = Stroke(
-                                            width = 4f, // fine gold outline
-                                            join = StrokeJoin.Round
-                                        )
-                                    ),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    textAlign = TextAlign.Center
-                                )
-                                
-                                // 4. Main inner text layer with brightness flash
-                                val flashColor = lerpColor(MysticGold, Color.White, titleFlashProgress)
-                                Text(
-                                    text = uppercaseTitle,
-                                    style = MaterialTheme.typography.displayLarge.copy(
-                                        color = flashColor,
-                                        fontSize = 36.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 4.sp
-                                    ),
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            // Highlighted, high-legibility subtitle
-                            Text(
-                                text = strings.splashLogoSubtitle.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MysticGold,
-                                    letterSpacing = 2.5.sp,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    shadow = Shadow(
-                                        color = Color.Black,
-                                        offset = Offset(0f, 2f),
-                                        blurRadius = 8f
-                                    )
-                                ),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp)
-                                    .background(Color.Black.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
-                                    .border(1.dp, MysticGold.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            )
+                        } else if (element.type == HandElementType.MOUNT) {
+                            val px = element.position.first * w
+                            val py = element.position.second * h
+
+                            // Outer subtle glow halo for planetary symbol
+                            drawContext.canvas.nativeCanvas.drawText(
+                                element.symbol,
+                                px,
+                                py,
+                                android.graphics.Paint().apply {
+                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.4f * fl).coerceIn(0f, 1f)))
+                                    textSize = 28.dp.toPx()
+                                    textAlign = android.graphics.Paint.Align.CENTER
+                                    isAntiAlias = true
+                                    style = android.graphics.Paint.Style.FILL_AND_STROKE
+                                    strokeWidth = 3.dp.toPx()
+                                }
+                            )
+
+                            // Crisp core text for planetary symbol
+                            val symbolColor = lerpColor(baseColor, Color.White, (fl - 1f).coerceIn(0f, 1f))
+                            drawContext.canvas.nativeCanvas.drawText(
+                                element.symbol,
+                                px,
+                                py,
+                                android.graphics.Paint().apply {
+                                    color = toAndroidColor(symbolColor.copy(alpha = op.coerceIn(0f, 1f)))
+                                    textSize = 22.dp.toPx()
+                                    textAlign = android.graphics.Paint.Align.CENTER
+                                    isAntiAlias = true
+                                    style = android.graphics.Paint.Style.FILL
+                                    setShadowLayer(6.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                }
                             )
                         }
                     }
                 }
+            }
+        }
 
-                // Middle: spacer to push the button to the bottom
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Bottom: "Пропустить заставку" button
-                Box(
-                    modifier = Modifier
-                        .padding(bottom = 12.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(0.6f)) // Semi-transparent black behind button
-                        .border(1.5.dp, MysticGold.copy(0.6f), RoundedCornerShape(20.dp))
-                        .clickable { onNavigateNext() }
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
+        // Layer 2: Top Title ("ХИРОМАНТ" & Subtitle) and Bottom "ПРОПУСТИТЬ ЗАСТАВКУ" button
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Top Section: Title & Subtitle appearing at 5th second
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = titleVisible,
+                    enter = fadeIn(animationSpec = tween(1000)) + slideInVertically(initialOffsetY = { -40 })
                 ) {
-                    Text(
-                        text = strings.splashTapToSkip,
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = MysticGold,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer(
+                                    alpha = titleAlpha,
+                                    scaleX = titleScale,
+                                    scaleY = titleScale
+                                )
+                        ) {
+                            val uppercaseTitle = strings.appName.uppercase()
+
+                            // Outer glow halo text
+                            Text(
+                                text = uppercaseTitle,
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = Color.Transparent,
+                                    fontSize = 38.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 5.sp,
+                                    shadow = Shadow(
+                                        color = MysticGold.copy(alpha = 0.9f),
+                                        offset = Offset(0f, 0f),
+                                        blurRadius = 45f
+                                    )
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
+                            )
+
+                            // Main golden inner text with flash effect
+                            val flashColor = lerpColor(MysticGold, Color.White, titleFlashProgress)
+                            Text(
+                                text = uppercaseTitle,
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = flashColor,
+                                    fontSize = 38.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 5.sp
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Subtitle: "ТАЙНЫ СУДЬБЫ, В ВАШИХ РУКАХ"
+                        Text(
+                            text = strings.splashLogoSubtitle.uppercase(),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = MysticGold,
+                                letterSpacing = 2.sp,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                shadow = Shadow(
+                                    color = Color.Black,
+                                    offset = Offset(0f, 2f),
+                                    blurRadius = 8f
+                                )
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+                                .border(1.2.dp, MysticGold.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 18.dp, vertical = 8.dp)
                         )
-                    )
+                    }
                 }
             }
+
+            // Bottom Section: Clean button with rounded corners "ПРОПУСТИТЬ ЗАСТАВКУ"
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(0.75f))
+                    .border(1.5.dp, MysticGold.copy(0.8f), RoundedCornerShape(24.dp))
+                    .clickable { onNavigateNext() }
+                    .padding(horizontal = 28.dp, vertical = 14.dp)
+            ) {
+                Text(
+                    text = strings.splashTapToSkip,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp,
+                        fontSize = 15.sp
+                    )
+                )
+            }
+        }
+    }
+}
+
+private fun animateElementAppearance(
+    scope: kotlinx.coroutines.CoroutineScope,
+    element: Any
+) {
+    scope.launch {
+        try {
+            val opField = element.javaClass.getDeclaredField("opacity")
+            val flField = element.javaClass.getDeclaredField("flash")
+            opField.isAccessible = true
+            flField.isAccessible = true
+            val opacityState = opField.get(element) as androidx.compose.runtime.MutableState<Float>
+            val flashState = flField.get(element) as androidx.compose.runtime.MutableState<Float>
+
+            val steps = 12
+            for (i in 1..steps) {
+                val progress = i.toFloat() / steps
+                opacityState.value = progress
+                if (progress < 0.5f) {
+                    flashState.value = 1f + (progress * 2f) * 1.5f
+                } else {
+                    flashState.value = 2.5f - ((progress - 0.5f) * 2f) * 1.5f
+                }
+                kotlinx.coroutines.delay(16)
+            }
+            opacityState.value = 1f
+            flashState.value = 1f
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
@@ -3765,6 +3812,15 @@ fun MysticLoadingScreen(
 
 // --- SCREEN 6: ANALYSIS RESULTS + INTERACTIVE LINES OVERLAY ---
 
+fun cleanInterpretationText(text: String?): String {
+    if (text.isNullOrBlank()) return ""
+    return text
+        .replace(Regex("[📍📌🚩⭐🌟✨🔮✋📜💙🪐☀️🌙♀♂♃♄⚡💎🕯🗝👁🖐💫⭕⏺⏹▶◀➔➡️⬅️⬆️⬇️▪️▫️◾◽◼️◻️⬛⬜🎯🎨🎭🎪🎰🎲🎴🎵🎶🎼]"), "")
+        .replace(Regex("[\\x{1F600}-\\x{1F64F}\\x{1F300}-\\x{1F5FF}\\x{1F680}-\\x{1F6FF}\\x{1F1E6}-\\x{1F1FF}\\x{2600}-\\x{27BF}\\x{2300}-\\x{23FF}\\x{2B50}\\x{203C}\\x{2049}\\x{1F900}-\\x{1F9FF}\\x{1FA70}-\\x{1FAFF}]"), "")
+        .replace(Regex("  +"), " ")
+        .trim()
+}
+
 fun buildReportAnnotatedString(
     report: com.aistudio.hiromant.kxsrwa.data.remote.PalmistReport,
     strings: com.aistudio.hiromant.kxsrwa.ui.language.PalmistStrings,
@@ -3773,16 +3829,19 @@ fun buildReportAnnotatedString(
     return buildAnnotatedString {
         fun appendHeader(text: String) {
             withStyle(SpanStyle(color = MysticGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
-                append(text)
+                append(cleanInterpretationText(text))
             }
             append("\n")
         }
         
         fun appendBody(text: String) {
-            withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
-                append(text)
+            val cleanedText = cleanInterpretationText(text)
+            if (cleanedText.isNotBlank()) {
+                withStyle(SpanStyle(color = Color.White, fontSize = 16.sp)) {
+                    append(cleanedText)
+                }
+                append("\n\n")
             }
-            append("\n\n")
         }
         
         appendHeader(strings.resOverallPortrait)
@@ -4152,29 +4211,33 @@ fun TtsVoiceController(
     var expanded by remember { mutableStateOf(false) }
     var maleMenuExpanded by remember { mutableStateOf(false) }
     var femaleMenuExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) expanded = true
+    }
     
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .background(Color(0xBB000000), RoundedCornerShape(22.dp))
+            .background(Color(0xCC121018), RoundedCornerShape(22.dp))
             .border(1.dp, MysticBronze.copy(0.4f), RoundedCornerShape(22.dp))
             .padding(4.dp)
             .animateContentSize()
     ) {
         IconButton(
             onClick = {
-                expanded = !expanded
+                expanded = true
                 onPlayToggle()
             },
             modifier = Modifier
                 .size(36.dp)
                 .background(MysticGold, CircleShape)
         ) {
-            Text(
-                text = if (isPlaying) "||" else ">",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+            Icon(
+                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Пауза" else "Воспроизвести",
+                tint = Color.Black,
+                modifier = Modifier.size(20.dp)
             )
         }
         
@@ -4187,7 +4250,7 @@ fun TtsVoiceController(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
-                // Male voice button & dropdown
+                // Выбор мужского голоса
                 Box {
                     IconButton(
                         onClick = {
@@ -4203,7 +4266,7 @@ fun TtsVoiceController(
                             .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
                     ) {
                         Text(
-                            text = "м",
+                            text = "М",
                             color = if (gender == "Male") Color.Black else Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
@@ -4216,21 +4279,23 @@ fun TtsVoiceController(
                         modifier = Modifier.background(MysticDarkSurface)
                     ) {
                         if (maleVoices.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("Мужской стандартный", color = Color.White) },
-                                onClick = {
-                                    onGenderChange("Male")
-                                    maleMenuExpanded = false
-                                }
-                            )
+                            listOf("Голос М1 (Стандартный)", "Голос М2 (Бархатный)", "Голос М3 (Четкий)").forEachIndexed { index, name ->
+                                DropdownMenuItem(
+                                    text = { Text(name, color = Color.White) },
+                                    onClick = {
+                                        onGenderChange("Male")
+                                        maleMenuExpanded = false
+                                    }
+                                )
+                            }
                         } else {
                             maleVoices.forEachIndexed { index, voice ->
-                                val isSelected = selectedVoice?.name == voice.name
-                                val cleanName = voice.name.substringAfterLast(".").substringBefore("-local")
+                                val isSelected = gender == "Male" && selectedVoice?.name == voice.name
+                                val cleanLabel = getCleanVoiceDisplayName(voice, index, "Male")
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "Голос М${index + 1} ($cleanName)",
+                                            text = cleanLabel,
                                             color = if (isSelected) MysticGold else Color.White,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -4248,6 +4313,7 @@ fun TtsVoiceController(
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
+                // Ползунок регулировки скорости воспроизведения
                 Slider(
                     value = rate,
                     onValueChange = onRateChange,
@@ -4258,13 +4324,13 @@ fun TtsVoiceController(
                         thumbColor = MysticGold
                     ),
                     modifier = Modifier
-                        .width(120.dp)
+                        .width(110.dp)
                         .height(32.dp)
                 )
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                // Female voice button & dropdown
+                // Выбор женского голоса
                 Box {
                     IconButton(
                         onClick = {
@@ -4280,7 +4346,7 @@ fun TtsVoiceController(
                             .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
                     ) {
                         Text(
-                            text = "ж",
+                            text = "Ж",
                             color = if (gender == "Female") Color.Black else Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
@@ -4293,21 +4359,23 @@ fun TtsVoiceController(
                         modifier = Modifier.background(MysticDarkSurface)
                     ) {
                         if (femaleVoices.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("Женский стандартный", color = Color.White) },
-                                onClick = {
-                                    onGenderChange("Female")
-                                    femaleMenuExpanded = false
-                                }
-                            )
+                            listOf("Голос Ж1 (Стандартный)", "Голос Ж2 (Нежный)", "Голос Ж3 (Звонкий)").forEachIndexed { index, name ->
+                                DropdownMenuItem(
+                                    text = { Text(name, color = Color.White) },
+                                    onClick = {
+                                        onGenderChange("Female")
+                                        femaleMenuExpanded = false
+                                    }
+                                )
+                            }
                         } else {
                             femaleVoices.forEachIndexed { index, voice ->
-                                val isSelected = selectedVoice?.name == voice.name
-                                val cleanName = voice.name.substringAfterLast(".").substringBefore("-local")
+                                val isSelected = gender == "Female" && selectedVoice?.name == voice.name
+                                val cleanLabel = getCleanVoiceDisplayName(voice, index, "Female")
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "Голос Ж${index + 1} ($cleanName)",
+                                            text = cleanLabel,
                                             color = if (isSelected) MysticGold else Color.White,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -4920,56 +4988,105 @@ fun ResultsScreen(
         rightHandTextState = rightHandTextState.copy(annotatedString = rightHandAnnotatedString)
     }
 
+    var followUpWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var activeCleanedTts by remember { mutableStateOf<CleanedTtsText?>(null) }
+
+    val followUpPromptText = remember(currentLang) {
+        if (currentLang == AppLanguage.RUS) {
+            "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?\n\n" +
+            "Хотите углубиться в какую-то конкретную область? Задайте вопрос:\n" +
+            "• 💼 Карьера и финансы — профессиональный потенциал, денежные потоки\n" +
+            "• 💕 Отношения и брак — совместимость, любовная линия, партнерство\n" +
+            "• 🧠 Интеллект и таланты — скрытые способности, обучение\n" +
+            "• 🏥 Здоровье и энергия — жизненная сила, уязвимые зоны\n" +
+            "• 🌟 Карма и предназначение — духовный путь, миссия\n" +
+            "• 📅 Временные периоды — прогноз по годам\n" +
+            "• 🔍 Конкретная линия или знак — детальный разбор\n" +
+            "• Улучшение фото — как сделать идеальные снимки\n\n" +
+            "Или напишите свой вопрос — я отвечу на всё!"
+        } else {
+            "❓ NEED MORE DETAILED ANALYSIS?\n\n" +
+            "Want to delve into a specific area? Ask a question:\n" +
+            "• 💼 Career & Finances — professional potential, money flows\n" +
+            "• 💕 Relationships & Marriage — compatibility, love line, partnership\n" +
+            "• 🧠 Intellect & Talents — hidden abilities, learning\n" +
+            "• 🏥 Health & Energy — vital force, vulnerable areas\n" +
+            "• 🌟 Karma & Purpose — spiritual path, mission\n" +
+            "• 📅 Time Periods — forecast by years\n" +
+            "• 🔍 Specific line or sign — detailed analysis\n" +
+            "• Photo improvement — how to take perfect pictures\n\n" +
+            "Or write your question — I will answer everything!"
+        }
+    }
+
+    val supportText = remember(currentLang) {
+        getLocalizedSupportText(currentLang)
+    }
+
+    val currentMainText = if (activeTab == "left") leftHandTextState.text else rightHandTextState.text
+
+    val fullTextToRead = remember(currentMainText, followUpPromptText, supportText) {
+        "$currentMainText\n\n$followUpPromptText\n\n$supportText"
+    }
+
     DisposableEffect(tts) {
         tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     isPlayingTts = true
-                    if (utteranceId == "promo_text") {
-                        // Скроллим к самому низу, чтобы показать блок поддержки проекта
-                        scrollState.animateScrollTo(scrollState.maxValue)
-                    }
                 }
             }
             override fun onDone(utteranceId: String?) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     isPlayingTts = false
                     spokenWordRange = null
+                    followUpWordRange = null
                     supportWordRange = null
-                    lastPlaybackIndex = 0 // Сбрасываем индекс, когда чтение завершено полностью
-                    
-                    if (utteranceId == "reading_text") {
-                        kotlinx.coroutines.delay(5000)
-                        val promoText = getLocalizedSupportText(currentLang).replace("\n", " ")
-                        val params = android.os.Bundle().apply {
-                            putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "promo_text")
-                        }
-                        ttsOffset = 0
-                        tts?.speak(promoText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "promo_text")
-                        isPlayingTts = true
-                    }
+                    lastPlaybackIndex = 0
                 }
             }
             override fun onError(utteranceId: String?) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     isPlayingTts = false
                     spokenWordRange = null
+                    followUpWordRange = null
                     supportWordRange = null
                 }
             }
             override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     if (utteranceId == "reading_text") {
-                        val absStart = start + ttsOffset
-                        val absEnd = end + ttsOffset
-                        spokenWordRange = Pair(absStart, absEnd)
-                        supportWordRange = null
-                        lastPlaybackIndex = absStart // Сохраняем текущую позицию чтения в реальном времени
-                    } else if (utteranceId == "promo_text") {
-                        spokenWordRange = null
-                        supportWordRange = Pair(start, end)
-                        // Поддерживаем прокрутку внизу при чтении каждой новой фразы
-                        scrollState.animateScrollTo(scrollState.maxValue)
+                        val cleaned = activeCleanedTts
+                        val subLen = fullTextToRead.length - ttsOffset
+                        val relStart = cleaned?.indexMap?.getOrElse(start) { subLen } ?: start
+                        val relEnd = cleaned?.indexMap?.getOrElse(end) { subLen } ?: end
+                        val absStart = relStart + ttsOffset
+                        val absEnd = relEnd + ttsOffset
+                        lastPlaybackIndex = absStart
+
+                        val mainLen = currentMainText.length
+                        val followUpStart = mainLen + 2
+                        val supportStart = followUpStart + followUpPromptText.length + 2
+
+                        if (absStart < mainLen) {
+                            spokenWordRange = Pair(absStart, absEnd.coerceAtMost(mainLen))
+                            followUpWordRange = null
+                            supportWordRange = null
+                        } else if (absStart < supportStart) {
+                            spokenWordRange = null
+                            val relFStart = (absStart - followUpStart).coerceIn(0, followUpPromptText.length)
+                            val relFEnd = (absEnd - followUpStart).coerceIn(relFStart, followUpPromptText.length)
+                            followUpWordRange = Pair(relFStart, relFEnd)
+                            supportWordRange = null
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        } else {
+                            spokenWordRange = null
+                            followUpWordRange = null
+                            val relSStart = (absStart - supportStart).coerceIn(0, supportText.length)
+                            val relSEnd = (absEnd - supportStart).coerceIn(relSStart, supportText.length)
+                            supportWordRange = Pair(relSStart, relSEnd)
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
                     }
                 }
             }
@@ -4980,17 +5097,20 @@ fun ResultsScreen(
     }
 
     fun speakTextFromIndex(text: String, startIndex: Int) {
-        if (text.isEmpty()) return
+        val subText = fullTextToRead.substring(startIndex.coerceIn(0, fullTextToRead.length))
+        if (subText.isEmpty()) return
         tts?.stop()
         applyTtsSettings()
         
-        val textToSpeak = text.substring(startIndex)
+        val cleaned = prepareTextForTts(subText)
+        activeCleanedTts = cleaned
+        ttsOffset = startIndex
+        
         val params = android.os.Bundle().apply {
             putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "reading_text")
         }
         
-        ttsOffset = startIndex
-        tts?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
+        tts?.speak(cleaned.sanitizedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
         isPlayingTts = true
     }
 
@@ -5156,23 +5276,34 @@ fun ResultsScreen(
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Text(
-                                        text = "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?",
+                                        text = if (currentLang == AppLanguage.RUS) "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?" else "❓ NEED MORE DETAILED ANALYSIS?",
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             color = MysticGold,
                                             fontWeight = FontWeight.Bold
                                         )
                                     )
+                                    val annotatedFollowUpText = remember(followUpPromptText, followUpWordRange) {
+                                        buildAnnotatedString {
+                                            append(followUpPromptText)
+                                            followUpWordRange?.let { (start, end) ->
+                                                val clampedStart = start.coerceIn(0, length)
+                                                val clampedEnd = end.coerceIn(clampedStart, length)
+                                                if (clampedStart != clampedEnd) {
+                                                    addStyle(
+                                                        style = SpanStyle(
+                                                            background = MysticGold.copy(alpha = 0.4f),
+                                                            color = Color.Black,
+                                                            fontWeight = FontWeight.Bold
+                                                        ),
+                                                        start = clampedStart,
+                                                        end = clampedEnd
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                     Text(
-                                        text = "Хотите углубиться в какую-то конкретную область? Задайте мне вопрос о:\n" +
-                                               "• 💼 Карьера и финансы — профессиональный потенциал, денежные потоки\n" +
-                                               "• 💕 Отношения и брак — совместимость, любовная линия, партнерство\n" +
-                                               "• 🧠 Интеллект и таланты — скрытые способности, обучение\n" +
-                                               "• 🏥 Здоровье и энергия — жизненная сила, уязвимые зоны\n" +
-                                               "• 🌟 Карма и предназначение — духовный путь, миссия\n" +
-                                               "• 📅 Временные периоды — прогноз по годам\n" +
-                                               "• 🔍 Конкретная линия или знак — детальный разбор\n" +
-                                               "• Улучшение фото — как сделать идеальные снимки\n\n" +
-                                               "Или напишите свой вопрос — я отвечу на всё!",
+                                        text = annotatedFollowUpText,
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             color = Color.LightGray.copy(0.9f),
                                             lineHeight = 20.sp
@@ -5277,7 +5408,8 @@ fun ResultsScreen(
                                                                 val params = android.os.Bundle().apply {
                                                                     putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "follow_up")
                                                                 }
-                                                                tts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "follow_up")
+                                                                val cleanedText = prepareTextForTts(text).sanitizedText
+                                                                tts?.speak(cleanedText, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "follow_up")
                                                                 isPlayingTts = true
                                                             }
                                                         }
@@ -5329,7 +5461,12 @@ fun ResultsScreen(
                                 MysticButton(
                                     text = strings.resExportPdf,
                                     onClick = {
-                                        Toast.makeText(context, strings.resExportSuccess, Toast.LENGTH_LONG).show()
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_SUBJECT, if (currentLang == AppLanguage.RUS) "Анализ ладони — Хиромант" else "Palm Reading Report")
+                                            putExtra(android.content.Intent.EXTRA_TEXT, currentTextState.text)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(shareIntent, strings.resExportPdf))
                                     },
                                     isSecondary = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -5783,12 +5920,21 @@ fun CompatibilityScreen(
         ttsByLocalRef?.stop()
         applyTtsSettings()
         
-        val textToSpeak = text.substring(startIndex)
+        val cleanedObj = prepareTextForTts(text)
+        val cleanedText = cleanedObj.sanitizedText
+        
+        var cleanedStartIndex = 0
+        if (startIndex > 0) {
+            val mappedIdx = cleanedObj.indexMap.indexOfFirst { it >= startIndex }
+            cleanedStartIndex = if (mappedIdx >= 0) mappedIdx else cleanedText.length
+        }
+        
+        val textToSpeak = cleanedText.substring(cleanedStartIndex)
         val params = android.os.Bundle().apply {
             putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "reading_text")
         }
         
-        ttsOffset = startIndex
+        ttsOffset = cleanedStartIndex
         ttsByLocalRef?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
         isPlayingTts = true
     }
@@ -7003,7 +7149,121 @@ fun AboutScreen(
         }
     }
 
+    val ttsGenderState by viewModel.ttsGender.collectAsState()
+    val ttsVoiceIndex by viewModel.ttsVoiceIndex.collectAsState()
+    val ttsRateState by viewModel.ttsSpeechRate.collectAsState()
+    val ttsPitchState by viewModel.ttsPitch.collectAsState()
+
     var activeSubTab by remember { mutableStateOf("theory") } // "theory", "faq", "contacts"
+
+    var ttsInstance by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isPlayingTts by remember { mutableStateOf(false) }
+    var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var activeSpeakingText by remember { mutableStateOf("") } // "theory", "faq_all", "faq_0", ...
+
+    val femaleVoicesList = remember(ttsInstance, currentLang) {
+        getProcessedVoicesForGender(ttsInstance, currentLang, "Female")
+    }
+    val maleVoicesList = remember(ttsInstance, currentLang) {
+        getProcessedVoicesForGender(ttsInstance, currentLang, "Male")
+    }
+    val selectedVoice = remember(ttsInstance, ttsGenderState, ttsVoiceIndex, femaleVoicesList, maleVoicesList) {
+        val list = if (ttsGenderState == "Female") femaleVoicesList else maleVoicesList
+        if (list.isNotEmpty()) list[ttsVoiceIndex % list.size] else null
+    }
+
+    DisposableEffect(Unit) {
+        var tts: TextToSpeech? = null
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = if (currentLang == AppLanguage.RUS) java.util.Locale("ru") else java.util.Locale.US
+            }
+        }
+
+        tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                isPlayingTts = true
+                if (utteranceId != null) {
+                    activeSpeakingText = utteranceId
+                }
+            }
+
+            override fun onDone(utteranceId: String?) {
+                isPlayingTts = false
+                spokenWordRange = null
+                activeSpeakingText = ""
+            }
+
+            override fun onError(utteranceId: String?) {
+                isPlayingTts = false
+                spokenWordRange = null
+                activeSpeakingText = ""
+            }
+
+            override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+                spokenWordRange = Pair(start, end)
+            }
+        })
+
+        ttsInstance = tts
+
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
+    }
+
+    fun speakText(text: String, utteranceId: String) {
+        if (activeSpeakingText == utteranceId && isPlayingTts) {
+            ttsInstance?.stop()
+            isPlayingTts = false
+            spokenWordRange = null
+            activeSpeakingText = ""
+            return
+        }
+
+        ttsInstance?.stop()
+        ttsInstance?.let { tts ->
+            configureTtsVoice(
+                tts = tts,
+                currentLang = currentLang,
+                voiceGender = ttsGenderState,
+                voiceIndex = ttsVoiceIndex,
+                speechRate = ttsRateState,
+                speechPitch = ttsPitchState
+            )
+            val params = android.os.Bundle()
+            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+            activeSpeakingText = utteranceId
+            isPlayingTts = true
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+        }
+    }
+
+    fun stopSpeaking() {
+        ttsInstance?.stop()
+        isPlayingTts = false
+        spokenWordRange = null
+        activeSpeakingText = ""
+    }
+
+    val faqList = remember(currentLang) {
+        if (currentLang == AppLanguage.RUS) {
+            listOf(
+                "Как сделать качественный снимок?" to "Положите ладонь ровно, раздвинув пальцы на плоском однотонном фоне при ярком естественном или искусственном освещении. Рядом можно положить кредитную карту для точной калибровки размеров.",
+                "Почему анализ занимает время?" to "Мистические алгоритмы Gemini прочитывают десятки параметров руки, включая форму ногтей, длину пальцев и холмы, формируя глубокий персонализированный отчёт.",
+                "Чем отличается краткий от полного анализа?" to "Краткий даёт сжатые выводы по четырём ключевым линиям. Полный включает подробнейшую трактовку бугров, фаланг, знаков судьбы, будущих прогнозов и любовной сферы.",
+                "Насколько точны прогнозы?" to "Хиромантия — это зеркало вашей души. Линии меняются в зависимости от ваших решений, поэтому приложение предоставляет руководство и духовные ориентиры."
+            )
+        } else {
+            listOf(
+                "How to take a high-quality photo?" to "Place your palm flat with fingers spread on a plain background under bright lighting. You can place a credit card nearby for size calibration.",
+                "Why does analysis take time?" to "Gemini AI algorithms process dozens of hand parameters including nail shapes, finger ratios, and mounts to build a deep personalized report.",
+                "Brief vs. Full analysis?" to "Brief analysis summarizes the four primary lines. Full analysis includes deep readings of mounts, phalanges, destiny marks, and future life projections.",
+                "How accurate are the readings?" to "Palmistry is a mirror of your inner soul. Lines evolve with your decisions, providing spiritual guidance and actionable insight."
+            )
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -7017,7 +7277,7 @@ fun AboutScreen(
         ) {
             MysticHeader(strings.aboutTitle)
 
-            // Sub Tabs
+            // Sub Tabs - maxLines = 1, softWrap = false prevent word wrap or single letter breaks
             TabRow(
                 selectedTabIndex = when (activeSubTab) {
                     "theory" -> 0
@@ -7040,18 +7300,57 @@ fun AboutScreen(
             ) {
                 Tab(
                     selected = activeSubTab == "theory",
-                    onClick = { activeSubTab = "theory" },
-                    text = { Text(strings.aboutTabInfo, style = MaterialTheme.typography.labelLarge) }
+                    onClick = {
+                        if (activeSubTab != "theory") {
+                            stopSpeaking()
+                            activeSubTab = "theory"
+                        }
+                    },
+                    text = {
+                        Text(
+                            text = strings.aboutTabInfo,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 )
                 Tab(
                     selected = activeSubTab == "faq",
-                    onClick = { activeSubTab = "faq" },
-                    text = { Text(strings.aboutTabFaq, style = MaterialTheme.typography.labelLarge) }
+                    onClick = {
+                        if (activeSubTab != "faq") {
+                            stopSpeaking()
+                            activeSubTab = "faq"
+                        }
+                    },
+                    text = {
+                        Text(
+                            text = strings.aboutTabFaq, // "FAQ"
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 )
                 Tab(
                     selected = activeSubTab == "contacts",
-                    onClick = { activeSubTab = "contacts" },
-                    text = { Text(strings.aboutTabContacts, style = MaterialTheme.typography.labelLarge) }
+                    onClick = {
+                        if (activeSubTab != "contacts") {
+                            stopSpeaking()
+                            activeSubTab = "contacts"
+                        }
+                    },
+                    text = {
+                        Text(
+                            text = strings.aboutTabContacts, // "Поддержка"
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 )
             }
 
@@ -7061,17 +7360,71 @@ fun AboutScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp)
+                    .padding(20.dp)
             ) {
                 when (activeSubTab) {
                     "theory" -> {
+                        val theoryTextFull = remember(strings) {
+                            "${strings.aboutHistoryPalmist}. ${strings.aboutHistoryText}. ${strings.aboutTheoryLines}. ${strings.aboutTheoryText}"
+                        }
+
+                        // Единый модуль озвучивания для вкладки Теория
+                        TtsVoiceController(
+                            isPlaying = isPlayingTts && activeSpeakingText == "theory",
+                            onPlayToggle = {
+                                speakText(theoryTextFull, "theory")
+                            },
+                            rate = ttsRateState,
+                            onRateChange = { newRate ->
+                                viewModel.changeTtsSpeechRate(newRate)
+                                ttsInstance?.setSpeechRate(newRate)
+                            },
+                            gender = ttsGenderState,
+                            onGenderChange = { newGender ->
+                                viewModel.changeTtsGender(newGender)
+                            },
+                            maleVoices = maleVoicesList,
+                            femaleVoices = femaleVoicesList,
+                            selectedVoice = selectedVoice,
+                            onVoiceSelected = { voice ->
+                                val index = if (ttsGenderState == "Female") femaleVoicesList.indexOf(voice) else maleVoicesList.indexOf(voice)
+                                if (index >= 0) viewModel.changeTtsVoiceIndex(index)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
                             text = strings.aboutHistoryPalmist,
-                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
+                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        val historyAnnotated = remember(strings.aboutHistoryText, spokenWordRange, isPlayingTts, activeSpeakingText) {
+                            if (isPlayingTts && activeSpeakingText == "theory" && spokenWordRange != null) {
+                                val offset = strings.aboutHistoryPalmist.length + 2
+                                val relStart = (spokenWordRange!!.first - offset).coerceIn(0, strings.aboutHistoryText.length)
+                                val relEnd = (spokenWordRange!!.second - offset).coerceIn(0, strings.aboutHistoryText.length)
+                                buildAnnotatedString {
+                                    append(strings.aboutHistoryText)
+                                    if (relStart < relEnd) {
+                                        addStyle(
+                                            SpanStyle(background = MysticGold.copy(0.4f), color = MysticGold, fontWeight = FontWeight.Bold),
+                                            start = relStart,
+                                            end = relEnd
+                                        )
+                                    }
+                                }
+                            } else {
+                                buildAnnotatedString { append(strings.aboutHistoryText) }
+                            }
+                        }
+
                         Text(
-                            text = strings.aboutHistoryText,
+                            text = historyAnnotated,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White
                         )
@@ -7080,25 +7433,87 @@ fun AboutScreen(
 
                         Text(
                             text = strings.aboutTheoryLines,
-                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold)
+                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        val theoryAnnotated = remember(strings.aboutTheoryText, spokenWordRange, isPlayingTts, activeSpeakingText) {
+                            if (isPlayingTts && activeSpeakingText == "theory" && spokenWordRange != null) {
+                                val offset = strings.aboutHistoryPalmist.length + strings.aboutHistoryText.length + strings.aboutTheoryLines.length + 6
+                                val relStart = (spokenWordRange!!.first - offset).coerceIn(0, strings.aboutTheoryText.length)
+                                val relEnd = (spokenWordRange!!.second - offset).coerceIn(0, strings.aboutTheoryText.length)
+                                buildAnnotatedString {
+                                    append(strings.aboutTheoryText)
+                                    if (relStart < relEnd) {
+                                        addStyle(
+                                            SpanStyle(background = MysticGold.copy(0.4f), color = MysticGold, fontWeight = FontWeight.Bold),
+                                            start = relStart,
+                                            end = relEnd
+                                        )
+                                    }
+                                }
+                            } else {
+                                buildAnnotatedString { append(strings.aboutTheoryText) }
+                            }
+                        }
+
                         Text(
-                            text = strings.aboutTheoryText,
+                            text = theoryAnnotated,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White
                         )
                     }
+
                     "faq" -> {
-                        listOf(
-                            "Как сделать качественный снимок?" to "Положите ладонь ровно, раздвинув пальцы на плоском однотонном фоне при ярком естественном или искусственном освещении. Рядом можно положить кредитную карту для точной калибровки размеров.",
-                            "Почему анализ занимает время?" to "Мистические алгоритмы Gemini прочитывают десятки параметров руки, включая форму ногтей, длину пальцев и холмы, формируя глубокий персонализированный отчёт.",
-                            "Чем отличается краткий от полного анализа?" to "Краткий даёт сжатые выводы по четырём ключевым линиям. Полный включает подробнейшую трактовку бугров, фаланг, знаков судьбы, будущих прогнозов и любовной сферы.",
-                            "Насколько точны прогнозы?" to "Хиромантия — это зеркало вашей души. Линии меняются в зависимости от ваших решений, поэтому приложение предоставляет руководство и духовные ориентиры."
-                        ).forEach { (q, a) ->
-                            FaqItem(q, a)
+                        val fullFaqSpokenText = remember(faqList) {
+                            faqList.joinToString(". ") { "${it.first}. ${it.second}" }
+                        }
+
+                        // Единый модуль озвучивания для вкладки FAQ
+                        TtsVoiceController(
+                            isPlaying = isPlayingTts && activeSpeakingText == "faq_all",
+                            onPlayToggle = {
+                                speakText(fullFaqSpokenText, "faq_all")
+                            },
+                            rate = ttsRateState,
+                            onRateChange = { newRate ->
+                                viewModel.changeTtsSpeechRate(newRate)
+                                ttsInstance?.setSpeechRate(newRate)
+                            },
+                            gender = ttsGenderState,
+                            onGenderChange = { newGender ->
+                                viewModel.changeTtsGender(newGender)
+                            },
+                            maleVoices = maleVoicesList,
+                            femaleVoices = femaleVoicesList,
+                            selectedVoice = selectedVoice,
+                            onVoiceSelected = { voice ->
+                                val index = if (ttsGenderState == "Female") femaleVoicesList.indexOf(voice) else maleVoicesList.indexOf(voice)
+                                if (index >= 0) viewModel.changeTtsVoiceIndex(index)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        faqList.forEachIndexed { idx, (q, a) ->
+                            val itemUttId = "faq_$idx"
+                            val isItemSpeaking = isPlayingTts && (activeSpeakingText == itemUttId || activeSpeakingText == "faq_all")
+
+                            FaqItem(
+                                question = q,
+                                answer = a,
+                                isSpeaking = isItemSpeaking,
+                                spokenWordRange = if (isItemSpeaking) spokenWordRange else null,
+                                onVoiceClick = {
+                                    speakText("$q. $a", itemUttId)
+                                }
+                            )
                         }
                     }
+
                     "contacts" -> {
                         Text(
                             text = strings.aboutEmailSupport,
@@ -7106,7 +7521,6 @@ fun AboutScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Support donation card with simulated YooKassa/SberPay
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0x22D4AF37)),
@@ -7146,6 +7560,7 @@ fun AboutScreen(
                         )
                     }
                 }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 val appFullDisplayName = if (currentLang == AppLanguage.RUS) {
                     "Хиромант $appVersionName"
@@ -7164,19 +7579,135 @@ fun AboutScreen(
 }
 
 @Composable
-fun FaqItem(question: String, answer: String) {
+fun InfoVoiceControlCard(
+    title: String,
+    isPlaying: Boolean,
+    onPlayPauseClick: () -> Unit,
+    onStopClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x221E1B2E)),
+        border = BorderStroke(1.dp, if (isPlaying) MysticGold else MysticBronze.copy(0.4f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            color = if (isPlaying) MysticGold.copy(0.25f) else Color.White.copy(0.05f),
+                            shape = CircleShape
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (isPlaying) MysticGold else MysticBronze.copy(0.3f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
+                        contentDescription = "Голос",
+                        tint = if (isPlaying) MysticGold else Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MysticGold
+                    )
+                    Text(
+                        text = if (isPlaying) "Озвучивание включено..." else "Нажмите для прослушивания",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isPlaying) MysticGold.copy(0.8f) else Color.Gray
+                    )
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onPlayPauseClick,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(MysticGold, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Пауза" else "Воспроизвести",
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                if (isPlaying) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onStopClick,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(Color(0x33CF6679), CircleShape)
+                            .border(0.5.dp, Color(0xFFCF6679), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = "Остановить",
+                            tint = Color(0xFFCF6679),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FaqItem(
+    question: String,
+    answer: String,
+    isSpeaking: Boolean = false,
+    spokenWordRange: Pair<Int, Int>? = null,
+    onVoiceClick: () -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSpeaking) {
+        if (isSpeaking) {
+            expanded = true
+        }
+    }
 
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-        border = BorderStroke(0.5.dp, MysticBronze.copy(0.3f)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSpeaking) Color(0x33D4AF37) else Color(0x22141420)
+        ),
+        border = BorderStroke(
+            width = if (isSpeaking) 1.dp else 0.5.dp,
+            color = if (isSpeaking) MysticGold else MysticBronze.copy(0.3f)
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 5.dp)
             .clickable { expanded = !expanded }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -7184,21 +7715,60 @@ fun FaqItem(question: String, answer: String) {
             ) {
                 Text(
                     text = question,
-                    style = MaterialTheme.typography.labelLarge.copy(color = MysticGold),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        color = MysticGold,
+                        fontWeight = FontWeight.Bold
+                    ),
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = MysticGold
-                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onVoiceClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSpeaking) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
+                            contentDescription = "Озвучить вопрос",
+                            tint = if (isSpeaking) MysticGold else Color.Gray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MysticGold,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
+
             if (expanded) {
                 Spacer(modifier = Modifier.height(8.dp))
+                val annotatedAnswer = remember(answer, spokenWordRange, isSpeaking) {
+                    if (isSpeaking && spokenWordRange != null) {
+                        val offset = question.length + 2
+                        val relStart = (spokenWordRange.first - offset).coerceIn(0, answer.length)
+                        val relEnd = (spokenWordRange.second - offset).coerceIn(0, answer.length)
+                        buildAnnotatedString {
+                            append(answer)
+                            if (relStart < relEnd) {
+                                addStyle(
+                                    SpanStyle(background = MysticGold.copy(0.4f), color = Color.White, fontWeight = FontWeight.Bold),
+                                    start = relStart,
+                                    end = relEnd
+                                )
+                            }
+                        }
+                    } else {
+                        buildAnnotatedString { append(answer) }
+                    }
+                }
                 Text(
-                    text = answer,
+                    text = annotatedAnswer,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFC0C0D0)
+                    color = Color(0xFFE0E0E0)
                 )
             }
         }
@@ -7236,6 +7806,20 @@ fun SettingsScreen(
     var isSpeakingTest by remember { mutableStateOf(false) }
     var currentWordRange by remember { mutableStateOf<IntRange?>(null) }
     var activeSpeakingText by remember { mutableStateOf("") } // "program" or "dev"
+
+    var tempRate by remember(ttsRateState) { mutableFloatStateOf(ttsRateState) }
+    var tempPitch by remember(ttsPitchState) { mutableFloatStateOf(ttsPitchState) }
+
+    val femaleVoicesList = remember(ttsInstance, currentLang) {
+        getProcessedVoicesForGender(ttsInstance, currentLang, "Female")
+    }
+    val maleVoicesList = remember(ttsInstance, currentLang) {
+        getProcessedVoicesForGender(ttsInstance, currentLang, "Male")
+    }
+    val selectedVoice = remember(ttsInstance, ttsGenderState, ttsVoiceIndex, femaleVoicesList, maleVoicesList) {
+        val list = if (ttsGenderState == "Female") femaleVoicesList else maleVoicesList
+        if (list.isNotEmpty()) list[ttsVoiceIndex % list.size] else null
+    }
 
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
@@ -7549,7 +8133,10 @@ fun SettingsScreen(
                                         if (ttsGenderState == "Female") MysticGold else MysticBronze.copy(0.3f),
                                         RoundedCornerShape(8.dp)
                                     )
-                                    .clickable { viewModel.changeTtsGender("Female") }
+                                    .clickable {
+                                        viewModel.changeTtsGender("Female")
+                                        viewModel.changeTtsVoiceIndex(2)
+                                    }
                                     .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -7574,7 +8161,10 @@ fun SettingsScreen(
                                         if (ttsGenderState == "Male") MysticGold else MysticBronze.copy(0.3f),
                                         RoundedCornerShape(8.dp)
                                     )
-                                    .clickable { viewModel.changeTtsGender("Male") }
+                                    .clickable {
+                                        viewModel.changeTtsGender("Male")
+                                        viewModel.changeTtsVoiceIndex(2)
+                                    }
                                     .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -7589,87 +8179,7 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 3. Select Voice Interpreter
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) "Выберите исполнителя (Голос)" else "Select Interpreter (Voice)",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val voiceOptions = if (ttsGenderState == "Female") {
-                            if (currentLang == AppLanguage.RUS) listOf(
-                                "Голос 1: Стандартный (Чистый тембр)",
-                                "Голос 2: Нежный (Успокаивающий)",
-                                "Голос 3: Звонкий (Энергичный)"
-                            ) else listOf(
-                                "Voice 1: Standard (Clear timbre)",
-                                "Voice 2: Gentle (Soothing)",
-                                "Voice 3: Vibrant (Energetic)"
-                            )
-                        } else {
-                            if (currentLang == AppLanguage.RUS) listOf(
-                                "Голос 1: Стандартный (Авторитетный)",
-                                "Голос 2: Бархатный (Глубокий)",
-                                "Голос 3: Четкий (Уверенный)"
-                            ) else listOf(
-                                "Voice 1: Standard (Authoritative)",
-                                "Voice 2: Velvet (Deep)",
-                                "Voice 3: Crisp (Confident)"
-                            )
-                        }
-
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            voiceOptions.forEachIndexed { idx, optionName ->
-                                val isSelected = ttsVoiceIndex == idx
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(
-                                            if (isSelected) MysticGold.copy(0.12f) else Color.White.copy(0.03f),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) MysticGold else Color.White.copy(0.08f),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .clickable { viewModel.changeTtsVoiceIndex(idx) }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .border(2.dp, if (isSelected) MysticGold else Color.Gray, androidx.compose.foundation.shape.CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (isSelected) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .background(MysticGold, androidx.compose.foundation.shape.CircleShape)
-                                            )
-                                        }
-                                    }
-
-                                    Text(
-                                        text = optionName,
-                                        color = if (isSelected) MysticGold else Color.White,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        fontSize = 13.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 4. Speech Rate
+                        // 3. Скорость речи
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
@@ -7680,15 +8190,15 @@ fun SettingsScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = String.format("%.1fx", ttsRateState),
+                                text = String.format("%.1fx", tempRate),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MysticGold,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Slider(
-                            value = ttsRateState,
-                            onValueChange = { viewModel.changeTtsSpeechRate(it) },
+                            value = tempRate,
+                            onValueChange = { tempRate = it },
                             valueRange = 0.5f..2.0f,
                             colors = SliderDefaults.colors(
                                 thumbColor = MysticGold,
@@ -7699,7 +8209,7 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // 5. Voice Pitch
+                        // 4. Тон голоса
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
@@ -7710,15 +8220,15 @@ fun SettingsScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = String.format("%.1fx", ttsPitchState),
+                                text = String.format("%.1fx", tempPitch),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MysticGold,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Slider(
-                            value = ttsPitchState,
-                            onValueChange = { viewModel.changeTtsPitch(it) },
+                            value = tempPitch,
+                            onValueChange = { tempPitch = it },
                             valueRange = 0.5f..2.0f,
                             colors = SliderDefaults.colors(
                                 thumbColor = MysticGold,
@@ -7727,44 +8237,147 @@ fun SettingsScreen(
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        // 6. Voice Test Button
-                        MysticButton(
-                            text = if (isSpeakingTest) {
-                                if (currentLang == AppLanguage.RUS) "ОСТАНОВИТЬ ТЕСТ" else "STOP TEST"
-                            } else {
-                                if (currentLang == AppLanguage.RUS) "ПРОВЕРИТЬ ОЗВУЧИВАНИЕ" else "TEST VOICE SYNTHESIS"
-                            },
-                            onClick = {
-                                if (isSpeakingTest) {
-                                    ttsInstance?.stop()
-                                    isSpeakingTest = false
-                                } else {
-                                    ttsInstance?.stop()
-                                    configureTtsVoice(
-                                        tts = ttsInstance,
-                                        currentLang = currentLang,
-                                        voiceGender = ttsGenderState,
-                                        voiceIndex = ttsVoiceIndex,
-                                        speechRate = ttsRateState,
-                                        speechPitch = ttsPitchState
-                                    )
-
-                                    val phrase = if (currentLang == AppLanguage.RUS) {
-                                        "Здравствуйте! Я ваш персональный хиромант. Озвучивание настроено и готово к работе."
+                        // 5. Кнопки управления: Озвучить, Сбросить, Сохранить
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Кнопка "Озвучить"
+                            OutlinedButton(
+                                onClick = {
+                                    if (isSpeakingTest) {
+                                        ttsInstance?.stop()
+                                        isSpeakingTest = false
                                     } else {
-                                        "Hello! I am your personal palmist. Voice synthesis is configured and ready to go."
+                                        ttsInstance?.stop()
+                                        configureTtsVoice(
+                                            tts = ttsInstance,
+                                            currentLang = currentLang,
+                                            voiceGender = ttsGenderState,
+                                            voiceIndex = 2,
+                                            speechRate = tempRate,
+                                            speechPitch = tempPitch
+                                        )
+                                        val testPhrase = if (currentLang == AppLanguage.RUS) {
+                                            "Это проверка настройки голоса в приложении Хиромантия."
+                                        } else {
+                                            "This is a test of voice settings in the Palmist app."
+                                        }
+                                        val params = android.os.Bundle().apply {
+                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "voice_test_utt")
+                                        }
+                                        ttsInstance?.speak(testPhrase, TextToSpeech.QUEUE_FLUSH, params, "voice_test_utt")
+                                        isSpeakingTest = true
                                     }
-                                    val params = android.os.Bundle().apply {
-                                        putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "voice_test_utt")
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MysticGold),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Color(0x33D4AF37),
+                                    contentColor = MysticGold
+                                ),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isSpeakingTest) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                    contentDescription = null,
+                                    tint = MysticGold,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isSpeakingTest) {
+                                        if (currentLang == AppLanguage.RUS) "Стоп" else "Stop"
+                                    } else {
+                                        if (currentLang == AppLanguage.RUS) "Озвучить" else "Speak"
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // Кнопка "Сбросить"
+                            OutlinedButton(
+                                onClick = {
+                                    tempRate = 1.0f
+                                    tempPitch = 1.0f
+                                    if (isSpeakingTest) {
+                                        ttsInstance?.stop()
+                                        isSpeakingTest = false
                                     }
-                                    ttsInstance?.speak(phrase, TextToSpeech.QUEUE_FLUSH, params, "voice_test_utt")
-                                    isSpeakingTest = true
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                                    Toast.makeText(
+                                        context,
+                                        if (currentLang == AppLanguage.RUS) "Настройки сброшены по умолчанию" else "Settings reset to default",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color.Gray.copy(0.6f)),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Color.White.copy(0.05f),
+                                    contentColor = Color.White
+                                ),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Сбросить" else "Reset",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // Кнопка "Сохранить"
+                            Button(
+                                onClick = {
+                                    viewModel.changeTtsSpeechRate(tempRate)
+                                    viewModel.changeTtsPitch(tempPitch)
+                                    viewModel.changeTtsGender(ttsGenderState)
+                                    viewModel.changeTtsVoiceIndex(2)
+                                    Toast.makeText(
+                                        context,
+                                        if (currentLang == AppLanguage.RUS) "Настройки голоса сохранены" else "Voice settings saved",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MysticGold,
+                                    contentColor = Color.Black
+                                ),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Сохранить" else "Save",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }

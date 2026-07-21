@@ -203,8 +203,8 @@ object LocalizedStrings {
         langContinue = "Продолжить",
 
         splashMysticScroll = "Древний свиток разворачивается...",
-        splashTapToSkip = "Пропустить заставку",
-        splashLogoSubtitle = "ТАЙНЫ ВАШЕЙ СУДЬБЫ НА ЛАДОНИ",
+        splashTapToSkip = "ПРОПУСТИТЬ ЗАСТАВКУ",
+        splashLogoSubtitle = "ТАЙНЫ СУДЬБЫ, В ВАШИХ РУКАХ",
 
         authTitle = "Вход/Регистрация",
         authSubtitle = "Создайте профиль для сохранения истории ваших сеансов",
@@ -281,8 +281,8 @@ object LocalizedStrings {
         resVoiceMale = "Мужской",
         resVoiceFemale = "Женский",
         resVoiceSpeed = "Скорость речи",
-        resExportPdf = "Экспорт в PDF",
-        resExportSuccess = "Отчет успешно экспортирован в PDF!",
+        resExportPdf = "Поделиться",
+        resExportSuccess = "Ссылка и текст отчета готовы к отправке!",
         resBtnBuy10 = "Получить 10 полных анализов за 1000 ₽",
         resBtnBuyCompat = "Узнать совместимость с партнёром за 250 ₽",
 
@@ -306,7 +306,7 @@ object LocalizedStrings {
 
         aboutTitle = "О приложении",
         aboutTabInfo = "Теория",
-        aboutTabFaq = "Частые вопросы",
+        aboutTabFaq = "FAQ",
         aboutTabContacts = "Поддержка",
         aboutHistoryPalmist = "История Хиромантии",
         aboutHistoryText = "Хиромантия (от греч. cheir — рука и manteia — анализ) — одна из древнейших систем предсказания, зародившаяся в Древней Индии, Китае и Египте. Великие умы древности, включая Аристотеля и Гиппократа, изучали линии рук для оценки характера и здоровья человека.",
@@ -440,8 +440,8 @@ object LocalizedStrings {
         resVoiceMale = "Male",
         resVoiceFemale = "Female",
         resVoiceSpeed = "Speech Rate",
-        resExportPdf = "Export PDF",
-        resExportSuccess = "Report successfully exported to PDF!",
+        resExportPdf = "Share",
+        resExportSuccess = "Report text ready for sharing!",
         resBtnBuy10 = "Unlock 10 Full Readings for 1000 ₽",
         resBtnBuyCompat = "Check Partner Compatibility for 250 ₽",
 
