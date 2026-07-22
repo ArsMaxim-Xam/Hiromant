@@ -853,6 +853,7 @@ class PalmistRepository(
     suspend fun analyzeCompatibility(
         selfBitmap: Bitmap?,
         partnerBitmap: Bitmap?,
+        selfName: String,
         partnerName: String,
         langCode: String
     ): ReadingEntity = withContext(Dispatchers.IO) {
@@ -861,13 +862,10 @@ class PalmistRepository(
 
         val promptText = """
             Analyze the relationship compatibility between two people based on palmistry principles.
-            Person 1 (User):
-            - Name: ${profile.name}
-            - Gender: ${profile.gender}
-            - Age: ${profile.age} years
-            - Hand: ${profile.dominantHand}
+            Person 1 (Partner 1):
+            - Name: $selfName
             
-            Person 2 (Partner):
+            Person 2 (Partner 2):
             - Name: $partnerName
             
             Evaluate the synergy between their Heart Lines, Marriage lines, and Planetary Mounts.
@@ -979,11 +977,11 @@ class PalmistRepository(
 
         if (resultJsonStr.isEmpty()) {
             AppLogger.i("PalmistRepository", "Result compatibility JSON is empty, generating local mock fallback compatibility report.")
-            resultJsonStr = generateLocalMockCompatibility(profile.name, partnerName, isRussian)
+            resultJsonStr = generateLocalMockCompatibility(selfName, partnerName, isRussian)
         }
 
         val reading = ReadingEntity(
-            name = profile.name,
+            name = selfName,
             gender = profile.gender,
             age = profile.age,
             height = profile.height,
@@ -1058,7 +1056,7 @@ class PalmistRepository(
         val isCharacter = reading.analysisType.contains("char")
         
         val newJson = if (reading.analysisType == "compatibility") {
-            generateLocalMockCompatibility(profile.name, reading.partnerName ?: "Партнёр", isRussian)
+            generateLocalMockCompatibility(reading.name, reading.partnerName ?: "Партнёр", isRussian)
         } else {
             generateLocalMockReport(profile, isRussian, isFull, isCharacter)
         }

@@ -488,7 +488,12 @@ class MainActivity : ComponentActivity() {
                                             onNavigateToLoading = { navController.navigate("loading") }, // Переход на экран ИИ-расчетов
                                             onNavigateToBilling = { navController.navigate("billing") }, // Переход на экран покупки баланса
                                             onNavigateToLanguage = { navController.navigate("language") }, // Смена языка
-                                            onNavigateToVideoScan = { navController.navigate("video_scan") } // Переход к записи видео ладоней
+                                            onNavigateToVideoScan = { navController.navigate("video_scan") }, // Переход к записи видео ладоней
+                                            onNavigateToSplash = {
+                                                navController.navigate("splash") {
+                                                    popUpTo("main_container") { inclusive = true }
+                                                }
+                                            }
                                         )
                                     }
 
@@ -616,9 +621,19 @@ fun MainContainerScreen(
     onNavigateToLoading: () -> Unit,
     onNavigateToBilling: () -> Unit,
     onNavigateToLanguage: () -> Unit,
-    onNavigateToVideoScan: () -> Unit
+    onNavigateToVideoScan: () -> Unit,
+    onNavigateToSplash: () -> Unit
 ) {
     val activeTab by viewModel.activeTab.collectAsState() // Подписка на изменение активной вкладки
+
+    // Нажатие системной кнопки возврата "Назад"
+    androidx.activity.compose.BackHandler {
+        if (activeTab != "upload") {
+            viewModel.activeTab.value = "upload" // Возврат на главный экран сканирования
+        } else {
+            onNavigateToSplash() // Возврат на заставку сплеш-экрана
+        }
+    }
 
     Box(
         modifier = Modifier

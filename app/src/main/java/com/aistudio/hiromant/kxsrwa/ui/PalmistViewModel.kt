@@ -436,7 +436,8 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     fun runCompatibilityAnalysis(
         selfBitmap: Bitmap?, // Фотографии ладони первого партнёра
         partnerBitmap: Bitmap?, // Фотографии ладони второго партнёра
-        partnerName: String, // Имя партнёра
+        selfName: String, // Имя первого партнёра
+        partnerName: String, // Имя второго партнёра
         onCompleted: () -> Unit // Функция завершения работы
     ) {
         currentReading.value = null // Сброс одиночного анализа перед совместимостью
@@ -477,6 +478,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 val reading = repository.analyzeCompatibility(
                     selfBitmap = selfBitmap,
                     partnerBitmap = partnerBitmap,
+                    selfName = selfName,
                     partnerName = partnerName,
                     langCode = _selectedLanguage.value.code
                 )

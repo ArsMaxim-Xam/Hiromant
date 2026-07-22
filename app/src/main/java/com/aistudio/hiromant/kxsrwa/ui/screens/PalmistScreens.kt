@@ -54,6 +54,7 @@ import com.aistudio.hiromant.kxsrwa.BuildConfig
 import com.aistudio.hiromant.kxsrwa.utils.AppLogger
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.aistudio.hiromant.kxsrwa.data.local.ReadingEntity
@@ -389,6 +390,7 @@ fun MysticSplashScreen(
     viewModel: PalmistViewModel,
     onNavigateNext: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
     val coroutineScope = rememberCoroutineScope()
@@ -396,6 +398,22 @@ fun MysticSplashScreen(
     // Animation states
     var titleVisible by remember { mutableStateOf(false) }
     var triggerFlash by remember { mutableStateOf(false) }
+    var backPressedOnce by remember { mutableStateOf(false) }
+    var showExitTooltip by remember { mutableStateOf(false) }
+
+    androidx.activity.compose.BackHandler {
+        if (backPressedOnce) {
+            (context as? android.app.Activity)?.finish()
+        } else {
+            backPressedOnce = true
+            showExitTooltip = true
+            coroutineScope.launch {
+                kotlinx.coroutines.delay(2500)
+                backPressedOnce = false
+                showExitTooltip = false
+            }
+        }
+    }
 
     class AnimatedElementState(
         val id: String,
@@ -420,10 +438,10 @@ fun MysticSplashScreen(
                 color = Color(0xFFFF0044), // Ультра Яркий Неоновый Красный
                 points = listOf(
                     Pair(0.64f, 0.47f),
-                    Pair(0.60f, 0.53f),
-                    Pair(0.56f, 0.60f),
-                    Pair(0.60f, 0.69f), // Выгнута более вправо
-                    Pair(0.64f, 0.79f)  // Удлинена на 1/4 фаланги
+                    Pair(0.58f, 0.53f),
+                    Pair(0.52f, 0.61f), // Еще больше выгнута в ЛЕВО
+                    Pair(0.57f, 0.70f),
+                    Pair(0.64f, 0.80f)
                 )
             ),
             AnimatedElementState(
@@ -432,11 +450,10 @@ fun MysticSplashScreen(
                 name = "Head Line",
                 color = Color(0xFF00FFFF), // Электрический Насыщенный Циан
                 points = listOf(
-                    Pair(0.64f, 0.47f),
-                    Pair(0.54f, 0.51f),
-                    Pair(0.42f, 0.56f),
-                    Pair(0.31f, 0.62f),
-                    Pair(0.21f, 0.68f) // Левый край загнут ниже к Бугру Луны
+                    Pair(0.69f, 0.47f), // На полфаланги подвинута правее
+                    Pair(0.59f, 0.51f),
+                    Pair(0.47f, 0.56f),
+                    Pair(0.36f, 0.62f)  // На полфаланги слева короче
                 )
             ),
             AnimatedElementState(
@@ -445,12 +462,12 @@ fun MysticSplashScreen(
                 name = "Heart Line",
                 color = Color(0xFFFF00AA), // Яркий Сочный Маджента
                 points = listOf(
-                    Pair(0.18f, 0.58f), // Левый край опущен на фалангу
+                    Pair(0.18f, 0.58f),
                     Pair(0.28f, 0.56f),
                     Pair(0.38f, 0.54f),
-                    Pair(0.48f, 0.52f), // Выгнута вниз посередине
-                    Pair(0.56f, 0.47f),
-                    Pair(0.62f, 0.42f)  // Правый край опущен на полфаланги
+                    Pair(0.48f, 0.51f),
+                    Pair(0.54f, 0.44f),
+                    Pair(0.59f, 0.39f) // Правый край подвинут по диагонали вверх-влево на 1/3 фаланги
                 )
             ),
             AnimatedElementState(
@@ -459,10 +476,10 @@ fun MysticSplashScreen(
                 name = "Destiny Line",
                 color = Color(0xFFB030FF), // Яркий Неоновый Пурпурный
                 points = listOf(
-                    Pair(0.47f, 0.69f),
-                    Pair(0.47f, 0.59f),
-                    Pair(0.46f, 0.49f),
-                    Pair(0.46f, 0.40f)
+                    Pair(0.47f, 0.74f), // Опущена на полфаланги без изменения формы и длины
+                    Pair(0.47f, 0.64f),
+                    Pair(0.46f, 0.54f),
+                    Pair(0.46f, 0.45f)
                 )
             ),
 
@@ -573,33 +590,33 @@ fun MysticSplashScreen(
         scaleTarget = 1.18f
 
         // Sequence of line and planetary symbol appearances with vibrant color flashes
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "life_line" })
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_jupiter" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_saturn" })
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "head_line" })
 
-        // Display title "ХИРОМАНТ" 0.8s earlier on translucent gray pill card with contour flash
+        // Display title "ХИРОМАНТ"
         titleVisible = true
         triggerFlash = true
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_apollo" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mercury" })
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "heart_line" })
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_venus" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_mars_lower" })
         animateElementAppearance(coroutineScope, elements.first { it.id == "mount_moon" })
 
-        delay(400)
+        delay(550)
         animateElementAppearance(coroutineScope, elements.first { it.id == "destiny_line" })
 
         // Launch continuous sequential flashing pulses across all elements
@@ -607,13 +624,13 @@ fun MysticSplashScreen(
             while (true) {
                 for (elem in elements) {
                     animateElementFlashPulse(coroutineScope, elem)
-                    delay(300)
+                    delay(450)
                 }
             }
         }
 
-        // Auto-navigate after splash sequence
-        delay(2200)
+        // Auto-navigate after splash sequence (+2s longer overall)
+        delay(4200)
         onNavigateNext()
     }
 
@@ -718,35 +735,35 @@ fun MysticSplashScreen(
                             val px = element.position.first * w
                             val py = element.position.second * h
 
-                            // Outer thin neon glow contour for planetary symbol
+                            // Outer thin neon glow contour for planetary symbol (1/3 thinner, intense color tone)
                             drawContext.canvas.nativeCanvas.drawText(
                                 element.symbol,
                                 px,
                                 py,
                                 android.graphics.Paint().apply {
-                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.8f * fl).coerceIn(0f, 1f)))
-                                    textSize = 22.dp.toPx()
+                                    color = toAndroidColor(baseColor.copy(alpha = (op * (0.85f + (fl - 1f) * 0.15f)).coerceIn(0f, 1f)))
+                                    textSize = 17.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL_AND_STROKE
-                                    strokeWidth = 1.6.dp.toPx()
-                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                    strokeWidth = 1.0.dp.toPx() // На 1/3 тоньше
+                                    setShadowLayer((8.dp.toPx() * fl), 0f, 0f, toAndroidColor(baseColor))
                                 }
                             )
 
-                            // Crisp core text for planetary symbol
-                            val symbolColor = lerpColor(baseColor, Color.White, (fl - 1f).coerceIn(0f, 1f))
+                            // Saturated core text for planetary symbol (vivid tone, flashes in own color)
+                            val symbolColor = lerpColor(baseColor, Color.White, (fl - 1f) * 0.25f)
                             drawContext.canvas.nativeCanvas.drawText(
                                 element.symbol,
                                 px,
                                 py,
                                 android.graphics.Paint().apply {
                                     color = toAndroidColor(symbolColor.copy(alpha = op.coerceIn(0f, 1f)))
-                                    textSize = 18.dp.toPx()
+                                    textSize = 15.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL
-                                    setShadowLayer(4.dp.toPx(), 0f, 0f, toAndroidColor(Color.White))
+                                    setShadowLayer((6.dp.toPx() * fl), 0f, 0f, toAndroidColor(baseColor))
                                 }
                             )
                         }
@@ -781,13 +798,14 @@ fun MysticSplashScreen(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
+                                .width(320.dp) // Одинаковая ширина для Заголовка и Подзаголовка
                                 .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
                                 .border(
                                     width = 1.2.dp,
                                     color = lerpColor(MysticGold.copy(alpha = 0.8f), Color.White, titleFlashProgress),
                                     shape = RoundedCornerShape(14.dp)
                                 )
-                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .graphicsLayer(
                                     alpha = titleAlpha,
                                     scaleX = titleScale,
@@ -801,7 +819,7 @@ fun MysticSplashScreen(
                                 text = uppercaseTitle,
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     color = Color.Transparent,
-                                    fontSize = 24.sp,
+                                    fontSize = 26.sp, // Увеличено на 2 ед.
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 2.sp,
                                     shadow = Shadow(
@@ -821,7 +839,7 @@ fun MysticSplashScreen(
                                 text = uppercaseTitle,
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     color = flashColor,
-                                    fontSize = 24.sp,
+                                    fontSize = 26.sp, // Увеличено на 2 ед.
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 2.sp
                                 ),
@@ -834,48 +852,88 @@ fun MysticSplashScreen(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Subtitle: "ТАЙНЫ СУДЬБЫ, В ВАШИХ РУКАХ"
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .width(320.dp) // Одинаковая ширина рамки
+                                .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
+                                .border(1.2.dp, MysticGold.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = strings.splashLogoSubtitle.uppercase(),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = MysticGold,
+                                    letterSpacing = 1.5.sp,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    shadow = Shadow(
+                                        color = Color.Black,
+                                        offset = Offset(0f, 2f),
+                                        blurRadius = 8f
+                                    )
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom Section: Floating Exit Tooltip OR Clean button "ПРОПУСТИТЬ ЗАСТАВКУ"
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                if (showExitTooltip) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .width(320.dp) // Такая же ширина и оформление, как у подзаголовка
+                            .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
+                            .border(1.2.dp, MysticGold.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
                         Text(
-                            text = strings.splashLogoSubtitle.uppercase(),
+                            text = "Нажмите ещё раз,\nчтоб выйти из программы",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = MysticGold,
-                                letterSpacing = 2.sp,
+                                letterSpacing = 1.2.sp,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 shadow = Shadow(
                                     color = Color.Black,
                                     offset = Offset(0f, 2f),
-                                    blurRadius = 8f
+                                    blurRadius = 6f
                                 )
                             ),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
-                                .border(1.2.dp, MysticGold.copy(alpha = 0.8f), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 18.dp, vertical = 8.dp)
+                            maxLines = 2,
+                            textAlign = TextAlign.Center
                         )
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-            }
 
-            // Bottom Section: Clean button with rounded corners "ПРОПУСТИТЬ ЗАСТАВКУ"
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(0.75f))
-                    .border(1.5.dp, MysticGold.copy(0.8f), RoundedCornerShape(24.dp))
-                    .clickable { onNavigateNext() }
-                    .padding(horizontal = 28.dp, vertical = 14.dp)
-            ) {
-                Text(
-                    text = strings.splashTapToSkip,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        color = MysticGold,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp,
-                        fontSize = 15.sp
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.Black.copy(0.75f))
+                        .border(1.5.dp, MysticGold.copy(0.8f), RoundedCornerShape(24.dp))
+                        .clickable { onNavigateNext() }
+                        .padding(horizontal = 28.dp, vertical = 14.dp)
+                ) {
+                    Text(
+                        text = strings.splashTapToSkip,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = MysticGold,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            fontSize = 15.sp
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -4247,194 +4305,187 @@ fun TtsVoiceController(
     onPlayToggle: () -> Unit,
     rate: Float,
     onRateChange: (Float) -> Unit,
+    pitch: Float,
+    onPitchChange: (Float) -> Unit,
     gender: String,
     onGenderChange: (String) -> Unit,
-    maleVoices: List<android.speech.tts.Voice>,
-    femaleVoices: List<android.speech.tts.Voice>,
-    selectedVoice: android.speech.tts.Voice?,
-    onVoiceSelected: (android.speech.tts.Voice) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var maleMenuExpanded by remember { mutableStateOf(false) }
-    var femaleMenuExpanded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(isPlaying) {
-        if (isPlaying) expanded = true
-    }
-    
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .background(Color(0xCC121018), RoundedCornerShape(22.dp))
-            .border(1.dp, MysticBronze.copy(0.4f), RoundedCornerShape(22.dp))
-            .padding(4.dp)
-            .animateContentSize()
-    ) {
-        IconButton(
-            onClick = {
-                expanded = true
-                onPlayToggle()
-            },
-            modifier = Modifier
-                .size(36.dp)
-                .background(MysticGold, CircleShape)
-        ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Пауза" else "Воспроизвести",
-                tint = Color.Black,
-                modifier = Modifier.size(20.dp)
-            )
+    // Автоматическое скрытие панели через 4 секунды после открытия или начала воспроизведения
+    LaunchedEffect(expanded, isPlaying) {
+        if (expanded) {
+            kotlinx.coroutines.delay(4000)
+            expanded = false
         }
-        
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn() + expandHorizontally(),
-            exit = fadeOut() + shrinkHorizontally()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 8.dp)
+    }
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopEnd
+    ) {
+        if (!expanded) {
+            // Кнопка с иконкой Динамика, закрепленная в верхней части страницы СПРАВА
+            IconButton(
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(Color(0xEE121018), CircleShape)
+                    .border(1.2.dp, if (isPlaying) MysticGold else MysticBronze.copy(0.6f), CircleShape)
             ) {
-                // Выбор мужского голоса
-                Box {
-                    IconButton(
-                        onClick = {
-                            onGenderChange("Male")
-                            maleMenuExpanded = true
-                        },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                if (gender == "Male") MysticGold else Color.White.copy(0.1f),
-                                CircleShape
-                            )
-                            .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
-                    ) {
-                        Text(
-                            text = "М",
-                            color = if (gender == "Male") Color.Black else Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = maleMenuExpanded,
-                        onDismissRequest = { maleMenuExpanded = false },
-                        modifier = Modifier.background(MysticDarkSurface)
-                    ) {
-                        if (maleVoices.isEmpty()) {
-                            listOf("Голос М1 (Стандартный)", "Голос М2 (Бархатный)", "Голос М3 (Четкий)").forEachIndexed { index, name ->
-                                DropdownMenuItem(
-                                    text = { Text(name, color = Color.White) },
-                                    onClick = {
-                                        onGenderChange("Male")
-                                        maleMenuExpanded = false
-                                    }
-                                )
-                            }
-                        } else {
-                            maleVoices.forEachIndexed { index, voice ->
-                                val isSelected = gender == "Male" && selectedVoice?.name == voice.name
-                                val cleanLabel = getCleanVoiceDisplayName(voice, index, "Male")
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = cleanLabel,
-                                            color = if (isSelected) MysticGold else Color.White,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
-                                    onClick = {
-                                        onVoiceSelected(voice)
-                                        onGenderChange("Male")
-                                        maleMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                // Ползунок регулировки скорости воспроизведения
-                Slider(
-                    value = rate,
-                    onValueChange = onRateChange,
-                    valueRange = 0.5f..2.0f,
-                    colors = SliderDefaults.colors(
-                        activeTrackColor = MysticGold,
-                        inactiveTrackColor = Color.Gray,
-                        thumbColor = MysticGold
-                    ),
-                    modifier = Modifier
-                        .width(110.dp)
-                        .height(32.dp)
+                Icon(
+                    imageVector = Icons.Default.VolumeUp,
+                    contentDescription = "Настройки голоса",
+                    tint = if (isPlaying) MysticGold else Color.White,
+                    modifier = Modifier.size(22.dp)
                 )
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                // Выбор женского голоса
-                Box {
-                    IconButton(
-                        onClick = {
-                            onGenderChange("Female")
-                            femaleMenuExpanded = true
-                        },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                if (gender == "Female") MysticGold else Color.White.copy(0.1f),
-                                CircleShape
-                            )
-                            .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
+            }
+        } else {
+            // Раскрывающаяся панель настроек голоса (две строки с ползунками Регулировка Тона и Скорости, по бокам буквы М и Ж)
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFA14101E),
+                border = BorderStroke(1.2.dp, MysticGold.copy(0.8f)),
+                shadowElevation = 8.dp,
+                modifier = Modifier.widthIn(max = 340.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    // Первая строка: Кнопка Старт/Пауза (">" / "||"), "М", Ползунок Скорости, "Ж", Кнопка с Динамиком для скрытия
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Ж",
-                            color = if (gender == "Female") Color.Black else Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
+                        // Кнопка Старт / Пауза (">" или "||")
+                        IconButton(
+                            onClick = onPlayToggle,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(MysticGold, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
+                                tint = Color.Black,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Буква "М" (Мужской голос)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(if (gender == "Male") MysticGold else Color.White.copy(0.12f))
+                                .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
+                                .clickable { onGenderChange("Male") }
+                        ) {
+                            Text(
+                                text = "М",
+                                color = if (gender == "Male") Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Регулировка скорости речи
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Скорость ${String.format(java.util.Locale.US, "%.1fx", rate)}",
+                                style = MaterialTheme.typography.labelSmall.copy(color = MysticGold, fontSize = 9.sp)
+                            )
+                            Slider(
+                                value = rate,
+                                onValueChange = onRateChange,
+                                valueRange = 0.5f..2.0f,
+                                colors = SliderDefaults.colors(
+                                    activeTrackColor = MysticGold,
+                                    inactiveTrackColor = Color.DarkGray,
+                                    thumbColor = MysticGold
+                                ),
+                                modifier = Modifier.height(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Буква "Ж" (Женский голос)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(if (gender == "Female") MysticGold else Color.White.copy(0.12f))
+                                .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
+                                .clickable { onGenderChange("Female") }
+                        ) {
+                            Text(
+                                text = "Ж",
+                                color = if (gender == "Female") Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Значок Динамика для прямого скрытия панели обратно
+                        IconButton(
+                            onClick = { expanded = false },
+                            modifier = Modifier.size(30.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = "Скрыть",
+                                tint = MysticGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
-                    DropdownMenu(
-                        expanded = femaleMenuExpanded,
-                        onDismissRequest = { femaleMenuExpanded = false },
-                        modifier = Modifier.background(MysticDarkSurface)
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Вторая строка: Регулировка Тона речи
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp)
                     ) {
-                        if (femaleVoices.isEmpty()) {
-                            listOf("Голос Ж1 (Стандартный)", "Голос Ж2 (Нежный)", "Голос Ж3 (Звонкий)").forEachIndexed { index, name ->
-                                DropdownMenuItem(
-                                    text = { Text(name, color = Color.White) },
-                                    onClick = {
-                                        onGenderChange("Female")
-                                        femaleMenuExpanded = false
-                                    }
-                                )
-                            }
-                        } else {
-                            femaleVoices.forEachIndexed { index, voice ->
-                                val isSelected = gender == "Female" && selectedVoice?.name == voice.name
-                                val cleanLabel = getCleanVoiceDisplayName(voice, index, "Female")
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = cleanLabel,
-                                            color = if (isSelected) MysticGold else Color.White,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
-                                    onClick = {
-                                        onVoiceSelected(voice)
-                                        onGenderChange("Female")
-                                        femaleMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
+                        Text(
+                            text = "Тон:",
+                            style = MaterialTheme.typography.labelSmall.copy(color = MysticGold, fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        Slider(
+                            value = pitch,
+                            onValueChange = onPitchChange,
+                            valueRange = 0.5f..1.5f,
+                            colors = SliderDefaults.colors(
+                                activeTrackColor = MysticGold,
+                                inactiveTrackColor = Color.DarkGray,
+                                thumbColor = MysticGold
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(22.dp)
+                        )
+                        Text(
+                            text = String.format(java.util.Locale.US, "%.1fx", pitch),
+                            style = MaterialTheme.typography.labelSmall.copy(color = Color.LightGray, fontSize = 9.sp),
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
             }
@@ -5166,6 +5217,7 @@ fun ResultsScreen(
             .fillMaxSize()
             .background(MysticDarkBackground)
     ) {
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -5228,6 +5280,52 @@ fun ResultsScreen(
                 }
             } else if (palmistReport != null) {
                 val currentTextState = if (activeTab == "left") leftHandTextState else rightHandTextState
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    TtsVoiceController(
+                        isPlaying = isPlayingTts,
+                        onPlayToggle = {
+                            if (isPlayingTts) {
+                                tts?.stop()
+                                isPlayingTts = false
+                            } else {
+                                speakTextFromIndex(currentTextState.text, lastPlaybackIndex)
+                            }
+                        },
+                        rate = ttsRateState,
+                        onRateChange = { newRate ->
+                            viewModel.changeTtsSpeechRate(newRate)
+                            tts?.setSpeechRate(newRate)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        pitch = ttsPitchState,
+                        onPitchChange = { newPitch ->
+                            viewModel.changeTtsPitch(newPitch)
+                            tts?.setPitch(newPitch)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        gender = ttsGenderState,
+                        onGenderChange = { newGender ->
+                            viewModel.changeTtsGender(newGender)
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(currentTextState.text, currentWordStart)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(top = 8.dp, end = 12.dp)
+                            .zIndex(100f)
+                    )
+                }
                 val onTextStateChange: (TextFieldValue) -> Unit = { newValue ->
                     if (activeTab == "left") {
                         leftHandTextState = newValue
@@ -5571,57 +5669,51 @@ fun ResultsScreen(
                         }
                     }
 
-                    TtsVoiceController(
-                        isPlaying = isPlayingTts,
-                        onPlayToggle = {
-                            if (isPlayingTts) {
-                                tts?.stop()
-                                isPlayingTts = false
-                                // Обратите внимание: при паузе мы НЕ зануляем lastPlaybackIndex, чтобы продолжить с этого же слова!
-                            } else {
-                                speakTextFromIndex(currentTextState.text, lastPlaybackIndex)
-                            }
-                        },
-                        rate = ttsRateState,
-                        onRateChange = { newRate ->
-                            viewModel.changeTtsSpeechRate(newRate)
-                            tts?.setSpeechRate(newRate)
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(currentTextState.text, currentWordStart)
-                            }
-                        },
-                        gender = ttsGenderState,
-                        onGenderChange = { newGender ->
-                            viewModel.changeTtsGender(newGender)
-                            applyTtsSettings()
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(currentTextState.text, currentWordStart)
-                            }
-                        },
-                        maleVoices = maleVoicesList,
-                        femaleVoices = femaleVoicesList,
-                        selectedVoice = selectedVoice,
-                        onVoiceSelected = { voice ->
-                            val index = if (ttsGenderState == "Female") {
-                                femaleVoicesList.indexOf(voice)
-                            } else {
-                                maleVoicesList.indexOf(voice)
-                            }
-                            if (index >= 0) {
-                                viewModel.changeTtsVoiceIndex(index)
-                            }
-                            applyTtsSettings()
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(currentTextState.text, currentWordStart)
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(16.dp)
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        TtsVoiceController(
+                            isPlaying = isPlayingTts,
+                            onPlayToggle = {
+                                if (isPlayingTts) {
+                                    tts?.stop()
+                                    isPlayingTts = false
+                                } else {
+                                    speakTextFromIndex(currentTextState.text, lastPlaybackIndex)
+                                }
+                            },
+                            rate = ttsRateState,
+                            onRateChange = { newRate ->
+                                viewModel.changeTtsSpeechRate(newRate)
+                                tts?.setSpeechRate(newRate)
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(currentTextState.text, currentWordStart)
+                                }
+                            },
+                            pitch = ttsPitchState,
+                            onPitchChange = { newPitch ->
+                                viewModel.changeTtsPitch(newPitch)
+                                tts?.setPitch(newPitch)
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(currentTextState.text, currentWordStart)
+                                }
+                            },
+                            gender = ttsGenderState,
+                            onGenderChange = { newGender ->
+                                viewModel.changeTtsGender(newGender)
+                                applyTtsSettings()
+                                if (isPlayingTts) {
+                                    val currentWordStart = spokenWordRange?.first ?: 0
+                                    speakTextFromIndex(currentTextState.text, currentWordStart)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .statusBarsPadding()
+                                .padding(top = 8.dp, end = 12.dp)
+                                .zIndex(100f)
+                        )
+                    }
                 }
             }
         }
@@ -6033,6 +6125,7 @@ fun CompatibilityScreen(
             .fillMaxSize()
             .background(MysticDarkBackground)
     ) {
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -6430,7 +6523,7 @@ fun CompatibilityScreen(
                                     val b1 = if (!p1.leftPalmPath.isNullOrEmpty()) BitmapUtils.uriToBitmap(context, Uri.parse(p1.leftPalmPath)) else null
                                     val b2 = if (!p2.leftPalmPath.isNullOrEmpty()) BitmapUtils.uriToBitmap(context, Uri.parse(p2.leftPalmPath)) else null
                                     partnerName = p2.name
-                                    viewModel.runCompatibilityAnalysis(b1, b2, p2.name, onNavigateToLoading)
+                                    viewModel.runCompatibilityAnalysis(b1, b2, p1.name, p2.name, onNavigateToLoading)
                                 } else {
                                     onNavigateToBilling()
                                 }
@@ -6453,13 +6546,62 @@ fun CompatibilityScreen(
 
                 // Генерируем полный плоский текст отчета о совместимости, подставляя динамические имена партнеров
                 val plainTextOfReport = remember(compatReport, selfName, actualPartnerName, currentLang) {
-                    buildCompatibilityPlainText(compatReport, selfName, actualPartnerName, currentLang)
+                    if (compatReport != null) {
+                        buildCompatibilityPlainText(compatReport, selfName, actualPartnerName, currentLang)
+                    } else ""
                 }
 
                 val annotatedReportText = buildCompatibilityAnnotatedString(
                     plainText = plainTextOfReport,
                     spokenWordRange = spokenWordRange
                 )
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    TtsVoiceController(
+                        isPlaying = isPlayingTts,
+                        onPlayToggle = {
+                            if (isPlayingTts) {
+                                ttsDelayJob?.cancel()
+                                ttsByLocalRef?.stop()
+                                isPlayingTts = false
+                            } else {
+                                speakTextFromIndex(plainTextOfReport, lastPlaybackIndex)
+                            }
+                        },
+                        rate = ttsRateState,
+                        onRateChange = { newRate ->
+                            viewModel.changeTtsSpeechRate(newRate)
+                            ttsByLocalRef?.setSpeechRate(newRate)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
+                            }
+                        },
+                        pitch = ttsPitchState,
+                        onPitchChange = { newPitch ->
+                            viewModel.changeTtsPitch(newPitch)
+                            ttsByLocalRef?.setPitch(newPitch)
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
+                            }
+                        },
+                        gender = ttsGenderState,
+                        onGenderChange = { newGender ->
+                            viewModel.changeTtsGender(newGender)
+                            applyTtsSettings()
+                            if (isPlayingTts) {
+                                val currentWordStart = spokenWordRange?.first ?: 0
+                                speakTextFromIndex(plainTextOfReport, currentWordStart)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(top = 8.dp, end = 12.dp)
+                            .zIndex(100f)
+                    )
+                }
 
                 // Ring percentage affinity display
                 Box(
@@ -6512,57 +6654,7 @@ fun CompatibilityScreen(
                         Text("Скопировать", color = Color.White, fontSize = 12.sp)
                     }
 
-                    TtsVoiceController(
-                        isPlaying = isPlayingTts,
-                        onPlayToggle = {
-                            if (isPlayingTts) {
-                                ttsDelayJob?.cancel() // Отменяем отложенную задачу озвучивания поддержки во избежание багов
-                                ttsByLocalRef?.stop() // Останавливаем текущее вещание синтезатора речи
-                                isPlayingTts = false // Сбрасываем статус воспроизведения в false
-                            } else {
-                                speakTextFromIndex(plainTextOfReport, lastPlaybackIndex) // Продолжаем или начинаем чтение с нужной позиции
-                            }
-                        },
-                        rate = ttsRateState,
-                        onRateChange = { newRate ->
-                            viewModel.changeTtsSpeechRate(newRate)
-                            ttsByLocalRef?.setSpeechRate(newRate)
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(plainTextOfReport, currentWordStart)
-                            }
-                        },
-                        gender = ttsGenderState,
-                        onGenderChange = { newGender ->
-                            viewModel.changeTtsGender(newGender)
-                            applyTtsSettings()
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(plainTextOfReport, currentWordStart)
-                            }
-                        },
-                        maleVoices = maleVoicesList,
-                        femaleVoices = femaleVoicesList,
-                        selectedVoice = selectedVoice,
-                        onVoiceSelected = { voice ->
-                            val index = if (ttsGenderState == "Female") {
-                                femaleVoicesList.indexOf(voice)
-                            } else {
-                                maleVoicesList.indexOf(voice)
-                            }
-                            if (index >= 0) {
-                                viewModel.changeTtsVoiceIndex(index)
-                            }
-                            applyTtsSettings()
-                            if (isPlayingTts) {
-                                val currentWordStart = spokenWordRange?.first ?: 0
-                                speakTextFromIndex(plainTextOfReport, currentWordStart)
-                            }
-                        }
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
 
                 // Unified beautiful reading card with text highlighting
                 MysticCard {
@@ -6606,6 +6698,7 @@ fun CompatibilityScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
+}
 }
 
 
@@ -7091,8 +7184,13 @@ fun HistoryScreen(
                             record = record,
                             currentLang = currentLang,
                             onOpen = {
-                                viewModel.currentReading.value = record
-                                onNavigateToResult()
+                                if (record.analysisType == "compatibility") {
+                                    viewModel.currentCompatibilityReading.value = record
+                                    viewModel.activeTab.value = "compatibility"
+                                } else {
+                                    viewModel.currentReading.value = record
+                                    onNavigateToResult()
+                                }
                             },
                             onDelete = {
                                 viewModel.deleteReading(record.id)
@@ -7151,7 +7249,8 @@ fun ReadingHistoryItem(
                     else -> if (currentLang == AppLanguage.RUS) "Д" else "O"
                 }
                 val infoText = if (record.analysisType == "compatibility") {
-                    if (currentLang == AppLanguage.RUS) "Совместимость c ${record.partnerName}" else "Compatibility with ${record.partnerName}"
+                    val p2Name = record.partnerName ?: if (currentLang == AppLanguage.RUS) "Партнёр" else "Partner"
+                    if (currentLang == AppLanguage.RUS) "Совместимость: ${record.name} + $p2Name" else "Compatibility: ${record.name} + $p2Name"
                 } else {
                     val yrUnit = if (currentLang == AppLanguage.RUS) "г.р." else "y.o.b."
                     val heightUnit = if (currentLang == AppLanguage.RUS) "см" else "cm"
@@ -7426,19 +7525,17 @@ fun AboutScreen(
                                 viewModel.changeTtsSpeechRate(newRate)
                                 ttsInstance?.setSpeechRate(newRate)
                             },
+                            pitch = ttsPitchState,
+                            onPitchChange = { newPitch ->
+                                viewModel.changeTtsPitch(newPitch)
+                                ttsInstance?.setPitch(newPitch)
+                            },
                             gender = ttsGenderState,
                             onGenderChange = { newGender ->
                                 viewModel.changeTtsGender(newGender)
                             },
-                            maleVoices = maleVoicesList,
-                            femaleVoices = femaleVoicesList,
-                            selectedVoice = selectedVoice,
-                            onVoiceSelected = { voice ->
-                                val index = if (ttsGenderState == "Female") femaleVoicesList.indexOf(voice) else maleVoicesList.indexOf(voice)
-                                if (index >= 0) viewModel.changeTtsVoiceIndex(index)
-                            },
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .align(Alignment.End)
                                 .padding(bottom = 12.dp)
                         )
 
@@ -7527,19 +7624,17 @@ fun AboutScreen(
                                 viewModel.changeTtsSpeechRate(newRate)
                                 ttsInstance?.setSpeechRate(newRate)
                             },
+                            pitch = ttsPitchState,
+                            onPitchChange = { newPitch ->
+                                viewModel.changeTtsPitch(newPitch)
+                                ttsInstance?.setPitch(newPitch)
+                            },
                             gender = ttsGenderState,
                             onGenderChange = { newGender ->
                                 viewModel.changeTtsGender(newGender)
                             },
-                            maleVoices = maleVoicesList,
-                            femaleVoices = femaleVoicesList,
-                            selectedVoice = selectedVoice,
-                            onVoiceSelected = { voice ->
-                                val index = if (ttsGenderState == "Female") femaleVoicesList.indexOf(voice) else maleVoicesList.indexOf(voice)
-                                if (index >= 0) viewModel.changeTtsVoiceIndex(index)
-                            },
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .align(Alignment.End)
                                 .padding(bottom = 12.dp)
                         )
 
