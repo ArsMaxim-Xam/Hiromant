@@ -394,23 +394,30 @@ fun MysticSplashScreen(
     val currentLang by viewModel.selectedLanguage.collectAsState()
     val strings = LocalizedStrings.get(currentLang)
     val coroutineScope = rememberCoroutineScope()
+    val isReturnedToSplash by viewModel.isReturnedToSplash.collectAsState()
 
     // Animation states
     var titleVisible by remember { mutableStateOf(false) }
     var triggerFlash by remember { mutableStateOf(false) }
-    var backPressedOnce by remember { mutableStateOf(false) }
-    var showExitTooltip by remember { mutableStateOf(false) }
+    var showExitButtonText by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isReturnedToSplash) {
+        if (isReturnedToSplash) {
+            showExitButtonText = true
+            viewModel.isReturnedToSplash.value = false
+            delay(3000)
+            showExitButtonText = false
+        }
+    }
 
     androidx.activity.compose.BackHandler {
-        if (backPressedOnce) {
+        if (showExitButtonText) {
             (context as? android.app.Activity)?.finish()
         } else {
-            backPressedOnce = true
-            showExitTooltip = true
+            showExitButtonText = true
             coroutineScope.launch {
-                kotlinx.coroutines.delay(2500)
-                backPressedOnce = false
-                showExitTooltip = false
+                delay(3000)
+                showExitButtonText = false
             }
         }
     }
@@ -882,50 +889,27 @@ fun MysticSplashScreen(
                 }
             }
 
-            // Bottom Section: Floating Exit Tooltip OR Clean button "ПРОПУСТИТЬ ЗАСТАВКУ"
+            // Bottom Section: Floating Exit Button OR Clean button "ПРОПУСТИТЬ ЗАСТАВКУ"
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                if (showExitTooltip) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .width(320.dp) // Такая же ширина и оформление, как у подзаголовка
-                            .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
-                            .border(1.2.dp, MysticGold.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = "Нажмите ещё раз,\nчтоб выйти из программы",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = MysticGold,
-                                letterSpacing = 1.2.sp,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                shadow = Shadow(
-                                    color = Color.Black,
-                                    offset = Offset(0f, 2f),
-                                    blurRadius = 6f
-                                )
-                            ),
-                            maxLines = 2,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color.Black.copy(0.75f))
                         .border(1.5.dp, MysticGold.copy(0.8f), RoundedCornerShape(24.dp))
-                        .clickable { onNavigateNext() }
+                        .clickable {
+                            if (showExitButtonText) {
+                                (context as? android.app.Activity)?.finish()
+                            } else {
+                                onNavigateNext()
+                            }
+                        }
                         .padding(horizontal = 28.dp, vertical = 14.dp)
                 ) {
                     Text(
-                        text = strings.splashTapToSkip,
+                        text = if (showExitButtonText) "Еще назад — ВЫХОД" else strings.splashTapToSkip,
                         style = MaterialTheme.typography.labelLarge.copy(
                             color = MysticGold,
                             fontWeight = FontWeight.Bold,
@@ -3530,10 +3514,7 @@ fun UploadScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start
                 ) {
-                    IconButton(onClick = { viewModel.showInterpretationScreen.value = false }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MysticGold)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(48.dp))
                     Column {
                         Text(
                             text = "Интерпритация",
@@ -4341,17 +4322,13 @@ fun TtsVoiceController(
                                 onPlayToggle()
                                 showQuickPlay = true
                             },
-                            modifier = Modifier
-                                .size(42.dp)
-                                .background(MysticGold, CircleShape)
-                                .border(1.dp, Color.White.copy(0.3f), CircleShape)
-                                .shadow(6.dp, CircleShape)
+                            modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
                                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
-                                tint = Color.Black,
-                                modifier = Modifier.size(24.dp)
+                                tint = MysticGold,
+                                modifier = Modifier.size(26.dp)
                             )
                         }
 
@@ -4365,16 +4342,13 @@ fun TtsVoiceController(
                         expanded = !expanded
                         showQuickPlay = true
                     },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .background(Color(0xEE121018), CircleShape)
-                        .border(1.2.dp, if (isPlaying) MysticGold else MysticBronze.copy(0.6f), CircleShape)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.VolumeUp,
                         contentDescription = "Настройки голоса",
                         tint = if (isPlaying) MysticGold else Color.White,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -4998,6 +4972,7 @@ fun ResultsScreen(
     var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var supportWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var ttsOffset by remember { mutableStateOf(0) }
+    var activePlaybackStartOffset by remember { mutableIntStateOf(0) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -5198,11 +5173,12 @@ fun ResultsScreen(
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) {
                     if (utteranceId == "reading_text") {
                         val cleaned = activeCleanedTts
-                        val subLen = fullTextToRead.length - ttsOffset
+                        val startOffset = activePlaybackStartOffset
+                        val subLen = (fullTextToRead.length - startOffset).coerceAtLeast(0)
                         val relStart = cleaned?.indexMap?.getOrElse(start) { subLen } ?: start
                         val relEnd = cleaned?.indexMap?.getOrElse(end) { subLen } ?: end
-                        val absStart = relStart + ttsOffset
-                        val absEnd = relEnd + ttsOffset
+                        val absStart = relStart + startOffset
+                        val absEnd = relEnd + startOffset
                         lastPlaybackIndex = absStart
 
                         val mainLen = currentMainText.length
@@ -5213,20 +5189,31 @@ fun ResultsScreen(
                             spokenWordRange = Pair(absStart, absEnd.coerceAtMost(mainLen))
                             followUpWordRange = null
                             supportWordRange = null
+
+                            // Автопрокрутка текста: удерживаем читаемое слово примерно на 2 строки выше нижней границы экрана
+                            if (mainLen > 0) {
+                                val viewportPx = scrollState.viewportSize.let { if (it > 0) it else 1500 }
+                                val totalHeightPx = scrollState.maxValue + viewportPx
+                                val fraction = absStart.toFloat() / mainLen.toFloat()
+                                val wordY = fraction * totalHeightPx
+                                val twoLinesOffsetPx = 140f // Отступ снизу экрана около 2 строк (~50-60 dp)
+                                val targetScroll = (wordY - (viewportPx - twoLinesOffsetPx)).toInt().coerceIn(0, scrollState.maxValue)
+                                scrollState.scrollTo(targetScroll)
+                            }
                         } else if (absStart < supportStart) {
                             spokenWordRange = null
                             val relFStart = (absStart - followUpStart).coerceIn(0, followUpPromptText.length)
                             val relFEnd = (absEnd - followUpStart).coerceIn(relFStart, followUpPromptText.length)
                             followUpWordRange = Pair(relFStart, relFEnd)
                             supportWordRange = null
-                            scrollState.animateScrollTo(scrollState.maxValue)
+                            scrollState.scrollTo(scrollState.maxValue)
                         } else {
                             spokenWordRange = null
                             followUpWordRange = null
                             val relSStart = (absStart - supportStart).coerceIn(0, supportText.length)
                             val relSEnd = (absEnd - supportStart).coerceIn(relSStart, supportText.length)
                             supportWordRange = Pair(relSStart, relSEnd)
-                            scrollState.animateScrollTo(scrollState.maxValue)
+                            scrollState.scrollTo(scrollState.maxValue)
                         }
                     }
                 }
@@ -5245,6 +5232,7 @@ fun ResultsScreen(
         
         val cleaned = prepareTextForTts(subText)
         activeCleanedTts = cleaned
+        activePlaybackStartOffset = startIndex
         ttsOffset = startIndex
         
         val params = android.os.Bundle().apply {
@@ -5279,14 +5267,7 @@ fun ResultsScreen(
                         .padding(horizontal = 8.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MysticGold
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(48.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Результат Анализа",
@@ -5378,7 +5359,7 @@ fun ResultsScreen(
                     } else {
                         rightHandTextState = newValue
                     }
-                    if (newValue.selection != oldSel) {
+                    if (!isPlayingTts && newValue.selection != oldSel) {
                         ttsOffset = newValue.selection.start
                         selectionTriggerCount++
                     }
@@ -5425,14 +5406,7 @@ fun ResultsScreen(
                                     modifier = Modifier.fillMaxSize(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = onClose) {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowBack,
-                                            contentDescription = "Back",
-                                            tint = MysticGold
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(48.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "Результат Анализа",
@@ -5718,52 +5692,6 @@ fun ResultsScreen(
                             )
                         }
                     }
-
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        TtsVoiceController(
-                            isPlaying = isPlayingTts,
-                            onPlayToggle = {
-                                if (isPlayingTts) {
-                                    tts?.stop()
-                                    isPlayingTts = false
-                                } else {
-                                    speakTextFromIndex(currentTextState.text, lastPlaybackIndex)
-                                }
-                            },
-                            rate = ttsRateState,
-                            onRateChange = { newRate ->
-                                viewModel.changeTtsSpeechRate(newRate)
-                                tts?.setSpeechRate(newRate)
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(currentTextState.text, currentWordStart)
-                                }
-                            },
-                            pitch = ttsPitchState,
-                            onPitchChange = { newPitch ->
-                                viewModel.changeTtsPitch(newPitch)
-                                tts?.setPitch(newPitch)
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(currentTextState.text, currentWordStart)
-                                }
-                            },
-                            gender = ttsGenderState,
-                            onGenderChange = { newGender ->
-                                viewModel.changeTtsGender(newGender)
-                                applyTtsSettings()
-                                if (isPlayingTts) {
-                                    val currentWordStart = spokenWordRange?.first ?: 0
-                                    speakTextFromIndex(currentTextState.text, currentWordStart)
-                                }
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .statusBarsPadding()
-                                .padding(top = 8.dp, end = 12.dp)
-                                .zIndex(100f)
-                        )
-                    }
                 }
             }
         }
@@ -5939,6 +5867,29 @@ fun CompatibilityScreen(
 
     var partnerName by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedPartner1 by remember { mutableStateOf<ReadingEntity?>(null) }
+    var selectedPartner2 by remember { mutableStateOf<ReadingEntity?>(null) }
+
+    // Parse output JSON
+    val compatReport = remember(compatibilityReading) {
+        compatibilityReading?.let {
+            try {
+                val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport::class.java).fromJson(it.resultJson)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    val selfName = compatibilityReading?.name ?: selectedPartner1?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 1" else "Self")
+    val actualPartnerName = compatibilityReading?.partnerName ?: partnerName.ifEmpty { selectedPartner2?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 2" else "Partner") }
+
+    val plainTextOfReport = remember(compatReport, selfName, actualPartnerName, currentLang) {
+        if (compatReport != null) {
+            buildCompatibilityPlainText(compatReport, selfName, actualPartnerName, currentLang)
+        } else ""
+    }
 
     val scope = rememberCoroutineScope()
     val ttsGenderState by viewModel.ttsGender.collectAsState()
@@ -5949,6 +5900,7 @@ fun CompatibilityScreen(
     var isPlayingTts by remember { mutableStateOf(false) } // Флаг активности воспроизведения синтеза речи
     var spokenWordRange by remember { mutableStateOf<Pair<Int, Int>?>(null) } // Координаты текущего произносимого слова
     var ttsOffset by remember { mutableStateOf(0) } // Смещение в тексте для точной работы подсветки слов
+    var activePlaybackStartOffset by remember { mutableIntStateOf(0) }
     var lastPlaybackIndex by remember { mutableStateOf(0) } // Индекс символа, на котором воспроизведение приостановилось
     var ttsByLocalRef by remember { mutableStateOf<android.speech.tts.TextToSpeech?>(null) } // Экземпляр Android TextToSpeech
     var isTtsReady by remember { mutableStateOf(false) } // Флаг готовности синтезатора речи к работе
@@ -6084,16 +6036,29 @@ fun CompatibilityScreen(
             override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) { // Метод, отслеживающий границы произносимых слов в реальном времени
                 scope.launch(kotlinx.coroutines.Dispatchers.Main) { // Переключаемся на главный поток для обновления подсветки
                     if (utteranceId == "reading_text") { // Подсвечиваем слова только для основного текста анализа
-                        val absStart = start + ttsOffset // Вычисляем абсолютное начало слова с учетом смещения
-                        val absEnd = end + ttsOffset // Вычисляем абсолютный конец слова с учетом смещения
+                        val startOffset = activePlaybackStartOffset
+                        val absStart = start + startOffset // Вычисляем абсолютное начало слова с учетом смещения
+                        val absEnd = end + startOffset // Вычисляем абсолютный конец слова с учетом смещения
                         spokenWordRange = Pair(absStart, absEnd) // Устанавливаем координаты слова для рендеринга
                         supportWordRange = null
                         lastPlaybackIndex = absStart // Запоминаем текущую позицию воспроизведения для возможности паузы
+
+                        // Автопрокрутка текста: удерживаем читаемое слово примерно на 2 строки выше нижней границы экрана
+                        val textLen = plainTextOfReport.length
+                        if (textLen > 0) {
+                            val viewportPx = scrollState.viewportSize.let { if (it > 0) it else 1500 }
+                            val totalHeightPx = scrollState.maxValue + viewportPx
+                            val fraction = absStart.toFloat() / textLen.toFloat()
+                            val wordY = fraction * totalHeightPx
+                            val twoLinesOffsetPx = 140f // Отступ снизу экрана около 2 строк (~50-60 dp)
+                            val targetScroll = (wordY - (viewportPx - twoLinesOffsetPx)).toInt().coerceIn(0, scrollState.maxValue)
+                            scrollState.scrollTo(targetScroll)
+                        }
                     } else if (utteranceId == "support_text") {
                         spokenWordRange = null
                         supportWordRange = Pair(start, end)
                         // Поддерживаем прокрутку внизу при чтении каждой новой фразы
-                        scrollState.animateScrollTo(scrollState.maxValue)
+                        scrollState.scrollTo(scrollState.maxValue)
                     }
                 } // Конец корутины главного потока
             } // Конец метода onRangeStart
@@ -6123,13 +6088,12 @@ fun CompatibilityScreen(
             putString(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "reading_text")
         }
         
+        activePlaybackStartOffset = cleanedStartIndex
         ttsOffset = cleanedStartIndex
         ttsByLocalRef?.speak(textToSpeak, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "reading_text")
         isPlayingTts = true
     }
     
-    var selectedPartner1 by remember { mutableStateOf<ReadingEntity?>(null) }
-    var selectedPartner2 by remember { mutableStateOf<ReadingEntity?>(null) }
     var activeSelectionSlot by remember { mutableStateOf(1) } // 1 or 2
 
     val readings by viewModel.allReadings.collectAsState()
@@ -6155,18 +6119,6 @@ fun CompatibilityScreen(
             }
         } else {
             filteredInterpretations
-        }
-    }
-
-    // Parse output JSON
-    val compatReport = remember(compatibilityReading) {
-        compatibilityReading?.let {
-            try {
-                val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-                moshi.adapter(com.aistudio.hiromant.kxsrwa.data.remote.CompatibilityReport::class.java).fromJson(it.resultJson)
-            } catch (e: Exception) {
-                null
-            }
         }
     }
 
@@ -6588,18 +6540,6 @@ fun CompatibilityScreen(
             } else {
                 // --- RESULTS COMPATIBILITY PRESENTATION ---
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // Определяем имя Личности 1: берем из объекта сохраненного анализа или из активного выбора партнера 1
-                val selfName = compatibilityReading?.name ?: selectedPartner1?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 1" else "Self")
-                // Определяем имя Личности 2: берем из объекта сохраненного анализа, из переменной состояния или из активного выбора партнера 2
-                val actualPartnerName = compatibilityReading?.partnerName ?: partnerName.ifEmpty { selectedPartner2?.name ?: (if (currentLang == AppLanguage.RUS) "Личность 2" else "Partner") }
-
-                // Генерируем полный плоский текст отчета о совместимости, подставляя динамические имена партнеров
-                val plainTextOfReport = remember(compatReport, selfName, actualPartnerName, currentLang) {
-                    if (compatReport != null) {
-                        buildCompatibilityPlainText(compatReport, selfName, actualPartnerName, currentLang)
-                    } else ""
-                }
 
                 val annotatedReportText = buildCompatibilityAnnotatedString(
                     plainText = plainTextOfReport,
@@ -8058,9 +7998,7 @@ fun SettingsScreen(
             }
 
             override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-                if (utteranceId != "voice_test_utt") {
-                    currentWordRange = start..end
-                }
+                currentWordRange = start..end
             }
         })
         
@@ -8145,14 +8083,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MysticGold
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(48.dp))
                 Text(
                     text = strings.settTitle,
                     style = MaterialTheme.typography.displayLarge.copy(
@@ -8431,7 +8362,79 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // 5. Кнопки управления: Озвучить, Сбросить, Сохранить
+                        // 5. Поле ввода текста для проверки озвучивания (автоматически расширяется, с подсветкой читаемого слова)
+                        var customTestText by remember(currentLang) {
+                            mutableStateOf(
+                                if (currentLang == AppLanguage.RUS) {
+                                    "Это проверка настройки голоса, в приложении Хиромант"
+                                } else {
+                                    "This is a test of voice settings in the Palmist app"
+                                }
+                            )
+                        }
+
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Текст для проверки озвучивания:" else "Text for voice testing:",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (isSpeakingTest && currentWordRange != null) {
+                            val annotatedTestText = buildAnnotatedString {
+                                append(customTestText)
+                                val start = currentWordRange!!.first
+                                val end = currentWordRange!!.last
+                                if (start in 0..length && end in start..length) {
+                                    addStyle(
+                                        style = SpanStyle(
+                                            background = MysticGold.copy(alpha = 0.45f),
+                                            color = Color.Black,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        start = start,
+                                        end = end
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0x33000000), RoundedCornerShape(10.dp))
+                                    .border(1.dp, MysticGold, RoundedCornerShape(10.dp))
+                                    .padding(12.dp)
+                                    .heightIn(min = 60.dp)
+                            ) {
+                                Text(
+                                    text = annotatedTestText,
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = customTestText,
+                                onValueChange = { customTestText = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 60.dp, max = 220.dp),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontSize = 14.sp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MysticGold,
+                                    unfocusedBorderColor = MysticBronze.copy(0.4f),
+                                    focusedContainerColor = Color(0x33000000),
+                                    unfocusedContainerColor = Color(0x22000000),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // 6. Кнопки управления: Озвучить, Сбросить, Сохранить
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -8452,10 +8455,12 @@ fun SettingsScreen(
                                             speechRate = tempRate,
                                             speechPitch = tempPitch
                                         )
-                                        val testPhrase = if (currentLang == AppLanguage.RUS) {
-                                            "Это проверка настройки голоса в приложении Хиромантия."
-                                        } else {
-                                            "This is a test of voice settings in the Palmist app."
+                                        val testPhrase = customTestText.ifBlank {
+                                            if (currentLang == AppLanguage.RUS) {
+                                                "Это проверка настройки голоса, в приложении Хиромант"
+                                            } else {
+                                                "This is a test of voice settings in the Palmist app"
+                                            }
                                         }
                                         val params = android.os.Bundle().apply {
                                             putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "voice_test_utt")
@@ -9909,10 +9914,7 @@ fun PostPaymentVideoScreen(
                     .padding(top = 48.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = MysticGold)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(48.dp))
                 Text(
                     text = if (currentLang == AppLanguage.RUS) "Запись видео ладоней" else "Record Hand Videos",
                     style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)

@@ -135,6 +135,9 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     // Активный раздел нижней панели навигации (по умолчанию upload)
     val activeTab = MutableStateFlow("upload")
 
+    // Флаг возврата из программы на экран заставки
+    val isReturnedToSplash = MutableStateFlow(false)
+
     // Предустановленная сумма платежа для быстрой поддержки проекта
     val paymentAmountToPreselect = MutableStateFlow("250")
 

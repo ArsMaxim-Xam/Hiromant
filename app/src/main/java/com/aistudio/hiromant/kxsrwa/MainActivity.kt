@@ -587,15 +587,14 @@ class MainActivity : ComponentActivity() {
                                         IconButton(
                                             onClick = {
                                                 if (currentRoute == "main_container") {
-                                                    if (activeTab != "upload") {
+                                                    if (viewModel.showInterpretationScreen.value) {
+                                                        viewModel.showInterpretationScreen.value = false
+                                                    } else if (activeTab != "upload") {
                                                         viewModel.activeTab.value = "upload" // Возврат на главную вкладку сканирования
                                                     } else {
-                                                        if (navController.previousBackStackEntry != null) {
-                                                            navController.popBackStack()
-                                                        } else {
-                                                            navController.navigate("splash") {
-                                                                popUpTo("splash") { inclusive = false }
-                                                            }
+                                                        viewModel.isReturnedToSplash.value = true
+                                                        navController.navigate("splash") {
+                                                            popUpTo("main_container") { inclusive = true }
                                                         }
                                                     }
                                                 } else if (currentRoute == "result") {
@@ -612,17 +611,13 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier
-                                                .size(42.dp)
-                                                .background(Color(0xEE121018), CircleShape)
-                                                .border(1.2.dp, MysticBronze.copy(0.6f), CircleShape)
-                                                .shadow(6.dp, CircleShape)
+                                            modifier = Modifier.size(40.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.ArrowBack,
                                                 contentDescription = "Назад",
                                                 tint = MysticGold,
-                                                modifier = Modifier.size(22.dp)
+                                                modifier = Modifier.size(26.dp)
                                             )
                                         }
                                     }
@@ -683,9 +678,12 @@ fun MainContainerScreen(
 
     // Нажатие системной кнопки возврата "Назад"
     androidx.activity.compose.BackHandler {
-        if (activeTab != "upload") {
+        if (viewModel.showInterpretationScreen.value) {
+            viewModel.showInterpretationScreen.value = false
+        } else if (activeTab != "upload") {
             viewModel.activeTab.value = "upload" // Возврат на главный экран сканирования
         } else {
+            viewModel.isReturnedToSplash.value = true
             onNavigateToSplash() // Возврат на заставку сплеш-экрана
         }
     }
