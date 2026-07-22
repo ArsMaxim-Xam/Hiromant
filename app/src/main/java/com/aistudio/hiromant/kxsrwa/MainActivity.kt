@@ -48,6 +48,8 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.zIndex
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -570,6 +572,59 @@ class MainActivity : ComponentActivity() {
                                             onNavigateToLanguage = { navController.navigate("language") }, // Смена языка
                                             onNavigateBack = { navController.popBackStack() } // Выход из настроек
                                         )
+                                    }
+                                }
+
+                                // Фиксированная кнопка «Назад» в верхнем ЛЕВОМ углу на ВСЕХ экранах, кроме заставки (splash)
+                                if (currentRoute != "splash") {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .statusBarsPadding()
+                                            .padding(top = 8.dp, start = 12.dp)
+                                            .zIndex(300f)
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                if (currentRoute == "main_container") {
+                                                    if (activeTab != "upload") {
+                                                        viewModel.activeTab.value = "upload" // Возврат на главную вкладку сканирования
+                                                    } else {
+                                                        if (navController.previousBackStackEntry != null) {
+                                                            navController.popBackStack()
+                                                        } else {
+                                                            navController.navigate("splash") {
+                                                                popUpTo("splash") { inclusive = false }
+                                                            }
+                                                        }
+                                                    }
+                                                } else if (currentRoute == "result") {
+                                                    navController.navigate("main_container") {
+                                                        popUpTo("main_container") { inclusive = true }
+                                                    }
+                                                } else {
+                                                    if (navController.previousBackStackEntry != null) {
+                                                        navController.popBackStack()
+                                                    } else {
+                                                        navController.navigate("main_container") {
+                                                            popUpTo("main_container") { inclusive = true }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .size(42.dp)
+                                                .background(Color(0xEE121018), CircleShape)
+                                                .border(1.2.dp, MysticBronze.copy(0.6f), CircleShape)
+                                                .shadow(6.dp, CircleShape)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ArrowBack,
+                                                contentDescription = "Назад",
+                                                tint = MysticGold,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
