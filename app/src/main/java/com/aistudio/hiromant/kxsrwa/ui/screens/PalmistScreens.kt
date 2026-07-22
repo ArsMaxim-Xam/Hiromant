@@ -421,9 +421,9 @@ fun MysticSplashScreen(
                 points = listOf(
                     Pair(0.64f, 0.47f),
                     Pair(0.60f, 0.53f),
-                    Pair(0.56f, 0.59f),
-                    Pair(0.57f, 0.66f),
-                    Pair(0.61f, 0.72f)
+                    Pair(0.56f, 0.60f),
+                    Pair(0.60f, 0.69f), // Выгнута более вправо
+                    Pair(0.64f, 0.79f)  // Удлинена на 1/4 фаланги
                 )
             ),
             AnimatedElementState(
@@ -434,9 +434,9 @@ fun MysticSplashScreen(
                 points = listOf(
                     Pair(0.64f, 0.47f),
                     Pair(0.54f, 0.51f),
-                    Pair(0.42f, 0.55f),
-                    Pair(0.31f, 0.59f),
-                    Pair(0.21f, 0.64f)
+                    Pair(0.42f, 0.56f),
+                    Pair(0.31f, 0.62f),
+                    Pair(0.21f, 0.68f) // Левый край загнут ниже к Бугру Луны
                 )
             ),
             AnimatedElementState(
@@ -445,12 +445,12 @@ fun MysticSplashScreen(
                 name = "Heart Line",
                 color = Color(0xFFFF00AA), // Яркий Сочный Маджента
                 points = listOf(
-                    Pair(0.18f, 0.51f),
-                    Pair(0.28f, 0.49f),
-                    Pair(0.38f, 0.47f),
-                    Pair(0.49f, 0.44f),
-                    Pair(0.58f, 0.41f),
-                    Pair(0.63f, 0.37f)
+                    Pair(0.18f, 0.58f), // Левый край опущен на фалангу
+                    Pair(0.28f, 0.56f),
+                    Pair(0.38f, 0.54f),
+                    Pair(0.48f, 0.52f), // Выгнута вниз посередине
+                    Pair(0.56f, 0.47f),
+                    Pair(0.62f, 0.42f)  // Правый край опущен на полфаланги
                 )
             ),
             AnimatedElementState(
@@ -505,7 +505,7 @@ fun MysticSplashScreen(
                 name = "Mount of Venus",
                 color = Color(0xFFFF3399), // Яркий Романтический Розовый
                 symbol = "♀",
-                position = Pair(0.615f, 0.720f)
+                position = Pair(0.680f, 0.650f) // Поднят по диагонали вправо-вверх на фалангу
             ),
             AnimatedElementState(
                 id = "mount_mars_lower",
@@ -681,35 +681,35 @@ fun MysticSplashScreen(
                                 }
                             }
 
-                            // 1. Wide outer neon glow halo
+                            // 1. Thin concentrated neon glow halo
                             drawPath(
                                 path = path,
-                                color = baseColor.copy(alpha = (op * 0.55f * fl).coerceIn(0f, 1f)),
+                                color = baseColor.copy(alpha = (op * 0.5f * fl).coerceIn(0f, 1f)),
                                 style = Stroke(
-                                    width = 10.dp.toPx(),
+                                    width = 2.4.dp.toPx(),
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                     join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
                             )
 
-                            // 2. Main rich saturated vibrant line stroke
+                            // 2. Fine concentrated saturated line stroke
                             drawPath(
                                 path = path,
                                 color = baseColor.copy(alpha = (op * fl).coerceIn(0f, 1f)),
                                 style = Stroke(
-                                    width = 4.2.dp.toPx(),
+                                    width = 1.4.dp.toPx(),
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                     join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
                             )
 
-                            // 3. Crisp white-hot highlight core
-                            val coreColor = lerpColor(baseColor, Color.White, (fl * 0.6f).coerceIn(0f, 1f))
+                            // 3. Ultra crisp laser core
+                            val coreColor = lerpColor(baseColor, Color.White, (fl * 0.7f).coerceIn(0f, 1f))
                             drawPath(
                                 path = path,
                                 color = coreColor.copy(alpha = op.coerceIn(0f, 1f)),
                                 style = Stroke(
-                                    width = 1.6.dp.toPx(),
+                                    width = 0.5.dp.toPx(),
                                     cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                     join = androidx.compose.ui.graphics.StrokeJoin.Round
                                 )
@@ -718,19 +718,19 @@ fun MysticSplashScreen(
                             val px = element.position.first * w
                             val py = element.position.second * h
 
-                            // Outer intense glow halo for planetary symbol
+                            // Outer thin neon glow contour for planetary symbol
                             drawContext.canvas.nativeCanvas.drawText(
                                 element.symbol,
                                 px,
                                 py,
                                 android.graphics.Paint().apply {
-                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.7f * fl).coerceIn(0f, 1f)))
-                                    textSize = 36.dp.toPx()
+                                    color = toAndroidColor(baseColor.copy(alpha = (op * 0.8f * fl).coerceIn(0f, 1f)))
+                                    textSize = 22.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL_AND_STROKE
-                                    strokeWidth = 6.dp.toPx()
-                                    setShadowLayer(18.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
+                                    strokeWidth = 1.6.dp.toPx()
+                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(baseColor))
                                 }
                             )
 
@@ -742,11 +742,11 @@ fun MysticSplashScreen(
                                 py,
                                 android.graphics.Paint().apply {
                                     color = toAndroidColor(symbolColor.copy(alpha = op.coerceIn(0f, 1f)))
-                                    textSize = 30.dp.toPx()
+                                    textSize = 18.dp.toPx()
                                     textAlign = android.graphics.Paint.Align.CENTER
                                     isAntiAlias = true
                                     style = android.graphics.Paint.Style.FILL
-                                    setShadowLayer(8.dp.toPx(), 0f, 0f, toAndroidColor(Color.White))
+                                    setShadowLayer(4.dp.toPx(), 0f, 0f, toAndroidColor(Color.White))
                                 }
                             )
                         }
@@ -781,14 +781,13 @@ fun MysticSplashScreen(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(22.dp))
-                                .background(Color(0x99282832)) // Полупрозрачный серый фон (pill card)
+                                .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
                                 .border(
-                                    width = 1.8.dp,
-                                    color = lerpColor(MysticGold, Color.White, titleFlashProgress),
-                                    shape = RoundedCornerShape(22.dp)
+                                    width = 1.2.dp,
+                                    color = lerpColor(MysticGold.copy(alpha = 0.8f), Color.White, titleFlashProgress),
+                                    shape = RoundedCornerShape(14.dp)
                                 )
-                                .padding(horizontal = 24.dp, vertical = 12.dp)
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
                                 .graphicsLayer(
                                     alpha = titleAlpha,
                                     scaleX = titleScale,
@@ -800,15 +799,15 @@ fun MysticSplashScreen(
                             // Outer glow halo text with contour flash
                             Text(
                                 text = uppercaseTitle,
-                                style = MaterialTheme.typography.displayLarge.copy(
+                                style = MaterialTheme.typography.titleLarge.copy(
                                     color = Color.Transparent,
-                                    fontSize = 38.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 5.sp,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
                                     shadow = Shadow(
-                                        color = lerpColor(MysticGold, Color.White, titleFlashProgress).copy(alpha = 0.95f),
+                                        color = lerpColor(MysticGold, Color.White, titleFlashProgress).copy(alpha = 0.9f),
                                         offset = Offset(0f, 0f),
-                                        blurRadius = 45f * (1f + titleFlashProgress * 0.5f)
+                                        blurRadius = 25f * (1f + titleFlashProgress * 0.5f)
                                     )
                                 ),
                                 maxLines = 1,
@@ -820,11 +819,11 @@ fun MysticSplashScreen(
                             val flashColor = lerpColor(Color(0xFFFFE066), Color.White, titleFlashProgress)
                             Text(
                                 text = uppercaseTitle,
-                                style = MaterialTheme.typography.displayLarge.copy(
+                                style = MaterialTheme.typography.titleLarge.copy(
                                     color = flashColor,
-                                    fontSize = 38.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 5.sp
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp
                                 ),
                                 maxLines = 1,
                                 softWrap = false,
