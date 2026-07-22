@@ -4160,34 +4160,6 @@ fun SelectableInterpretationText(
             
             bottomContent()
         }
-        
-        if (isFocused) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(
-                    onClick = {
-                        onReadFromCursor(value.selection.start)
-                    },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(MysticGold, CircleShape)
-                        .border(1.dp, Color.White.copy(0.3f), CircleShape)
-                        .shadow(6.dp, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.VolumeUp,
-                        contentDescription = "Read from cursor",
-                        tint = Color.Black,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -4309,14 +4281,41 @@ fun TtsVoiceController(
     onPitchChange: (Float) -> Unit,
     gender: String,
     onGenderChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectionTrigger: Int = 0
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showQuickPlay by remember { mutableStateOf(false) }
 
-    // Автоматическое скрытие панели через 4 секунды после открытия или начала воспроизведения
-    LaunchedEffect(expanded, isPlaying) {
-        if (expanded) {
-            kotlinx.coroutines.delay(4000)
+    // Реакция на выделение текста или изменение позиции курсора пользователем
+    LaunchedEffect(selectionTrigger) {
+        if (selectionTrigger > 0) {
+            expanded = true
+            showQuickPlay = true
+        }
+    }
+
+    // Логика управления видимостью:
+    // - Во время произношения (isPlaying == true) панель настроек сворачивается (expanded = false),
+    //   но кнопка управления ("||") остается видимой ЛЕВЕЕ динамика (showQuickPlay = true).
+    // - После остановки произношения кнопка (">") остается видимой еще 4 секунды (в диапазоне 3-5 сек),
+    //   после чего автоматически скрывается.
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            expanded = false
+            showQuickPlay = true
+        } else {
+            if (showQuickPlay) {
+                kotlinx.coroutines.delay(4000)
+                showQuickPlay = false
+            }
+        }
+    }
+
+    // Автоматическое скрытие раскрытой панели через 5 секунд бездействия
+    LaunchedEffect(expanded) {
+        if (expanded && !isPlaying) {
+            kotlinx.coroutines.delay(5000)
             expanded = false
         }
     }
@@ -4326,23 +4325,61 @@ fun TtsVoiceController(
         contentAlignment = Alignment.TopEnd
     ) {
         if (!expanded) {
-            // Кнопка с иконкой Динамика, закрепленная в верхней части страницы СПРАВА
-            IconButton(
-                onClick = { expanded = true },
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(Color(0xEE121018), CircleShape)
-                    .border(1.2.dp, if (isPlaying) MysticGold else MysticBronze.copy(0.6f), CircleShape)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
-                Icon(
-                    imageVector = Icons.Default.VolumeUp,
-                    contentDescription = "Настройки голоса",
-                    tint = if (isPlaying) MysticGold else Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
+                // Кнопка включения/паузы произношения (">" или "||"), находящаяся ЛЕВЕЕ значка динамика
+                AnimatedVisibility(
+                    visible = isPlaying || showQuickPlay,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                onPlayToggle()
+                                showQuickPlay = true
+                            },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(MysticGold, CircleShape)
+                                .border(1.dp, Color.White.copy(0.3f), CircleShape)
+                                .shadow(6.dp, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) "Пауза" else "Воспроизведение",
+                                tint = Color.Black,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+
+                // Кнопка с иконкой Динамика в Верхнем ПРАВОМ углу
+                IconButton(
+                    onClick = {
+                        expanded = !expanded
+                        showQuickPlay = true
+                    },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color(0xEE121018), CircleShape)
+                        .border(1.2.dp, if (isPlaying) MysticGold else MysticBronze.copy(0.6f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = "Настройки голоса",
+                        tint = if (isPlaying) MysticGold else Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         } else {
-            // Раскрывающаяся панель настроек голоса (две строки с ползунками Регулировка Тона и Скорости, по бокам буквы М и Ж)
+            // Раскрывающаяся панель настроек голоса
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = Color(0xFA14101E),
@@ -4359,9 +4396,12 @@ fun TtsVoiceController(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Кнопка Старт / Пауза (">" или "||")
                         IconButton(
-                            onClick = onPlayToggle,
+                            onClick = {
+                                onPlayToggle()
+                                expanded = false
+                                showQuickPlay = true
+                            },
                             modifier = Modifier
                                 .size(34.dp)
                                 .background(MysticGold, CircleShape)
@@ -4442,7 +4482,10 @@ fun TtsVoiceController(
 
                         // Значок Динамика для прямого скрытия панели обратно
                         IconButton(
-                            onClick = { expanded = false },
+                            onClick = {
+                                expanded = false
+                                showQuickPlay = true
+                            },
                             modifier = Modifier.size(30.dp)
                         ) {
                             Icon(
@@ -5280,6 +5323,7 @@ fun ResultsScreen(
                 }
             } else if (palmistReport != null) {
                 val currentTextState = if (activeTab == "left") leftHandTextState else rightHandTextState
+                var selectionTriggerCount by remember { mutableIntStateOf(0) }
 
                 Box(modifier = Modifier.fillMaxWidth()) {
                     TtsVoiceController(
@@ -5289,7 +5333,7 @@ fun ResultsScreen(
                                 tts?.stop()
                                 isPlayingTts = false
                             } else {
-                                speakTextFromIndex(currentTextState.text, lastPlaybackIndex)
+                                speakTextFromIndex(currentTextState.text, ttsOffset)
                             }
                         },
                         rate = ttsRateState,
@@ -5319,6 +5363,7 @@ fun ResultsScreen(
                                 speakTextFromIndex(currentTextState.text, currentWordStart)
                             }
                         },
+                        selectionTrigger = selectionTriggerCount,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .statusBarsPadding()
@@ -5327,10 +5372,15 @@ fun ResultsScreen(
                     )
                 }
                 val onTextStateChange: (TextFieldValue) -> Unit = { newValue ->
+                    val oldSel = if (activeTab == "left") leftHandTextState.selection else rightHandTextState.selection
                     if (activeTab == "left") {
                         leftHandTextState = newValue
                     } else {
                         rightHandTextState = newValue
+                    }
+                    if (newValue.selection != oldSel) {
+                        ttsOffset = newValue.selection.start
+                        selectionTriggerCount++
                     }
                 }
 
