@@ -369,8 +369,9 @@ class MainActivity : ComponentActivity() {
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
-                                                // Контейнер для иконки с поддержкой динамических двухцветных счетчиков анализа
+                                                // Контейнер для иконки кабинета с крупными цифрами счетчиков без овалов и кругов
                                                 if (tabId == "user_cabinet") {
+                                                    // Получаем количество доступных бесплатных и платных анализов
                                                     val freeCount = billingStateVal?.freeAnalyses ?: 0
                                                     val paidCount = billingStateVal?.paidAnalyses ?: 0
 
@@ -378,23 +379,17 @@ class MainActivity : ComponentActivity() {
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.Center
                                                     ) {
-                                                        // а) Зеленый счетчик Бесплатных (Слева)
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .background(Color(0xFF004D20), shape = RoundedCornerShape(50))
-                                                                .border(1.dp, Color(0xFF00FF66), RoundedCornerShape(50))
-                                                                .padding(horizontal = 3.dp, vertical = 0.dp)
-                                                        ) {
-                                                            Text(
-                                                                text = freeCount.toString(),
-                                                                color = Color(0xFF00FF66),
-                                                                fontSize = 8.sp,
-                                                                fontWeight = FontWeight.Bold
-                                                            )
-                                                        }
+                                                        // а) Зеленый счетчик бесплатных анализов (слева) - цифры без кругов, размером с иконку
+                                                        Text(
+                                                            text = freeCount.toString(),
+                                                            color = Color(0xFF00FF66),
+                                                            fontSize = 16.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
 
-                                                        Spacer(modifier = Modifier.width(3.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
 
+                                                        // Иконка профиля пользователя
                                                         Icon(
                                                             imageVector = icon,
                                                             contentDescription = null,
@@ -402,22 +397,15 @@ class MainActivity : ComponentActivity() {
                                                             modifier = Modifier.size(18.dp)
                                                         )
 
-                                                        Spacer(modifier = Modifier.width(3.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
 
-                                                        // б) Фиолетовый счетчик Полных/Платных (Справа)
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .background(Color(0xFF3B0066), shape = RoundedCornerShape(50))
-                                                                .border(1.dp, Color(0xFFE040FB), RoundedCornerShape(50))
-                                                                .padding(horizontal = 3.dp, vertical = 0.dp)
-                                                        ) {
-                                                            Text(
-                                                                text = paidCount.toString(),
-                                                                color = Color(0xFFE040FB),
-                                                                fontSize = 8.sp,
-                                                                fontWeight = FontWeight.Bold
-                                                            )
-                                                        }
+                                                        // б) Фиолетовый счетчик полных анализов (справа) - цифры без кругов, размером с иконку
+                                                        Text(
+                                                            text = paidCount.toString(),
+                                                            color = Color(0xFFE040FB),
+                                                            fontSize = 16.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
                                                     }
                                                 } else {
                                                     Icon(

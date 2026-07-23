@@ -3571,7 +3571,7 @@ fun UploadScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = if (currentLang == AppLanguage.RUS) "Краткая интерпритация" else "Brief interpretation",
+                            text = if (currentLang == AppLanguage.RUS) "Краткое Описание" else "Brief Description",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
@@ -3600,7 +3600,7 @@ fun UploadScreen(
                     }
                 }
 
-                // 2. Кнопка "Полная интерпритация" (доступно ярко-фиолетового цвета)
+                // 2. Кнопка "Полное Описание" (доступно ярко-фиолетового цвета)
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MysticGold),
@@ -3628,7 +3628,7 @@ fun UploadScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = if (currentLang == AppLanguage.RUS) "Полная интерпритация" else "Full interpretation",
+                            text = if (currentLang == AppLanguage.RUS) "Полное Описание" else "Full Description",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
@@ -3664,7 +3664,7 @@ fun UploadScreen(
                     }
                 }
 
-                // 3. Кнопка "Совместимость" (доступно зеленый / фиолетовый)
+                // 3. Кнопка "Совместимость пары" (доступно зеленый / фиолетовый)
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF231E18)),
@@ -3687,7 +3687,7 @@ fun UploadScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = if (currentLang == AppLanguage.RUS) "Интерпритация Совместимости" else "Compatibility Interpretation",
+                                text = if (currentLang == AppLanguage.RUS) "Совместимость пары" else "Pair Compatibility",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = MysticGold,
                                     fontWeight = FontWeight.Bold,
@@ -3738,7 +3738,7 @@ fun UploadScreen(
                     }
                 }
 
-                // а) Под-кнопки по нажатию на кнопку "Совместимость"
+                // а) Под-кнопки по нажатию на кнопку "Совместимость пары"
                 AnimatedVisibility(visible = showCompatibilitySubButtons) {
                     Column(
                         modifier = Modifier
@@ -3746,7 +3746,7 @@ fun UploadScreen(
                             .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // б) Кнопка "Краткая Интерпритация"
+                        // б) Кнопка "Краткое Описание" для совместимости (доступно второй строкой)
                         Card(
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF003816)),
@@ -3759,26 +3759,26 @@ fun UploadScreen(
                                     viewModel.showInterpretationScreen.value = false
                                 }
                         ) {
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 12.dp, horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Краткая Интерпритация" else "Brief Interpretation",
+                                    text = if (currentLang == AppLanguage.RUS) "Краткое Описание" else "Brief Description",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
                                         color = Color.LightGray,
-                                        fontSize = 12.sp,
+                                        fontSize = 13.sp,
                                         maxLines = 1
                                     )
                                     Text(
@@ -3792,7 +3792,7 @@ fun UploadScreen(
                             }
                         }
 
-                        // в) Кнопка "Полная Интерпритация"
+                        // в) Кнопка "Полное Описание" для совместимости (доступно второй строкой)
                         Card(
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2D004D)),
@@ -3805,26 +3805,26 @@ fun UploadScreen(
                                     viewModel.showInterpretationScreen.value = false
                                 }
                         ) {
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 12.dp, horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Полная Интерпритация" else "Full Interpretation",
+                                    text = if (currentLang == AppLanguage.RUS) "Полное Описание" else "Full Description",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
                                         color = Color.LightGray,
-                                        fontSize = 12.sp,
+                                        fontSize = 13.sp,
                                         maxLines = 1
                                     )
                                     Text(
