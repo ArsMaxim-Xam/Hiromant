@@ -95,6 +95,8 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
     val currentReading = MutableStateFlow<ReadingEntity?>(null)
     // Текущий выбранный результат анализа совместимости партнеров
     val currentCompatibilityReading = MutableStateFlow<ReadingEntity?>(null)
+    // Режим фильтрации интерпретаций для совместимости ("all", "brief", "full")
+    val compatibilityFilterMode = MutableStateFlow<String>("all")
 
     // Кэшированные изображения ладоней для экрана загрузки (левая ладонь)
     val bitmapLeftPalm = MutableStateFlow<Bitmap?>(null)
@@ -235,6 +237,40 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Действия биллинга (Имитация платежей для тестирования, полностью обновляет состояние БД!) ---
 
+    // Обработка успешной оплаты и автоматическое начисление Полных и Кратких интерпретаций
+    fun processPaymentSuccess(amount: Int, method: String = "ЮKassa / ЮMoney") {
+        viewModelScope.launch { // Запуск фоновой задачи обработки платежа во ViewModelScope
+            val fullCount = amount / 250 // Рассчитываем количество Полных Интерпретаций (1 Полная = 250 руб)
+            val remainder = amount % 250 // Вычисляем остаток суммы в рублях
+            val briefCount = remainder / 100 // Рассчитываем количество Кратких Интерпретаций (1 Краткая = 100 руб)
+
+            // Если сумма платежа менее 100 рублей, но платеж прошел, начисляем минимум 1 Краткую интерпретацию
+            val finalBriefCount = if (fullCount == 0 && briefCount == 0 && amount > 0) 1 else briefCount
+
+            if (fullCount > 0) {
+                repository.addPaidAnalyses(fullCount) // Начисляем полученные Полные Интерпретации в базу данных
+            }
+            if (finalBriefCount > 0) {
+                repository.addFreeAnalyses(finalBriefCount) // Начисляем полученные Краткие Интерпретации в базу данных
+            }
+
+            // Формируем текстовое описание транзакции для истории
+            val descParts = mutableListOf<String>()
+            if (fullCount > 0) descParts.add("Полные: $fullCount")
+            if (finalBriefCount > 0) descParts.add("Краткие: $finalBriefCount")
+            val desc = if (descParts.isNotEmpty()) descParts.joinToString(", ") else "Поддержка проекта ($amount р.)"
+
+            // Создаем сущность истории платежа
+            val payment = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = amount, // Сохраняем оплаченную сумму
+                paymentSystem = method, // Сохраняем выбранную платёжную систему
+                status = "Успешно", // Устанавливаем успешный статус проведения
+                readingType = "Пополнение: $desc" // Записываем подробное описание начисленных услуг
+            )
+            repository.insertPayment(payment) // Вставляем запись истории платежа в локальную база данных Room
+        }
+    }
+
     // Имитация покупки премиум подписки (начисление 10 сеансов анализов в БД)
     fun simulateBuySubscription(amount: Int = 999, method: String = "Google Play (Встроенная)") {
         viewModelScope.launch { // Запуск асинхронной задачи в viewModelScope
@@ -344,20 +380,33 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // Начисление вознаграждения (+3 полных анализа) за успешный шеринг и установку приложения
+    // Начисление вознаграждения (+3 бесплатные интерпретации) за шеринг и установку приложения
     fun rewardUserForSharing() {
         viewModelScope.launch { // Запуск сопрограммы начисления бонуса
             // Записываем информацию о бонусе в таблицу истории платежей БД для прозрачности
             val promoReward = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
                 amountRub = 0, // Бонусное начисление (0 рублей)
-                paymentSystem = "Бонус за установку (Поделиться)", // Название операции
+                paymentSystem = "Бонус (Поделиться)", // Название операции
                 status = "Успешно начислено +3", // Информация о начислении в статусе
-                readingType = "sharing_bonus" // Тип бонуса для идентификации
+                readingType = "+3 бесплатные интерпретации за приглашение" // Описание для истории
             )
             // Сохраняем промо-начисление в единую базу данных
             repository.insertPayment(promoReward)
-            // Добавляем 3 анализа пользователю в профиль в БД
-            repository.addAnalyses(3)
+            // Добавляем 3 бесплатные интерпретации пользователю
+            repository.addFreeAnalyses(3)
+        }
+    }
+
+    fun addFreeAnalyses(count: Int) {
+        viewModelScope.launch {
+            val promoReward = com.aistudio.hiromant.kxsrwa.data.local.PaymentHistoryEntity(
+                amountRub = 0,
+                paymentSystem = "Бонус (Поделиться)",
+                status = "Успешно",
+                readingType = "+$count бесплатные интерпретации за приглашение"
+            )
+            repository.insertPayment(promoReward)
+            repository.addFreeAnalyses(count)
         }
     }
 
@@ -410,8 +459,12 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 
                 currentReading.value = reading // Сохранение структуры результатов анализа
                 
-                // Снятие 1 сеанса из доступного количества анализов в локальной БД
-                repository.decrementAnalyses()
+                // Списание сеанса (бесплатного или платного)
+                if (analysisType.startsWith("full")) {
+                    repository.decrementPaidAnalyses()
+                } else {
+                    repository.decrementFreeAnalyses()
+                }
 
                 // Шаг 2: Симуляция получения и расшифровки линий (прогресс 51-100%)
                 for (p in 51..100) {
@@ -487,6 +540,7 @@ class PalmistViewModel(application: Application) : AndroidViewModel(application)
                 )
                 
                 currentCompatibilityReading.value = reading // Сохранение сущности совместимости
+                repository.decrementFreeAnalyses() // Списание 1 сеанса (бесплатного или платного)
                 analysisProgress.value = 100 // Завершение шкалы
                 delay(300) // Пауза
                 isAnalyzing.value = false // Выключение режима загрузки

@@ -3508,7 +3508,7 @@ fun UploadScreen(
                 Spacer(modifier = Modifier.height(40.dp))
 
             } else {
-                // STEP 2: Interpretation / Selection screen
+                // ШАГ 2: Экран выбора типа интерпретации
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -3517,92 +3517,326 @@ fun UploadScreen(
                     Spacer(modifier = Modifier.width(48.dp))
                     Column {
                         Text(
-                            text = "Интерпритация",
-                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                            text = if (currentLang == AppLanguage.RUS) "Интерпритация" else "Interpretation",
+                            style = MaterialTheme.typography.titleLarge.copy(color = MysticGold, fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Выберите тип анализа",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
+                            text = if (currentLang == AppLanguage.RUS) "Выберите тип интерпритации" else "Choose interpretation type",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
+                // Извлекаем количество доступных бесплатных и платных интерпретаций
+                val freeCount = billingState?.freeAnalyses ?: 0
+                val paidCount = billingState?.paidAnalyses ?: 0
                 val bitmaps = listOfNotNull(bitmapLeftPalm, bitmapLeftBack, bitmapRightPalm, bitmapRightBack)
+                var showCompatibilitySubButtons by remember { mutableStateOf(false) }
 
-                // Button 1: Краткий анализ (БЕСПЛАТНО!)
-                TriggerAnalysisButton(
-                    label = "Краткий анализ",
-                    priceText = "(БЕСПЛАТНО!)",
-                    onClick = {
-                        viewModel.currentAnalysisTypeState.value = "brief"
-                        viewModel.runPalmAnalysis(
-                            bitmaps = bitmaps,
-                            videoUri = null,
-                            analysisType = "brief",
-                            leftPalmPath = leftPalmPath,
-                            leftBackPath = leftBackPath,
-                            rightPalmPath = rightPalmPath,
-                            rightBackPath = rightBackPath,
-                            onCompleted = {
-                                viewModel.showInterpretationScreen.value = false
-                                onNavigateToLoading()
-                            }
-                        )
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Кнопка 2: Полный анализ (Обновленная стоимость - 250 р. по требованию пользователя)
-                TriggerAnalysisButton(
-                    label = "Полный анализ", // Текст метки кнопки полного анализа
-                    priceText = "Стоимость - 250 р.", // Обновленная стоимость (было 200 р.)
-                    onClick = { // Обработчик нажатия на кнопку запуска полного анализа
-                        viewModel.checkFeatureUnlocked("full") { unlocked -> // Проверка доступности функции
-                            viewModel.currentAnalysisTypeState.value = "full" // Установка типа анализа в "full"
-                            if (unlocked || (billingState?.remainingAnalyses ?: 0) > 0) { // Если разблокировано или есть доступные анализы
-                                viewModel.showInterpretationScreen.value = false // Скрываем экран интерпретации
-                                onNavigateToVideoScan() // Навигация к видео-сканированию
-                            } else {
-                                viewModel.paymentAmountToPreselect.value = "250"
-                                onNavigateToBilling() // Иначе переходим на страницу оплаты
-                            }
-                        }
-                    }
-                )
-
-                // Кнопка 3: Анализ Совместимости
-                Spacer(modifier = Modifier.height(12.dp))
+                // 1. Кнопка "Краткая интерпритация" (доступно ярко-зеленого цвета)
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MysticGold
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1C18)),
+                    border = BorderStroke(1.2.dp, MysticGold.copy(0.6f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .clickable {
+                            viewModel.currentAnalysisTypeState.value = "brief"
+                            viewModel.runPalmAnalysis(
+                                bitmaps = bitmaps,
+                                videoUri = null,
+                                analysisType = "brief",
+                                leftPalmPath = leftPalmPath,
+                                leftBackPath = leftBackPath,
+                                rightPalmPath = rightPalmPath,
+                                rightBackPath = rightBackPath,
+                                onCompleted = {
+                                    viewModel.showInterpretationScreen.value = false
+                                    onNavigateToLoading()
+                                }
+                            )
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Краткая интерпритация" else "Brief interpretation",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "$freeCount",
+                                color = Color(0xFF00FF66),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                // 2. Кнопка "Полная интерпритация" (доступно ярко-фиолетового цвета)
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MysticGold),
                     border = BorderStroke(1.2.dp, MysticGold),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 6.dp)
                         .clickable {
-                            viewModel.activeTab.value = "compatibility"
-                            viewModel.showInterpretationScreen.value = false
+                            viewModel.checkFeatureUnlocked("full") { unlocked ->
+                                viewModel.currentAnalysisTypeState.value = "full"
+                                if (unlocked || (billingState?.paidAnalyses ?: 0) > 0) {
+                                    viewModel.showInterpretationScreen.value = false
+                                    onNavigateToVideoScan()
+                                } else {
+                                    viewModel.paymentAmountToPreselect.value = "250"
+                                    onNavigateToBilling()
+                                }
+                            }
                         }
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp, horizontal = 20.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        ShrinkableText(
-                            text = "Анализ Совместимости",
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Полная интерпритация" else "Full interpretation",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
-                            )
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
+                                color = Color.Black.copy(0.7f),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "$paidCount",
+                                color = Color(0xFFE040FB),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "  (Стоимость - 250 р.)" else "  (250 RUB)",
+                                color = Color.Black.copy(0.8f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Normal,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                // 3. Кнопка "Совместимость" (доступно зеленый / фиолетовый)
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF231E18)),
+                    border = BorderStroke(1.5.dp, MysticGold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .clickable {
+                            showCompatibilitySubButtons = !showCompatibilitySubButtons
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Интерпритация Совместимости" else "Compatibility Interpretation",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = MysticGold,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = if (showCompatibilitySubButtons) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = MysticGold,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "доступно " else "available ",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "$freeCount",
+                                color = Color(0xFF00FF66),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = " / ",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "$paidCount",
+                                color = Color(0xFFE040FB),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                // а) Под-кнопки по нажатию на кнопку "Совместимость"
+                AnimatedVisibility(visible = showCompatibilitySubButtons) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // б) Кнопка "Краткая Интерпритация"
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF003816)),
+                            border = BorderStroke(1.2.dp, Color(0xFF00FF66)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.compatibilityFilterMode.value = "brief"
+                                    viewModel.activeTab.value = "compatibility"
+                                    viewModel.showInterpretationScreen.value = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Краткая Интерпритация" else "Brief Interpretation",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
+                                        color = Color.LightGray,
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = "$freeCount",
+                                        color = Color(0xFF00FF66),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+
+                        // в) Кнопка "Полная Интерпритация"
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2D004D)),
+                            border = BorderStroke(1.2.dp, Color(0xFFE040FB)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.compatibilityFilterMode.value = "full"
+                                    viewModel.activeTab.value = "compatibility"
+                                    viewModel.showInterpretationScreen.value = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (currentLang == AppLanguage.RUS) "Полная Интерпритация" else "Full Interpretation",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = if (currentLang == AppLanguage.RUS) "доступно: " else "available: ",
+                                        color = Color.LightGray,
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = "$paidCount",
+                                        color = Color(0xFFE040FB),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -4267,6 +4501,7 @@ fun TtsVoiceController(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showQuickPlay by remember { mutableStateOf(false) }
+    var userInteractionKey by remember { mutableIntStateOf(0) }
 
     // Реакция на выделение текста или изменение позиции курсора пользователем
     LaunchedEffect(selectionTrigger) {
@@ -4279,25 +4514,25 @@ fun TtsVoiceController(
     // Логика управления видимостью:
     // - Во время произношения (isPlaying == true) панель настроек сворачивается (expanded = false),
     //   но кнопка управления ("||") остается видимой ЛЕВЕЕ динамика (showQuickPlay = true).
-    // - После остановки произношения кнопка (">") остается видимой еще 4 секунды (в диапазоне 3-5 сек),
-    //   после чего автоматически скрывается.
+    // - После остановки произношения кнопка (">") остается видимой еще 5 секунд, после чего скрывается.
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
             expanded = false
             showQuickPlay = true
         } else {
             if (showQuickPlay) {
-                kotlinx.coroutines.delay(4000)
+                kotlinx.coroutines.delay(5000)
                 showQuickPlay = false
             }
         }
     }
 
-    // Автоматическое скрытие раскрытой панели через 5 секунд бездействия
-    LaunchedEffect(expanded) {
-        if (expanded && !isPlaying) {
+    // Автоматическое скрытие панели через 5 секунд бездействия с сохранением кнопки Воспроизведение/Пауза
+    LaunchedEffect(expanded, userInteractionKey) {
+        if (expanded) {
             kotlinx.coroutines.delay(5000)
             expanded = false
+            showQuickPlay = true
         }
     }
 
@@ -4359,7 +4594,9 @@ fun TtsVoiceController(
                 color = Color(0xFA14101E),
                 border = BorderStroke(1.2.dp, MysticGold.copy(0.8f)),
                 shadowElevation = 8.dp,
-                modifier = Modifier.widthIn(max = 340.dp)
+                modifier = Modifier
+                    .padding(start = 56.dp, end = 8.dp)
+                    .fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
@@ -4398,7 +4635,10 @@ fun TtsVoiceController(
                                 .clip(CircleShape)
                                 .background(if (gender == "Male") MysticGold else Color.White.copy(0.12f))
                                 .border(1.dp, if (gender == "Male") MysticGold else Color.Gray, CircleShape)
-                                .clickable { onGenderChange("Male") }
+                                .clickable {
+                                    onGenderChange("Male")
+                                    userInteractionKey++
+                                }
                         ) {
                             Text(
                                 text = "М",
@@ -4421,7 +4661,10 @@ fun TtsVoiceController(
                             )
                             Slider(
                                 value = rate,
-                                onValueChange = onRateChange,
+                                onValueChange = {
+                                    onRateChange(it)
+                                    userInteractionKey++
+                                },
                                 valueRange = 0.5f..2.0f,
                                 colors = SliderDefaults.colors(
                                     activeTrackColor = MysticGold,
@@ -4442,7 +4685,10 @@ fun TtsVoiceController(
                                 .clip(CircleShape)
                                 .background(if (gender == "Female") MysticGold else Color.White.copy(0.12f))
                                 .border(1.dp, if (gender == "Female") MysticGold else Color.Gray, CircleShape)
-                                .clickable { onGenderChange("Female") }
+                                .clickable {
+                                    onGenderChange("Female")
+                                    userInteractionKey++
+                                }
                         ) {
                             Text(
                                 text = "Ж",
@@ -5109,8 +5355,7 @@ fun ResultsScreen(
 
     val followUpPromptText = remember(currentLang) {
         if (currentLang == AppLanguage.RUS) {
-            "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?\n\n" +
-            "Хотите углубиться в какую-то конкретную область? Задайте вопрос:\n" +
+            "Выберите тему:\n" +
             "• 💼 Карьера и финансы — профессиональный потенциал, денежные потоки\n" +
             "• 💕 Отношения и брак — совместимость, любовная линия, партнерство\n" +
             "• 🧠 Интеллект и таланты — скрытые способности, обучение\n" +
@@ -5119,10 +5364,9 @@ fun ResultsScreen(
             "• 📅 Временные периоды — прогноз по годам\n" +
             "• 🔍 Конкретная линия или знак — детальный разбор\n" +
             "• Улучшение фото — как сделать идеальные снимки\n\n" +
-            "Или напишите свой вопрос — я отвечу на всё!"
+            "Задайте свой вопрос ..."
         } else {
-            "❓ NEED MORE DETAILED ANALYSIS?\n\n" +
-            "Want to delve into a specific area? Ask a question:\n" +
+            "Select a topic:\n" +
             "• 💼 Career & Finances — professional potential, money flows\n" +
             "• 💕 Relationships & Marriage — compatibility, love line, partnership\n" +
             "• 🧠 Intellect & Talents — hidden abilities, learning\n" +
@@ -5131,7 +5375,7 @@ fun ResultsScreen(
             "• 📅 Time Periods — forecast by years\n" +
             "• 🔍 Specific line or sign — detailed analysis\n" +
             "• Photo improvement — how to take perfect pictures\n\n" +
-            "Or write your question — I will answer everything!"
+            "Ask your question ..."
         }
     }
 
@@ -5190,15 +5434,26 @@ fun ResultsScreen(
                             followUpWordRange = null
                             supportWordRange = null
 
-                            // Автопрокрутка текста: удерживаем читаемое слово примерно на 2 строки выше нижней границы экрана
+                            // Плавная автопрокрутка текста без дёргания экрана:
+                            // Удерживаем произносимое слово в районе 30-35% высоты экрана от верха,
+                            // чтобы под подсвечиваемым текстом всегда оставалось видно несколько (3-6) следующих строк.
                             if (mainLen > 0) {
                                 val viewportPx = scrollState.viewportSize.let { if (it > 0) it else 1500 }
                                 val totalHeightPx = scrollState.maxValue + viewportPx
                                 val fraction = absStart.toFloat() / mainLen.toFloat()
                                 val wordY = fraction * totalHeightPx
-                                val twoLinesOffsetPx = 140f // Отступ снизу экрана около 2 строк (~50-60 dp)
-                                val targetScroll = (wordY - (viewportPx - twoLinesOffsetPx)).toInt().coerceIn(0, scrollState.maxValue)
-                                scrollState.scrollTo(targetScroll)
+                                val currentScroll = scrollState.value
+                                val targetScroll = (wordY - viewportPx * 0.32f).toInt().coerceIn(0, scrollState.maxValue)
+
+                                // Корректируем прокрутку плавно только если слово смещается ниже 55% высоты экрана или уходит за верхний край
+                                if (wordY > currentScroll + viewportPx * 0.55f || wordY < currentScroll + 20f) {
+                                    scope.launch {
+                                        scrollState.animateScrollTo(
+                                            value = targetScroll,
+                                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 350)
+                                        )
+                                    }
+                                }
                             }
                         } else if (absStart < supportStart) {
                             spokenWordRange = null
@@ -5445,7 +5700,7 @@ fun ResultsScreen(
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Text(
-                                        text = if (currentLang == AppLanguage.RUS) "❓ НУЖЕН БОЛЕЕ ПОДРОБНЫЙ АНАЛИЗ?" else "❓ NEED MORE DETAILED ANALYSIS?",
+                                        text = if (currentLang == AppLanguage.RUS) "❓ Хотите подробнее?" else "❓ Want more details?",
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             color = MysticGold,
                                             fontWeight = FontWeight.Bold
@@ -5482,7 +5737,7 @@ fun ResultsScreen(
                                     OutlinedTextField(
                                         value = userQuestionText,
                                         onValueChange = { userQuestionText = it },
-                                        placeholder = { Text("Задайте свой вопрос...", color = Color.Gray) },
+                                        placeholder = { Text(if (currentLang == AppLanguage.RUS) "Задайте свой вопрос..." else "Ask your question...", color = Color.Gray) },
                                         minLines = 3,
                                         maxLines = 8,
                                         colors = OutlinedTextFieldDefaults.colors(
@@ -6043,16 +6298,26 @@ fun CompatibilityScreen(
                         supportWordRange = null
                         lastPlaybackIndex = absStart // Запоминаем текущую позицию воспроизведения для возможности паузы
 
-                        // Автопрокрутка текста: удерживаем читаемое слово примерно на 2 строки выше нижней границы экрана
+                        // Плавная автопрокрутка текста без дёргания экрана:
+                        // Удерживаем произносимое слово в районе 30-35% высоты экрана от верха
                         val textLen = plainTextOfReport.length
                         if (textLen > 0) {
                             val viewportPx = scrollState.viewportSize.let { if (it > 0) it else 1500 }
                             val totalHeightPx = scrollState.maxValue + viewportPx
                             val fraction = absStart.toFloat() / textLen.toFloat()
                             val wordY = fraction * totalHeightPx
-                            val twoLinesOffsetPx = 140f // Отступ снизу экрана около 2 строк (~50-60 dp)
-                            val targetScroll = (wordY - (viewportPx - twoLinesOffsetPx)).toInt().coerceIn(0, scrollState.maxValue)
-                            scrollState.scrollTo(targetScroll)
+                            val currentScroll = scrollState.value
+                            val targetScroll = (wordY - viewportPx * 0.32f).toInt().coerceIn(0, scrollState.maxValue)
+
+                            // Корректируем прокрутку плавно только если слово смещается ниже 55% высоты экрана
+                            if (wordY > currentScroll + viewportPx * 0.55f || wordY < currentScroll + 20f) {
+                                scope.launch {
+                                    scrollState.animateScrollTo(
+                                        value = targetScroll,
+                                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 350)
+                                    )
+                                }
+                            }
                         }
                     } else if (utteranceId == "support_text") {
                         spokenWordRange = null
@@ -6094,12 +6359,19 @@ fun CompatibilityScreen(
         isPlayingTts = true
     }
     
-    var activeSelectionSlot by remember { mutableStateOf(1) } // 1 or 2
+    var activeSelectionSlot by remember { mutableStateOf(1) } // 1 или 2
 
     val readings by viewModel.allReadings.collectAsState()
-    
-    val interpretations = remember(readings) {
-        readings.filter { it.analysisType != "compatibility" }
+    val compatFilterMode by viewModel.compatibilityFilterMode.collectAsState()
+
+    // Фильтрация интерпретаций с учетом выбранного режима (Все, Краткие, Полные)
+    val interpretations = remember(readings, compatFilterMode) {
+        val base = readings.filter { it.analysisType != "compatibility" }
+        when (compatFilterMode) {
+            "brief" -> base.filter { it.analysisType == "brief" }
+            "full" -> base.filter { it.analysisType.startsWith("full") || it.analysisType != "brief" }
+            else -> base
+        }
     }
     
     val filteredInterpretations = remember(interpretations, searchQuery) {
@@ -6349,7 +6621,72 @@ fun CompatibilityScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // List of profiles from history
+                // Панель быстрой фильтрации типов интерпретаций
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val isAll = compatFilterMode == "all"
+                    val isBrief = compatFilterMode == "brief"
+                    val isFull = compatFilterMode == "full"
+
+                    FilterChip(
+                        selected = isAll,
+                        onClick = { viewModel.compatibilityFilterMode.value = "all" },
+                        label = {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Все" else "All",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MysticGold,
+                            selectedLabelColor = Color.Black
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    FilterChip(
+                        selected = isBrief,
+                        onClick = { viewModel.compatibilityFilterMode.value = "brief" },
+                        label = {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Краткие" else "Brief",
+                                color = if (isBrief) Color.Black else Color(0xFF00FF66),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF00FF66),
+                            selectedLabelColor = Color.Black
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    FilterChip(
+                        selected = isFull,
+                        onClick = { viewModel.compatibilityFilterMode.value = "full" },
+                        label = {
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Полные" else "Full",
+                                color = if (isFull) Color.White else Color(0xFFE040FB),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF2D004D),
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+
+                // Список профилей из истории
                 Text(
                     text = if (activeSelectionSlot == 1) {
                         if (currentLang == AppLanguage.RUS) "Выберите профиль для Партнёра 1:" else "Choose profile for Partner 1:"
@@ -6697,7 +7034,8 @@ fun CompatibilityScreen(
 @Composable
 fun UserCabinetScreen(
     viewModel: PalmistViewModel,
-    onNavigateToResult: () -> Unit
+    onNavigateToResult: () -> Unit,
+    onNavigateToBilling: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val currentLang by viewModel.selectedLanguage.collectAsState()
@@ -6708,10 +7046,12 @@ fun UserCabinetScreen(
     val readings by viewModel.allReadings.collectAsState()
     val payments by viewModel.allPayments.collectAsState()
 
-    val count = billingStateVal?.remainingAnalyses ?: 0
+    val freeCount = billingStateVal?.freeAnalyses ?: 0
+    val paidCount = billingStateVal?.paidAnalyses ?: 0
     val userName = profile?.name?.trim()?.ifBlank { null } ?: (if (currentLang == AppLanguage.RUS) "Искатель" else "Seeker")
 
-    var selectedTab by remember { mutableStateOf(0) } // 0 - История, 1 - Оплата, 2 - Поделиться
+    var selectedTab by remember { mutableStateOf(0) } // 0 - Интерпретации, 1 - Пополнения
+    var showFreeDialog by remember { mutableStateOf(false) } // Флаг модального окна "+Бесплатные Интерпретации"
 
     Box(
         modifier = Modifier
@@ -6724,59 +7064,90 @@ fun UserCabinetScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Карточка профиля пользователя
+            // Карточка профиля пользователя с подписью имени и счетчиками слева/справа
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0x22FFFFFF)),
                 border = BorderStroke(1.dp, MysticGold.copy(0.4f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 12.dp)
             ) {
-                Row(
+                Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = "User Avatar",
-                        tint = MysticGold,
-                        modifier = Modifier.size(64.dp)
+                    Text(
+                        text = userName,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Filled.Stars,
-                                contentDescription = "Analyses Count",
-                                tint = MysticBronze,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Ряд: Слева - зеленый счетчик Бесплатных, По центру - Аватар, Справа - фиолетовый счетчик Полных
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // а) Количество бесплатных интерпретаций (ярко-зеленый)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Text(
-                                text = if (currentLang == AppLanguage.RUS) 
-                                    "Доступно анализов: $count" 
-                                else "Analyses available: $count",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MysticGold,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                text = freeCount.toString(),
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00FF66)
+                            )
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "БЕСПЛАТНЫХ" else "FREE",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00FF66),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Изображение пользователя / Аватар
+                        Icon(
+                            imageVector = Icons.Filled.AccountCircle,
+                            contentDescription = "User Avatar",
+                            tint = MysticGold,
+                            modifier = Modifier.size(64.dp)
+                        )
+
+                        // б) Количество полных/платных интерпретаций (ярко-фиолетовый)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = paidCount.toString(),
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE040FB)
+                            )
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "ПОЛНЫХ" else "FULL",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE040FB),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
             }
 
-            // Переключатель вкладок (Кастомный TabRow в мистическом стиле)
+            // Экран разделён на 2 части - 1) Интерпретации и 2) Пополнения
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -6788,16 +7159,18 @@ fun UserCabinetScreen(
                         height = 2.dp
                     )
                 },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     text = { 
                         Text(
-                            text = if (currentLang == AppLanguage.RUS) "История" else "History",
+                            text = if (currentLang == AppLanguage.RUS) "1. Интерпретации" else "1. Interpretations",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         ) 
                     },
                     selectedContentColor = MysticGold,
@@ -6808,22 +7181,11 @@ fun UserCabinetScreen(
                     onClick = { selectedTab = 1 },
                     text = { 
                         Text(
-                            text = if (currentLang == AppLanguage.RUS) "Оплаты" else "Payments",
+                            text = if (currentLang == AppLanguage.RUS) "2. Пополнения" else "2. Top-ups",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        ) 
-                    },
-                    selectedContentColor = MysticGold,
-                    unselectedContentColor = Color.Gray
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = { 
-                        Text(
-                            text = if (currentLang == AppLanguage.RUS) "Поделиться" else "Share",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         ) 
                     },
                     selectedContentColor = MysticGold,
@@ -6839,7 +7201,7 @@ fun UserCabinetScreen(
             ) {
                 when (selectedTab) {
                     0 -> {
-                        // Вкладка: История анализов
+                        // в) История Интерпретаций (дата/время/личность/тип)
                         if (readings.isEmpty()) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -6873,7 +7235,7 @@ fun UserCabinetScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
                                 MysticButton(
                                     text = strings.histClearHistory,
@@ -6885,7 +7247,7 @@ fun UserCabinetScreen(
                         }
                     }
                     1 -> {
-                        // Вкладка: История оплаты
+                        // г) История оплат (дата/время/сумма/способ оплаты)
                         if (payments.isEmpty()) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -6904,8 +7266,8 @@ fun UserCabinetScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = if (currentLang == AppLanguage.RUS)
-                                            "История платежей пуста.\nПоддержите проект в разделе оплаты!"
-                                        else "Payment history is empty.\nSupport us in the billing section!",
+                                            "История пополнений пуста.\nСовершите пополнение в меню оплаты!"
+                                        else "Top-up history is empty.",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = Color.Gray,
                                         textAlign = TextAlign.Center
@@ -6923,10 +7285,10 @@ fun UserCabinetScreen(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
                                 MysticButton(
-                                    text = if (currentLang == AppLanguage.RUS) "Очистить историю оплат" else "Clear payment history",
+                                    text = if (currentLang == AppLanguage.RUS) "Очистить историю пополнений" else "Clear top-up history",
                                     onClick = { viewModel.clearPaymentHistory() },
                                     isSecondary = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -6934,120 +7296,165 @@ fun UserCabinetScreen(
                             }
                         }
                     }
-                    2 -> {
-                        // Вкладка: Поделиться приложением
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState()),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CardGiftcard,
-                                contentDescription = "Bonus icon",
-                                tint = MysticGold,
-                                modifier = Modifier.size(72.dp)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS) "Подарите друзьям Хироманта!" else "Gift Palmist to your friends!",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    color = MysticGold,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Serif
-                                ),
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS)
-                                    "Поделитесь ссылкой на приложение. После успешной установки другом вы получите +3 дополнительных полных анализа судьбы!"
-                                else "Share the app. You will receive +3 free full palm analyses once your friend successfully installs and launches the application!",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            Spacer(modifier = Modifier.height(30.dp))
-
-                            // Кнопка: Поделиться (Отправить ссылку)
-                            MysticButton(
-                                text = if (currentLang == AppLanguage.RUS) "ОТПРАВИТЬ ССЫЛКУ / APK" else "SHARE APP / APK",
-                                onClick = {
-                                    try {
-                                        val shareText = if (currentLang == AppLanguage.RUS) {
-                                            "Привет! Сканируй ладонь и раскрой свои тайны в приложении 'Хиромант'! Вот ссылка на установку APK: https://hiromant-app.ru/download/palmist.apk"
-                                        } else {
-                                            "Hi! Scan your palm and uncover your destiny with the Palmist app! Install APK from here: https://hiromant-app.ru/download/palmist.apk"
-                                        }
-                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
-                                        }
-                                        context.startActivity(android.content.Intent.createChooser(shareIntent, "Поделиться"))
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Кнопка: Симуляция установки другом (ДЛЯ ТЕСТИРОВАНИЯ)
-                            Card(
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0x33D4AF37)),
-                                border = BorderStroke(1.2.dp, MysticGold),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = if (currentLang == AppLanguage.RUS) "РЕЖИМ ПРОВЕРКИ / ТЕСТИРОВАНИЯ" else "TESTING MODE",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MysticGold
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = if (currentLang == AppLanguage.RUS)
-                                            "Нажмите кнопку ниже, чтобы сымитировать, будто ваш друг скачал и успешно установил приложение по вашей ссылке."
-                                        else "Click the button below to simulate that your friend successfully downloaded and installed the app.",
-                                        fontSize = 12.sp,
-                                        color = Color.White,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Button(
-                                        onClick = {
-                                            viewModel.rewardUserForSharing()
-                                            Toast.makeText(
-                                                context,
-                                                if (currentLang == AppLanguage.RUS)
-                                                    "Ура! Друг установил приложение. Начислено +3 анализа в БД!"
-                                                else "Success! Friend installed the app. +3 analyses awarded!",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
-                                    ) {
-                                        Text(
-                                            text = if (currentLang == AppLanguage.RUS) "Сымитировать установку" else "Simulate Installation",
-                                            color = Color.Black,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // В нижней части экрана, кнопка - "+Бесплатные Интерпретации"
+            Button(
+                onClick = { showFreeDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004D20)),
+                border = BorderStroke(1.5.dp, Color(0xFF00FF66)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CardGiftcard,
+                        contentDescription = null,
+                        tint = Color(0xFF00FF66),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "+Бесплатные Интерпретации" else "+Free Interpretations",
+                        color = Color(0xFF00FF66),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Фиксированная кнопка-полоска с надписью "ПОДДЕРЖАТЬ ПРОЕКТ"
+            Button(
+                onClick = onNavigateToBilling,
+                colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "ПОДДЕРЖАТЬ ПРОЕКТ" else "SUPPORT PROJECT",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        // Модальное окно "+Бесплатные Интерпретации"
+        if (showFreeDialog) {
+            AlertDialog(
+                onDismissRequest = { showFreeDialog = false },
+                containerColor = MysticDarkBackground,
+                shape = RoundedCornerShape(24.dp),
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CardGiftcard,
+                            contentDescription = null,
+                            tint = Color(0xFF00FF66),
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (currentLang == AppLanguage.RUS) "Бесплатные Интерпретации" else "Free Interpretations",
+                            color = MysticGold,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
+                text = {
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS)
+                            "Если вы поделитесь ссылкой на приложение «Хиромант», и оно будет установлено и использовано, вы получите 3 бесплатные Интерпретации."
+                        else "If you share a link to the Palmist app and it is installed and used, you will receive 3 free Interpretations.",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            try {
+                                val shareText = if (currentLang == AppLanguage.RUS) {
+                                    "Раскрой тайны своей судьбы по ладони в приложении «Хиромант»! Скачивай: https://hiromant-app.ru/download/palmist.apk"
+                                } else {
+                                    "Discover your destiny with the Palmist app! Download: https://hiromant-app.ru/download/palmist.apk"
+                                }
+                                val sendIntent = android.content.Intent().apply {
+                                    action = android.content.Intent.ACTION_SEND
+                                    putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                                    type = "text/plain"
+                                }
+                                val shareIntent = android.content.Intent.createChooser(sendIntent, if (currentLang == AppLanguage.RUS) "Поделиться ссылкой" else "Share App")
+                                context.startActivity(shareIntent)
+                                
+                                viewModel.addFreeAnalyses(3)
+                                Toast.makeText(
+                                    context,
+                                    if (currentLang == AppLanguage.RUS) "Вам начислено +3 бесплатные интерпретации!" else "+3 free interpretations awarded!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                            showFreeDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MysticGold)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = Color.Black,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Поделиться" else "Share",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showFreeDialog = false }) {
+                        Text(
+                            text = strings.cancel,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            )
         }
     }
 }
@@ -7246,9 +7653,30 @@ fun ReadingHistoryItem(
                     val heightUnit = if (currentLang == AppLanguage.RUS) "см" else "cm"
                     "${record.name}, $birthYear $yrUnit, ${record.height} $heightUnit, $genderLetter"
                 }
+                val isFull = record.analysisType.startsWith("full") || record.analysisType == "compatibility"
+                val typeTag = if (record.analysisType == "compatibility") {
+                    if (currentLang == AppLanguage.RUS) "Полная интерпритация совместимости" else "Full compatibility"
+                } else if (isFull) {
+                    val topic = when {
+                        record.analysisType.contains("char") -> if (currentLang == AppLanguage.RUS) "Тема: Характер" else "Topic: Character"
+                        record.analysisType.contains("path") -> if (currentLang == AppLanguage.RUS) "Тема: Жизненный путь" else "Topic: Life Path"
+                        else -> if (currentLang == AppLanguage.RUS) "Общая тема" else "General topic"
+                    }
+                    if (currentLang == AppLanguage.RUS) "Полная интерпритация ($topic)" else "Full ($topic)"
+                } else {
+                    if (currentLang == AppLanguage.RUS) "Краткая интерпритация" else "Brief interpretation"
+                }
+
                 Text(
                     text = infoText,
                     style = MaterialTheme.typography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = typeTag,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = if (isFull) Color(0xFFE040FB) else Color(0xFF00FF66),
+                        fontWeight = FontWeight.Bold
+                    )
                 )
                 Text(
                     text = formattedDate,
@@ -8641,469 +9069,47 @@ fun SettingsScreen(
                                             speechRate = ttsRateState,
                                             speechPitch = ttsPitchState
                                         )
-                                        val speakParams = android.os.Bundle().apply {
-                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "settings_program")
+                                        val params = android.os.Bundle().apply {
+                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "about_program_utt")
                                         }
-                                        ttsInstance?.speak(aboutProgramText, TextToSpeech.QUEUE_FLUSH, speakParams, "settings_program")
+                                        ttsInstance?.speak(aboutProgramText, TextToSpeech.QUEUE_FLUSH, params, "about_program_utt")
                                         isPlayingTts = true
                                     }
-                                },
-                                modifier = Modifier.size(32.dp)
+                                }
                             ) {
                                 Icon(
-                                    imageVector = if (isPlayingTts && activeSpeakingText == "program") Icons.Default.Stop else Icons.Default.VolumeUp,
-                                    contentDescription = "Read aloud",
-                                    tint = MysticGold,
-                                    modifier = Modifier.size(20.dp)
+                                    imageVector = if (isPlayingTts && activeSpeakingText == "program") Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = MysticGold
                                 )
                             }
                             Text(
                                 text = if (isPlayingTts && activeSpeakingText == "program") {
-                                    if (currentLang == AppLanguage.RUS) "Читает..." else "Reading..."
+                                    if (currentLang == AppLanguage.RUS) "Остановить озвучку" else "Stop Audio"
                                 } else {
-                                    if (currentLang == AppLanguage.RUS) "Прослушать" else "Listen"
+                                    if (currentLang == AppLanguage.RUS) "Озвучить описание" else "Listen Description"
                                 },
-                                style = MaterialTheme.typography.bodySmall.copy(color = MysticGold, fontWeight = FontWeight.Bold)
+                                fontSize = 13.sp,
+                                color = MysticGold,
+                                fontWeight = FontWeight.Bold
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(12.dp))
-                        
-                        androidx.compose.foundation.text.selection.SelectionContainer {
-                            Text(
-                                text = annotatedAboutProgram,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFFC0C0D0),
-                                lineHeight = 20.sp,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Expandable card: "О разработчике"
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { aboutDevExpanded = !aboutDevExpanded },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MysticGold)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS) "О разработчике" else "About Developer",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
-                            )
-                        }
-                        Icon(
-                            imageVector = if (aboutDevExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = null,
-                            tint = MysticGold
+                        Text(
+                            text = annotatedAboutProgram,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f)
                         )
                     }
-                    if (aboutDevExpanded) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        // TTS audio panel with direct click Email fallback icon
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0x1F1E1E2C), RoundedCornerShape(8.dp))
-                                .padding(8.dp)
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    if (isPlayingTts && activeSpeakingText == "dev") {
-                                        ttsInstance?.stop()
-                                        isPlayingTts = false
-                                        currentWordRange = null
-                                        activeSpeakingText = ""
-                                    } else {
-                                        ttsInstance?.stop()
-                                        activeSpeakingText = "dev"
-                                        configureTtsVoice(
-                                            tts = ttsInstance,
-                                            currentLang = currentLang,
-                                            voiceGender = ttsGenderState,
-                                            voiceIndex = ttsVoiceIndex,
-                                            speechRate = ttsRateState,
-                                            speechPitch = ttsPitchState
-                                        )
-                                        val speakParams = android.os.Bundle().apply {
-                                            putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "settings_dev")
-                                        }
-                                        ttsInstance?.speak(aboutDevText, TextToSpeech.QUEUE_FLUSH, speakParams, "settings_dev")
-                                        isPlayingTts = true
-                                    }
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (isPlayingTts && activeSpeakingText == "dev") Icons.Default.Stop else Icons.Default.VolumeUp,
-                                    contentDescription = "Read aloud",
-                                    tint = MysticGold,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Text(
-                                text = if (isPlayingTts && activeSpeakingText == "dev") {
-                                    if (currentLang == AppLanguage.RUS) "Читает..." else "Reading..."
-                                } else {
-                                    if (currentLang == AppLanguage.RUS) "Прослушать" else "Listen"
-                                },
-                                style = MaterialTheme.typography.bodySmall.copy(color = MysticGold, fontWeight = FontWeight.Bold),
-                                modifier = Modifier.weight(1f)
-                            )
-                            
-                            // Email action button
-                            IconButton(
-                                onClick = {
-                                    try {
-                                        uriHandler.openUri("mailto:arsmaxim@gmail.com")
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Send Email",
-                                    tint = MysticGold,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
-                        
-                        androidx.compose.foundation.text.selection.SelectionContainer {
-                            Text(
-                                text = annotatedAboutDev,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFFC0C0D0),
-                                lineHeight = 20.sp,
-                                onTextLayout = { textLayoutResult = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .pointerInput(aboutDevText) {
-                                        detectTapGestures { offset ->
-                                            textLayoutResult?.let { layout ->
-                                                val charIndex = layout.getOffsetForPosition(offset)
-                                                val emailStr = "arsmaxim@gmail.com"
-                                                val emailStart = aboutDevText.indexOf(emailStr)
-                                                if (emailStart != -1) {
-                                                    val emailEnd = emailStart + emailStr.length
-                                                    if (charIndex in emailStart until emailEnd) {
-                                                        try {
-                                                            uriHandler.openUri("mailto:arsmaxim@gmail.com")
-                                                        } catch (e: Exception) {
-                                                            e.printStackTrace()
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                            )
-                        }
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Expandable card: "Лог операций"
-            var operationsLogExpanded by remember { mutableStateOf(false) }
-            val logsList by AppLogger.logs.collectAsState()
-            
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0x22141420)),
-                border = BorderStroke(1.dp, MysticBronze.copy(0.3f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { operationsLogExpanded = !operationsLogExpanded },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Default.BugReport, contentDescription = null, tint = MysticGold)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = if (currentLang == AppLanguage.RUS) "Лог операций" else "Operations Log",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White
-                            )
-                        }
-                        Icon(
-                            imageVector = if (operationsLogExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = null,
-                            tint = MysticGold
-                        )
-                    }
-                    if (operationsLogExpanded) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        // Scrollable console-like logs container
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp)
-                                .background(Color(0xFF0F0F18), RoundedCornerShape(8.dp))
-                                .border(1.dp, MysticBronze.copy(0.2f), RoundedCornerShape(8.dp))
-                                .padding(8.dp)
-                        ) {
-                            val scrollState = rememberScrollState()
-                            
-                            // Automatically scroll to the bottom when new logs are added
-                            LaunchedEffect(logsList.size) {
-                                scrollState.animateScrollTo(scrollState.maxValue)
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(scrollState)
-                            ) {
-                                if (logsList.isEmpty()) {
-                                    Text(
-                                        text = if (currentLang == AppLanguage.RUS) "Лог пуст..." else "Log is empty...",
-                                        color = Color.Gray,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                } else {
-                                    logsList.forEach { entry ->
-                                        val color = when (entry.level) {
-                                            "E" -> Color(0xFFCF6679) // Soft red for errors
-                                            "W" -> Color(0xFFFFB300) // Soft orange/amber for warnings
-                                            "D" -> Color(0xFF4CAF50) // Green for debug
-                                            else -> Color(0xFFD4AF37) // Mystic Gold for info
-                                        }
-                                        Text(
-                                            text = "[${entry.timeStr}] [${entry.level}/${entry.tag}] ${entry.message}",
-                                            color = color,
-                                            fontSize = 11.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            lineHeight = 14.sp
-                                        )
-                                        entry.throwable?.let { th ->
-                                            val sw = java.io.StringWriter()
-                                            th.printStackTrace(java.io.PrintWriter(sw))
-                                            Text(
-                                                text = sw.toString(),
-                                                color = Color(0xFFCF6679).copy(alpha = 0.8f),
-                                                fontSize = 10.sp,
-                                                fontFamily = FontFamily.Monospace,
-                                                lineHeight = 13.sp
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // "Send to Developer" button
-                            Button(
-                                onClick = {
-                                    val logText = AppLogger.getLogText()
-                                    val emailIntent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-                                        data = android.net.Uri.parse("mailto:")
-                                        putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("arsmaxim@gmail.com"))
-                                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Palmist App Operations Log")
-                                        putExtra(android.content.Intent.EXTRA_TEXT, logText)
-                                    }
-                                    try {
-                                        context.startActivity(android.content.Intent.createChooser(emailIntent, "Send Log via Email"))
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "No email client found!", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                modifier = Modifier.weight(1.5f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = null,
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Отправить" else "Send Email",
-                                    color = Color.Black,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            // "Copy Log" button
-                            Button(
-                                onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newPlainText("Palmist Logs", AppLogger.getLogText())
-                                    clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(
-                                        context,
-                                        if (currentLang == AppLanguage.RUS) "Лог скопирован в буфер!" else "Log copied to clipboard!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x33C0C0D0)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Копировать" else "Copy",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            // "Clear" button
-                            Button(
-                                onClick = {
-                                    AppLogger.clear()
-                                    Toast.makeText(
-                                        context,
-                                        if (currentLang == AppLanguage.RUS) "Лог очищен!" else "Log cleared!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x33CF6679)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = Color(0xFFCF6679),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (currentLang == AppLanguage.RUS) "Очистить" else "Clear",
-                                    color = Color(0xFFCF6679),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Sub Status Card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0x11D4AF37)),
-                border = BorderStroke(1.dp, MysticGold.copy(0.3f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = strings.settSubStatus, style = MaterialTheme.typography.labelSmall.copy(color = MysticBronze))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (billingState?.isPremiumSubscribed == true) strings.settSubActive else strings.settSubInactive,
-                        style = MaterialTheme.typography.titleLarge.copy(color = MysticGold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = if (currentLang == AppLanguage.RUS) "Доступные полные анализы: ${billingState?.remainingAnalyses ?: 0}" else "Available full readings: ${billingState?.remainingAnalyses ?: 0}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Reset cache
-            MysticButton(
-                text = strings.settResetApp,
-                onClick = {
-                    viewModel.resetApplicationData()
-                    Toast.makeText(
-                        context,
-                        if (currentLang == AppLanguage.RUS) "Данные приложения успешно сброшены!" else "App data reset successfully!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                isSecondary = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Delete Account
-            TextButton(
-                onClick = {
-                    viewModel.clearHistory()
-                    viewModel.saveProfile("", "", 25, 175, "Right")
-                    Toast.makeText(context, "Account reset successfully.", Toast.LENGTH_SHORT).show()
-                },
-                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCF6679)),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text(text = strings.settDeleteAcc, fontWeight = FontWeight.Bold)
-            }
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
-
-
-// --- ADDITIONAL SCREEN: BILLING CHECKOUT PANEL (PLAY BILLING / YOOKASSA SIMULATED) ---
 
 @Composable
 fun BillingScreen(
@@ -9116,12 +9122,12 @@ fun BillingScreen(
 
     val scope = rememberCoroutineScope()
     var isCheckingPayment by remember { mutableStateOf(false) }
-    var confirmAttempts by remember { mutableStateOf(0) }
 
     val initialAmountFromVM by viewModel.paymentAmountToPreselect.collectAsState()
-    var walletNum by remember { mutableStateOf("410013630971157") } // User's custom wallet number
-    var paymentAmount by remember(initialAmountFromVM) { mutableStateOf(initialAmountFromVM) }
-    var chosenMethod by remember { mutableStateOf<String?>(null) } // "yookassa", "google"
+    var walletNum by remember { mutableStateOf("410013630971157") } // Номер кошелька ЮMoney получателя
+    var paymentAmount by remember(initialAmountFromVM) { mutableStateOf(if (initialAmountFromVM.isBlank()) "250" else initialAmountFromVM) }
+    var chosenMethod by remember { mutableStateOf<String?>("yookassa") } // По умолчанию выбрана ЮKassa / ЮMoney
+    var showSupportInput by remember { mutableStateOf(false) } // Флаг отображения поля ввода произвольной суммы поддержки
     var showConfirmationDialog by remember { mutableStateOf(false) }
 
     if (showConfirmationDialog) {
@@ -9129,15 +9135,28 @@ fun BillingScreen(
             onDismissRequest = { showConfirmationDialog = false },
             title = {
                 Text(
-                    text = "Ожидание оплаты ЮMoney",
+                    text = if (currentLang == AppLanguage.RUS) "Подтверждение оплаты ЮMoney" else "YooMoney Payment Confirmation",
                     color = MysticGold,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             },
             text = {
+                val amtInt = paymentAmount.toIntOrNull() ?: 250
+                val fullCount = amtInt / 250
+                val briefCount = (amtInt % 250) / 100
+                val infoStr = if (currentLang == AppLanguage.RUS) {
+                    "Страница оплаты ЮMoney с выбранной суммой ($amtInt р.) открыта в вашем браузере.\n\n" +
+                    "После выполнения перевода нажмите 'Подтвердить' для зачисления ваших интерпретаций:\n" +
+                    "• Полных Интерпретаций: $fullCount\n" +
+                    "• Кратких Интерпретаций: $briefCount"
+                } else {
+                    "YooMoney payment page with selected sum ($amtInt RUB) was opened in your browser.\n\n" +
+                    "Click 'Confirm' after payment to credit your interpretations."
+                }
                 Text(
-                    text = "Официальная страница оплаты была открыта в вашем браузере.\n\n" +
-                           "После успешного завершения перевода в системе ЮMoney вернитесь сюда и нажмите кнопку 'Подтвердить', чтобы разблокировать сеансы.",
+                    text = infoStr,
                     color = Color.White
                 )
             },
@@ -9146,21 +9165,17 @@ fun BillingScreen(
                     onClick = {
                         scope.launch {
                             isCheckingPayment = true
-                            delay(1500)
+                            delay(1200)
                             isCheckingPayment = false
-                            if (confirmAttempts == 0) {
-                                confirmAttempts++
-                                Toast.makeText(
-                                    context,
-                                    if (currentLang == AppLanguage.RUS) "Оплата не подтверждена... Попробуйте ещё раз!" else "Payment not confirmed. Try again!",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            } else {
-                                showConfirmationDialog = false
-                                viewModel.simulateBuySubscription()
-                                Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show()
-                                onNavigateBack()
-                            }
+                            showConfirmationDialog = false
+                            val amt = paymentAmount.toIntOrNull() ?: 250
+                            viewModel.processPaymentSuccess(amt, "ЮKassa / ЮMoney")
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Оплата успешно подтверждена! Интерпретации зачислены." else "Payment confirmed successfully!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            onNavigateBack()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MysticGold),
@@ -9176,7 +9191,8 @@ fun BillingScreen(
                         Text(
                             text = if (currentLang == AppLanguage.RUS) "Подтвердить" else "Confirm",
                             color = Color.Black,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
                     }
                 }
@@ -9185,7 +9201,11 @@ fun BillingScreen(
                 TextButton(
                     onClick = { showConfirmationDialog = false }
                 ) {
-                    Text("Отмена", color = Color.Gray)
+                    Text(
+                        text = if (currentLang == AppLanguage.RUS) "Отмена" else "Cancel",
+                        color = Color.Gray,
+                        maxLines = 1
+                    )
                 }
             },
             containerColor = MysticDarkSurface,
@@ -9203,82 +9223,122 @@ fun BillingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(10.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Заголовок экрана
             Text(
-                text = "Выбор способа оплаты",
+                text = if (currentLang == AppLanguage.RUS) "Страница Оплаты" else "Payment Page",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     color = MysticGold,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .padding(vertical = 4.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 1. Выбор способа оплаты
             Text(
-                text = "(Полный Анализ)",
+                text = if (currentLang == AppLanguage.RUS) "1. Выбор способа оплаты:" else "1. Payment method:",
                 style = MaterialTheme.typography.titleMedium.copy(
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
                 ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 2.dp)
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Google play billing simulated
+            // а) Google Billing
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = if (chosenMethod == "google") Color(0x33D4AF37) else Color(0x22141420)),
-                border = BorderStroke(1.2.dp, if (chosenMethod == "google") MysticGold else MysticBronze.copy(0.3f)),
+                border = BorderStroke(1.5.dp, if (chosenMethod == "google") MysticGold else MysticBronze.copy(0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { chosenMethod = "google" }
             ) {
-                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Payment, contentDescription = null, tint = MysticGold, modifier = Modifier.size(36.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(strings.billDialogGooglePlay, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = chosenMethod == "google",
+                        onClick = { chosenMethod = "google" },
+                        colors = RadioButtonDefaults.colors(selectedColor = MysticGold)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.Payment,
+                        contentDescription = null,
+                        tint = MysticGold,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Google Billing",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // YooKassa / YooMoney
+            // б) ЮKassa / ЮMoney
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = if (chosenMethod == "yookassa") Color(0x33D4AF37) else Color(0x22141420)),
-                border = BorderStroke(1.2.dp, if (chosenMethod == "yookassa") MysticGold else MysticBronze.copy(0.3f)),
+                border = BorderStroke(1.5.dp, if (chosenMethod == "yookassa") MysticGold else MysticBronze.copy(0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { chosenMethod = "yookassa" }
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.CreditCard, contentDescription = null, tint = MysticGold, modifier = Modifier.size(36.dp))
-                        Spacer(modifier = Modifier.width(16.dp))
+                        RadioButton(
+                            selected = chosenMethod == "yookassa",
+                            onClick = { chosenMethod = "yookassa" },
+                            colors = RadioButtonDefaults.colors(selectedColor = MysticGold)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.CreditCard,
+                            contentDescription = null,
+                            tint = MysticGold,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "ЮMoney / ЮKassa (Карты/СБП)",
+                            text = "ЮKassa / ЮMoney",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     if (chosenMethod == "yookassa") {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Введите номер кошелька ЮMoney получателя:",
+                            text = if (currentLang == AppLanguage.RUS) "Кошелек получателя:" else "Recipient wallet:",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = Color.Gray,
+                            maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        
                         val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
                         MysticTextField(
                             value = walletNum,
@@ -9302,155 +9362,250 @@ fun BillingScreen(
                                 }
                             }
                         )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Text(
-                            text = "Выберите сумму перевода (рубли):",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 3 кнопки суммы: 250 р.  500 р. 1000 р. согласно требованию пользователя
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            listOf("250", "500", "1000").forEach { valAmount ->
-                                val isSelected = paymentAmount == valAmount
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .background(
-                                            if (isSelected) MysticGold else Color.White.copy(0.05f),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) MysticGold else MysticBronze.copy(0.3f),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .clickable { 
-                                            paymentAmount = valAmount // Выбираем фиксированную сумму при клике
-                                        }
-                                        .padding(vertical = 10.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "$valAmount р.", // Отображаем текст суммы в формате "X р." по заданию
-                                        color = if (isSelected) Color.Black else Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Надпись "Поддержать проект" под кнопками сумм
-                        Text(
-                            text = "Поддержать проект",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MysticGold,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Поле ввода под надписью "Поддержать проект" с текстом "Введите любую сумму..." внутри
-                        MysticTextField(
-                            value = paymentAmount,
-                            onValueChange = { newVal ->
-                                // Оставляем только числовые символы для ввода суммы
-                                val digits = newVal.filter { it.isDigit() }
-                                paymentAmount = digits
-                            },
-                            label = "Сумма поддержки", // Название поля для доступности
-                            placeholder = "Введите любую сумму...", // Текст подсказки внутри поля ввода по заданию
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row( // Создаем горизонтальный контейнер для размещения кнопок управления действиями
-                modifier = Modifier.fillMaxWidth(), // Растягиваем контейнер на всю ширину доступного экрана
-                horizontalArrangement = Arrangement.spacedBy(16.dp) // Настраиваем расстояние в 16dp между кнопками
-            ) { // Начало описания содержимого горизонтальной строки кнопок
-                MysticButton( // Отрисовываем кнопку отмены действия
-                    text = strings.cancel, // Передаем локализованный текст для кнопки отмены из строковых ресурсов
-                    onClick = onNavigateBack, // Назначаем действие возврата на предыдущий экран при нажатии
-                    isSecondary = true, // Указываем, что кнопка является второстепенной по визуальному стилю
-                    modifier = Modifier.weight(1f) // Задаем вес кнопке, чтобы она делила пространство поровну
-                ) // Завершаем описание кнопки отмены
+            // 2. Кнопки выбора суммы: а) 250 р. б) 500 р. в) 1000 р.
+            Text(
+                text = if (currentLang == AppLanguage.RUS) "2. Кнопки выбора суммы:" else "2. Choose payment amount:",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                MysticButton( // Отрисовываем главную кнопку инициации платежа "ОПЛАТИТЬ"
-                    text = "ОПЛАТИТЬ", // Задаем текст кнопки оплаты заглавными буквами
-                    onClick = { // Начало лямбда-выражения для обработки нажатия на кнопку оплаты
-                        if (chosenMethod == "google") { // Проверяем, выбран ли метод оплаты через систему Google Play
-                            viewModel.simulateBuySubscription() // Запускаем симуляцию успешной покупки премиума в ViewModel
-                            Toast.makeText(context, strings.billDialogSuccess, Toast.LENGTH_LONG).show() // Показываем тост об успехе
-                            onNavigateBack() // Совершаем переход назад на предыдущий экран приложения
-                        } else if (chosenMethod == "yookassa") { // Иначе, если выбран способ перевода через ЮKassa/ЮMoney
-                            try { // Начинаем блок перехвата исключений при попытке открыть веб-страницу
-                                val cleanWallet = walletNum.replace(" ", "").trim() // Очищаем номер кошелька от пробелов
-                                if (cleanWallet.length < 10) { // Проверяем валидность длины кошелька
-                                    Toast.makeText(context, "Пожалуйста, введите номер кошелька", Toast.LENGTH_LONG).show() // Выводим предупреждение
-                                    return@MysticButton // Прерываем выполнение дальнейшей логики кнопки
-                                } // Завершаем проверку длины кошелька
-                                val amountVal = paymentAmount.trim() // Убираем лишние пробелы из суммы платежа
-                                if (amountVal.isEmpty() || amountVal.toIntOrNull() == null || amountVal.toInt() <= 0) { // Проверяем корректность суммы
-                                    Toast.makeText(context, "Пожалуйста, введите корректную сумму", Toast.LENGTH_LONG).show() // Выводим предупреждение о некорректной сумме
-                                    return@MysticButton // Прерываем выполнение логики платежа
-                                } // Завершаем валидацию суммы
+            Spacer(modifier = Modifier.height(10.dp))
 
-                                val targets = "Hiromant App Premium Subscription" // Задаем назначение платежа для формы ЮMoney
-                                val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8") // Кодируем строку назначения в URL-формат
-                                val url = "https://yoomoney.ru/quickpay/confirm.xml?" + // Строим базовый URL-адрес подтверждения платежа ЮMoney
-                                        "receiver=$cleanWallet&" + // Добавляем кошелек получателя в параметры запроса
-                                        "quickpay-form=button&" + // Задаем формат формы быстрой оплаты в ЮMoney
-                                        "targets=$encodedTargets&" + // Добавляем закодированную цель платежа
-                                        "paymentType=AC&" + // Указываем способ оплаты банковской картой
-                                        "sum=$amountVal" // Передаем введенную пользователем сумму платежа
-                                
-                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)) // Создаем Intent для открытия ссылки в браузере
-                                context.startActivity(intent) // Запускаем активность внешнего системного браузера с формой оплаты
-                                showConfirmationDialog = true // Отображаем диалоговое окно для подтверждения факта перевода
-                            } catch (e: Exception) { // Ловим ошибки, если не удалось открыть ссылку в браузере
-                                e.printStackTrace() // Печатаем трассировку стека возникшего исключения в системный лог
-                                Toast.makeText(context, "Ошибка открытия: ${e.localizedMessage}", Toast.LENGTH_LONG).show() // Сообщаем пользователю об ошибке
-                            } // Завершаем блок обработки исключений
-                        } // Завершаем проверку методов оплаты
-                    }, // Конец обработчика клика на кнопку "ОПЛАТИТЬ"
-                    modifier = Modifier.weight(1f), // Задаем вес кнопке для симметричного деления строки наполовину
-                    enabled = chosenMethod != null // Кнопка активна только в случае, если выбран хотя бы один способ
-                ) // Завершаем описание кнопки оплаты
-            } // Завершаем контейнер строки кнопок
-            Spacer(modifier = Modifier.height(12.dp)) // Добавляем отступ в 12dp под кнопками перед предупреждением о комиссии
-            Text( // Выводим текстовое предупреждение о банковской комиссии в соответствии с требованием
-                text = if (currentLang == AppLanguage.RUS) { // Проверяем, равен ли выбранный язык интерфейса русскому языку
-                    "В разных Банках и Системах оплат, могут взымать разную коммисию...\nОбратите на это внимание!" // Отображаем ТЗ-текст на русском языке
-                } else { // Если выбран отличный от русского язык интерфейса (английский)
-                    "Different banks and payment systems may charge different commissions...\nPlease pay attention to this!" // Отображаем эквивалентный текст на английском языке
-                }, // Завершаем условное выражение выбора языка для предупреждения
-                style = MaterialTheme.typography.bodySmall.copy( // Применяем компактный стиль текста bodySmall
-                    color = Color.Gray.copy(alpha = 0.8f), // Устанавливаем серый цвет для предупреждения, чтобы не отвлекать внимание
-                    textAlign = TextAlign.Center // Выравниваем текст предупреждения по центру для гармоничной симметрии
-                ), // Завершаем настройку шрифтового стиля предупреждения
-                modifier = Modifier // Начинаем конфигурацию модификатора отображения текста
-                    .fillMaxWidth() // Растягиваем текстовое поле на всю доступную ширину для корректного центрирования
-                    .padding(horizontal = 16.dp) // Добавляем горизонтальные отступы по бокам в 16dp
-            ) // Завершаем создание текстового элемента с предупреждением о комиссиях
-            Spacer(modifier = Modifier.height(20.dp)) // Добавляем нижний отступ в 20dp для безопасной области прокрутки
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                listOf("250", "500", "1000").forEach { valAmount ->
+                    val isSelected = paymentAmount == valAmount && !showSupportInput
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) MysticGold else Color.White.copy(0.06f)
+                        ),
+                        border = BorderStroke(
+                            1.2.dp,
+                            if (isSelected) MysticGold else MysticBronze.copy(0.4f)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                paymentAmount = valAmount
+                                showSupportInput = false
+                            }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$valAmount р.",
+                                color = if (isSelected) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. Кнопки и раздел поддержки
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0x11FFFFFF)),
+                border = BorderStroke(1.dp, MysticGold.copy(0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // в) Кнопка ПОДДЕРЖАТЬ
+                    Button(
+                        onClick = {
+                            showSupportInput = !showSupportInput
+                            if (showSupportInput && paymentAmount.isBlank()) {
+                                paymentAmount = "100"
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (showSupportInput) MysticGold else Color(0xFF2A241E)
+                        ),
+                        border = BorderStroke(1.2.dp, MysticGold),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = if (showSupportInput) Color.Black else MysticGold,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "ПОДДЕРЖАТЬ" else "SUPPORT",
+                                color = if (showSupportInput) Color.Black else MysticGold,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Нажав на кнопку ПОДДЕРЖАТЬ, появляется поле ввода произвольной суммы с текстом "любая сумма"
+                    AnimatedVisibility(visible = showSupportInput) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            MysticTextField(
+                                value = paymentAmount,
+                                onValueChange = { newVal ->
+                                    val digits = newVal.filter { it.isDigit() }
+                                    paymentAmount = digits
+                                },
+                                label = if (currentLang == AppLanguage.RUS) "Произвольная сумма" else "Custom amount",
+                                placeholder = "любая сумма",
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Под полем ввода, надпись - Краткая Интерпритация - 100 р.
+                            Text(
+                                text = if (currentLang == AppLanguage.RUS) "Краткая Интерпритация - 100 р." else "Brief Interpretation - 100 RUB",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Color(0xFF00FF66),
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Кнопки: а) ОТМЕНИТЬ  б) ОПЛАТИТЬ
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // а) ОТМЕНИТЬ
+                MysticButton(
+                    text = if (currentLang == AppLanguage.RUS) "ОТМЕНИТЬ" else "CANCEL",
+                    onClick = onNavigateBack,
+                    isSecondary = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // б) ОПЛАТИТЬ
+                MysticButton(
+                    text = if (currentLang == AppLanguage.RUS) "ОПЛАТИТЬ" else "PAY",
+                    onClick = {
+                        val amtInt = paymentAmount.trim().toIntOrNull()
+                        if (amtInt == null || amtInt <= 0) {
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Пожалуйста, введите или выберите сумму" else "Please select or enter sum",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@MysticButton
+                        }
+
+                        if (chosenMethod == "google") {
+                            // Начисление при оплате Google Billing
+                            viewModel.processPaymentSuccess(amtInt, "Google Billing")
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Оплата прошла успешно! Интерпретации зачислены." else "Payment successful!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            onNavigateBack()
+                        } else if (chosenMethod == "yookassa") {
+                            try {
+                                val cleanWallet = walletNum.replace(" ", "").trim()
+                                val targets = "Hiromant App Interpretation"
+                                val encodedTargets = java.net.URLEncoder.encode(targets, "UTF-8")
+                                // Перенаправление на страницу оплаты с уже введённой суммой без возможности изменить её
+                                val url = "https://yoomoney.ru/quickpay/confirm.xml?" +
+                                        "receiver=$cleanWallet&" +
+                                        "quickpay-form=button&" +
+                                        "targets=$encodedTargets&" +
+                                        "paymentType=AC&" +
+                                        "sum=$amtInt"
+
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                context.startActivity(intent)
+                                showConfirmationDialog = true
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                Toast.makeText(context, "Ошибка открытия страницы оплаты: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                if (currentLang == AppLanguage.RUS) "Выберите способ оплаты" else "Select payment method",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = chosenMethod != null
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Текст о возможной комиссии банков
+            Text(
+                text = if (currentLang == AppLanguage.RUS) {
+                    "В разных Банках и Системах оплат, могут взымать разную комиссию...\nОбратите на это внимание!"
+                } else {
+                    "Different banks and payment systems may charge different commissions...\nPlease pay attention to this!"
+                },
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Color.Gray.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
+
+// --- END OF BILLING SCREEN ---
 
 @Composable
 fun YookassaPaymentForm(

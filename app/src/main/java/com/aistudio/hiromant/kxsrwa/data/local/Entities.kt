@@ -43,9 +43,11 @@ data class UserProfileEntity(
 @Entity(tableName = "app_billing_state")
 data class BillingStateEntity(
     @PrimaryKey val id: Int = 1, // Идентификатор записи состояния биллинга (всегда 1)
-    val remainingAnalyses: Int = 3, // Количество доступных бесплатных/оплаченных сеансов ИИ-анализа ладони
+    val freeAnalyses: Int = 3, // Количество доступных бесплатных интерпретаций
+    val paidAnalyses: Int = 0, // Количество доступных полных/платных интерпретаций
+    val remainingAnalyses: Int = 3, // Количество доступных общее (для обратной совместимости)
     val isPremiumSubscribed: Boolean = false, // Активен ли режим полной безлимитной премиум-подписки
-    val purchasedItemIds: String = "" // Идентификаторы приобретенных пакетов товаров через запятую (например, "3_analyses,10_analyses")
+    val purchasedItemIds: String = "" // Идентификаторы приобретенных пакетов товаров через запятую
 )
 
 // Сущность (таблица) единой истории совершенных транзакций, платежей, донатов и начислений в приложении

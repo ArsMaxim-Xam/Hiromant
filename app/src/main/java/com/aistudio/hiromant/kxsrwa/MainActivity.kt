@@ -369,37 +369,63 @@ class MainActivity : ComponentActivity() {
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
-                                                // Контейнер для иконки с поддержкой динамического красного бейджа количества анализов
-                                                Box(
-                                                    contentAlignment = Alignment.TopEnd
-                                                ) {
-                                                    Icon(
-                                                        imageVector = icon, // Системная иконка Material Design
-                                                        contentDescription = null, // Игнорируется для скринридеров
-                                                        tint = if (isSelected) MysticGold else Color.Gray, // Золотая подсветка активного пункта
-                                                        modifier = Modifier.size(18.dp) // Компактный размер иконки
-                                                    )
-                                                    
-                                                    // Отрисовка круглого бейджа с балансом сеансов над вкладкой «Кабинет» пользователя
-                                                    if (tabId == "user_cabinet") {
-                                                        // Считываем баланс из состояния биллинга, вынесенного на верхний уровень
-                                                        val count = billingStateVal?.remainingAnalyses ?: 0 // Получение баланса доступных сеансов ИИ-анализа без вложенных подписок в цикле
-                                                        if (count > 0) { // Отрисовываем бейдж только при наличии доступных балансов
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .offset(x = 6.dp, y = (-6).dp) // Сдвиг на правый верхний угол иконки
-                                                                    .background(Color.Red, shape = RoundedCornerShape(50)) // Красный круглый фон
-                                                                    .padding(horizontal = 4.dp, vertical = 1.dp) // Минимальные отступы вокруг текста
-                                                            ) {
-                                                                Text(
-                                                                    text = count.toString(), // Выводим число оставшихся сеансов
-                                                                    color = Color.White, // Белый цвет текста цифры
-                                                                    fontSize = 7.sp, // Миниатюрный размер
-                                                                    fontWeight = FontWeight.Bold // Жирное начертание для читаемости
-                                                                )
-                                                            }
+                                                // Контейнер для иконки с поддержкой динамических двухцветных счетчиков анализа
+                                                if (tabId == "user_cabinet") {
+                                                    val freeCount = billingStateVal?.freeAnalyses ?: 0
+                                                    val paidCount = billingStateVal?.paidAnalyses ?: 0
+
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.Center
+                                                    ) {
+                                                        // а) Зеленый счетчик Бесплатных (Слева)
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(Color(0xFF004D20), shape = RoundedCornerShape(50))
+                                                                .border(1.dp, Color(0xFF00FF66), RoundedCornerShape(50))
+                                                                .padding(horizontal = 3.dp, vertical = 0.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = freeCount.toString(),
+                                                                color = Color(0xFF00FF66),
+                                                                fontSize = 8.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+
+                                                        Spacer(modifier = Modifier.width(3.dp))
+
+                                                        Icon(
+                                                            imageVector = icon,
+                                                            contentDescription = null,
+                                                            tint = if (isSelected) MysticGold else Color.Gray,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+
+                                                        Spacer(modifier = Modifier.width(3.dp))
+
+                                                        // б) Фиолетовый счетчик Полных/Платных (Справа)
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(Color(0xFF3B0066), shape = RoundedCornerShape(50))
+                                                                .border(1.dp, Color(0xFFE040FB), RoundedCornerShape(50))
+                                                                .padding(horizontal = 3.dp, vertical = 0.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = paidCount.toString(),
+                                                                color = Color(0xFFE040FB),
+                                                                fontSize = 8.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
                                                         }
                                                     }
+                                                } else {
+                                                    Icon(
+                                                        imageVector = icon,
+                                                        contentDescription = null,
+                                                        tint = if (isSelected) MysticGold else Color.Gray,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
                                                 }
                                                 Spacer(modifier = Modifier.height(2.dp)) // Отступ между иконкой и надписью
                                                 Text(

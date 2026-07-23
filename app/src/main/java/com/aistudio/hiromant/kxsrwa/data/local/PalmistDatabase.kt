@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         BillingStateEntity::class, // Таблица баланса анализов и подписок
         PaymentHistoryEntity::class // Таблица истории транзакций и бонусов
     ],
-    version = 4, // Текущая версия схемы БД
+    version = 5, // Текущая версия схемы БД
     exportSchema = false // Отключение экспорта схемы БД в json-файл при компиляции
 )
 abstract class PalmistDatabase : RoomDatabase() {
