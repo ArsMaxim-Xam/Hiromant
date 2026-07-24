@@ -339,13 +339,14 @@ class MainActivity : ComponentActivity() {
                                             Triple("compatibility", strings.navCompat, if (activeTab == "compatibility") Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder),
                                             Triple("user_cabinet", if (currentLang == AppLanguage.RUS) "Кабинет" else "Cabinet", if (activeTab == "user_cabinet") Icons.Filled.Person else Icons.Outlined.Person),
                                             Triple("settings", if (currentLang == AppLanguage.RUS) "Настройки" else "Settings", if (activeTab == "settings") Icons.Filled.Settings else Icons.Outlined.Settings),
-                                            Triple("about", strings.navAbout, if (activeTab == "about") Icons.Filled.Info else Icons.Outlined.Info)
+                                            Triple("billing", if (currentLang == AppLanguage.RUS) "+Р" else "+P", if (activeTab == "billing") Icons.Filled.AddCard else Icons.Outlined.AddCard)
                                         )
 
                                         tabs.forEach { (tabId, label, icon) ->
                                             // Проверка, является ли данная вкладка выбранной
                                             val isSelected = if (currentRoute == "main_container") activeTab == tabId else {
                                                 if (currentRoute == "settings" && tabId == "settings") true
+                                                else if (currentRoute == "billing" && tabId == "billing") true
                                                 else if (currentRoute == "result" && tabId == "upload") true
                                                 else false
                                             }
@@ -357,7 +358,9 @@ class MainActivity : ComponentActivity() {
                                                         indication = null, // Отключение стандартного серого эффекта нажатия для мистического вида
                                                         onClick = {
                                                             viewModel.activeTab.value = tabId // Переключение активной вкладки во ViewModel
-                                                            if (currentRoute != "main_container") {
+                                                            if (tabId == "billing") {
+                                                                navController.navigate("billing")
+                                                            } else if (currentRoute != "main_container") {
                                                                 // Возврат на главный экран-контейнер при нажатии на вкладку из других окон
                                                                 navController.navigate("main_container") {
                                                                     popUpTo("main_container") { inclusive = false }

@@ -36,8 +36,16 @@ fun MysticHeader(
     modifier: Modifier = Modifier, // Дополнительные модификаторы
     textAlign: TextAlign = TextAlign.Center // Выравнивание текста
 ) {
+    val initialSize = remember(text) {
+        when {
+            text.length > 18 -> 20.sp
+            text.length > 14 -> 24.sp
+            text.length > 10 -> 28.sp
+            else -> 32.sp
+        }
+    }
     // Хранение текущего размера шрифта в состоянии для динамического масштабирования
-    var fontSize by remember(text) { mutableStateOf(34.sp) }
+    var fontSize by remember(text) { mutableStateOf(initialSize) }
     // Состояние готовности текста к отрисовке (чтобы избежать мерцания в момент расчета ширины)
     var readyToDraw by remember(text) { mutableStateOf(false) }
 
@@ -45,17 +53,19 @@ fun MysticHeader(
         text = text, // Передаем текст
         style = MaterialTheme.typography.displayLarge.copy(
             color = MysticGold, // Золотистый цвет
-            fontSize = fontSize // Текущий динамический размер шрифта
+            fontSize = fontSize, // Текущий динамический размер шрифта
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Serif
         ),
         textAlign = textAlign, // Способ выравнивания
         maxLines = 1, // Ограничение в одну строчку
         softWrap = false, // Отключение автоматического переноса слов
-        overflow = TextOverflow.Clip, // Обрезка избытка текста при расчете
+        overflow = TextOverflow.Ellipsis, // Обрезка с эллипсисом при нехватке места
         onTextLayout = { textLayoutResult ->
             // Если текст выходит за видимые границы (переполняет контейнер)
             if (textLayoutResult.hasVisualOverflow) {
-                val nextSize = fontSize.value - 1f // Уменьшаем шаг шрифта на 1sp
-                if (nextSize > 12f) { // Контроль минимального размера
+                val nextSize = fontSize.value - 1.5f // Уменьшаем шаг шрифта на 1.5sp
+                if (nextSize >= 12f) { // Контроль минимального размера
                     fontSize = nextSize.sp // Обновляем состояние для следующего прохода recomposition
                 } else {
                     readyToDraw = true // Если дошли до предела, разрешаем рисовать как есть
@@ -66,7 +76,7 @@ fun MysticHeader(
         },
         modifier = modifier
             .fillMaxWidth() // Растягивание на всю ширину
-            .padding(vertical = 12.dp) // Внутренний вертикальный отступ
+            .padding(horizontal = 8.dp, vertical = 12.dp) // Внутренний вертикальный отступ
             .drawWithContent {
                 if (readyToDraw) drawContent() // Отрисовываем контент только после успешного расчета размеров
             }
